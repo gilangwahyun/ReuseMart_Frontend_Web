@@ -1,8 +1,8 @@
 import useAxios from ".";
 
-const API_URL = "/pembeli"
+const API_URL = "/register"
 
-export const createPembeli = async (userData) => {
+export const createUser = async (userData) => {
     try {
       const response = await useAxios.post(API_URL, userData);
       return response.data;
