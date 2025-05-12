@@ -5,14 +5,16 @@ import DetailBarang from "../pages/client/DetailBarang";
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import RegisterOrganisasi from '../pages/auth/RegisterOrganisasi';
 import RegisterPembeli from '../pages/auth/RegisterPembeli';
+import LoginPage from '../pages/auth/LoginPage';
+import DashboardProfilPembeli from '../pages/client/DashboardProfilPembeli';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 const AppRoutes = () => {
-  return (
+  return (  
     <Router>
       <Routes>
-        <Route path="/" element={< RegisterOrganisasi/>} />
+        <Route path="/" element={<DashboardProfilPembeli/>} />
         <Route path="/product/:id" element={<DetailBarang />} />
       </Routes>
     </Router>
