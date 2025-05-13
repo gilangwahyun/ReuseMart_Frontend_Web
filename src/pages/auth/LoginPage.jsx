@@ -35,7 +35,7 @@ export default function LoginPage() {
       // Redirect berdasarkan role pengguna
       switch (data.role) {
         case 'Pembeli':
-          navigate('/DashboardPembeli');
+          navigate('/DashboardProfilPembeli');
           break;
         case 'Penitip':
           navigate('/DashboardPenitip');

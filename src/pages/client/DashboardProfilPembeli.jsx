@@ -1,40 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProfilCard from "../../components/ProfilCard";
 import ProfilDetailTransaksi from "../../components/ProfilDetailTransaksi";
 import ProfilHistoriTransaksi from "../../components/ProfilHistoriTransaksi";
-
-const dummyProfile = {
-  name: "Pinsen Cetiav",
-  email: "pinsen@tehcetiav.com",
-  rewardPoints: 120,
-};
-
-const dummyTransactions = [
-  {
-    id: "TX001",
-    date: "2025-04-01",
-    total: 250000,
-    items: [
-      { name: "Teh Hijau", quantity: 2, price: 50000 },
-      { name: "Teh Hitam", quantity: 3, price: 50000 },
-    ],
-  },
-  {
-    id: "TX002",
-    date: "2025-04-10",
-    total: 150000,
-    items: [{ name: "Teh Oolong", quantity: 3, price: 50000 }],
-  },
-];
+import { getPembeliByUserId } from "../../api/PembeliApi";
+import { getTransaksiByPembeli } from "../../api/TransaksiApi";
 
 export default function BuyerDashboard() {
+  const [profile, setProfile] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [selectedTx, setSelectedTx] = useState(null);
+
+  // Ambil data user dari localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.id_user || user?.id; // pastikan ini id_user
+
+  console.log(JSON.parse(localStorage.getItem("user")));
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Ambil data pembeli berdasarkan id_user
+    getPembeliByUserId(userId)
+      .then((pembeli) => {
+        setProfile(pembeli);
+        if (pembeli) {
+          // Fetch transactions milik pembeli ini
+          getTransaksiByPembeli(pembeli.id_pembeli)
+            .then((data) => setTransactions(data))
+            .catch((err) => console.error("Gagal mengambil transaksi:", err));
+        }
+      })
+      .catch((error) => {
+        console.error("Gagal mengambil data pembeli:", error);
+      });
+  }, [userId]);
 
   return (
     <div className="dashboard">
-      <ProfilCard profile={dummyProfile} />
+      {profile && <ProfilCard profile={profile} />}
       <ProfilHistoriTransaksi
-        transactions={dummyTransactions}
+        transactions={transactions}
         onSelect={setSelectedTx}
       />
       <ProfilDetailTransaksi

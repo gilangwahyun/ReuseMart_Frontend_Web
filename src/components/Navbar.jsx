@@ -8,6 +8,7 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
   const [showPanel, setShowPanel] = useState(false);
   const [kategoriList, setKategoriList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,8 +30,19 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
     const handleClickOutside = (e) => {
       const panel = document.getElementById("kategoriPanel");
       const toggle = document.getElementById("kategoriToggle");
-      if (panel && !panel.contains(e.target) && !toggle.contains(e.target)) {
+      const profileMenu = document.getElementById("profileMenu");
+      const profileToggle = document.getElementById("profileToggle");
+
+      if (
+        panel && !panel.contains(e.target) && !toggle.contains(e.target)
+      ) {
         setShowPanel(false);
+      }
+
+      if (
+        profileMenu && !profileMenu.contains(e.target) && !profileToggle.contains(e.target)
+      ) {
+        setShowProfileMenu(false);
       }
     };
 
@@ -40,6 +52,10 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
 
   const togglePanel = () => {
     setShowPanel((prev) => !prev);
+  };
+
+  const toggleProfileMenu = () => {
+    setShowProfileMenu((prev) => !prev);
   };
 
   const handleKategoriClick = (namaKategori) => {
@@ -102,10 +118,44 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
                 <FaShoppingCart size={18} />
               </Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link text-dark" to="/profile">
+
+            <li className="nav-item position-relative">
+              <button
+                id="profileToggle"
+                className="btn nav-link text-dark"
+                onClick={toggleProfileMenu}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
                 <FaUser size={18} />
-              </Link>
+              </button>
+
+              {showProfileMenu && (
+                <div
+                  id="profileMenu"
+                  className="position-absolute end-0 mt-2 bg-white shadow rounded border"
+                  style={{ zIndex: 1000, minWidth: "150px" }}
+                >
+                  <Link
+                    to="/LoginPage"
+                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                    onClick={() => setShowProfileMenu(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                    onClick={() => setShowProfileMenu(false)}
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
             </li>
           </ul>
         </div>

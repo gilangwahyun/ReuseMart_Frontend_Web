@@ -10,3 +10,21 @@ export const createPembeli = async (userData) => {
       throw error;
     }
 };
+
+export const getPembeli = async (id) => {
+  try {
+    const response = await useAxios.get(`/pembeli/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getPembeliByUserId = async (id_user) => {
+  try {
+    const response = await useAxios.get(`/pembeli/user/${id_user}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

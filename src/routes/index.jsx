@@ -14,8 +14,10 @@ const AppRoutes = () => {
   return (  
     <Router>
       <Routes>
-        <Route path="/" element={<DashboardProfilPembeli/>} />
+        <Route path="/" element={<Home/>} />
         <Route path="/product/:id" element={<DetailBarang />} />
+        <Route path="/LoginPage" element={<LoginPage/>} />
+        <Route path="/DashboardProfilPembeli" element={<DashboardProfilPembeli/>} />
       </Routes>
     </Router>
   );
