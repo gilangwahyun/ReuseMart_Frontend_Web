@@ -1,40 +1,28 @@
-import React, { useState } from "react";
+import React from "react";
 import AdminSidebar from "../../components/AdminSidebar";
-import { FaBars } from "react-icons/fa";
+import { Outlet } from "react-router-dom"; // Use Outlet for nested routes
 
 const AdminDashboard = () => {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
-  };
-
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="d-flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <AdminSidebar isOpen={isSidebarOpen} />
+      <AdminSidebar />
 
       {/* Main content */}
       <div
-        className={`flex-1 transition-all duration-300 ${
-          isSidebarOpen ? "ml-64" : "ml-0"
-        }`}
+        style={{
+          marginLeft: "250px", // Match the sidebar width
+          width: "100%", // Ensure it takes the remaining width
+        }}
       >
         <nav className="bg-white shadow px-6 py-4 flex items-center">
-          <button
-            onClick={toggleSidebar}
-            className="text-gray-600 mr-4"
-            aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-            aria-expanded={isSidebarOpen}
-          >
-            <FaBars size={22} />
-          </button>
-          <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+          <h1 className="text-xl font-semibold" style={{ paddingLeft: "20px" }}>
+            Admin Dashboard
+          </h1>
         </nav>
 
-        <main className="p-6">
-          <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
-          <p className="text-gray-700">Kelola semua tugas administratif di sini.</p>
+        <main className="p-6" style={{ paddingLeft: "20px", paddingTop: "20px" }}>
+          <Outlet /> {/* This will render the matched child route */}
         </main>
       </div>
     </div>
