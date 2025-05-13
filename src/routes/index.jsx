@@ -8,6 +8,8 @@ import RegisterPembeli from '../pages/auth/RegisterPembeli';
 import LoginPage from '../pages/auth/LoginPage';
 import DashboardProfilPembeli from '../pages/client/DashboardProfilPembeli';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import RegisterPembeliPage from '../pages/auth/RegisterOrganisasi';
+import CRUDPenitip from '../pages/auth/CRUDPenitip';
 
 
 const AppRoutes = () => {
