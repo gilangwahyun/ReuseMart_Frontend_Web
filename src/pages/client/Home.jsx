@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
-import { getAllBarang } from "../../api/BarangApi";
+import { getAllActiveBarang, searchBarangByName, getBarangByKategori } from "../../api/BarangApi";
 
 const Home = () => {
   const [barangList, setBarangList] = useState([]);
@@ -10,16 +10,17 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedKategori, setSelectedKategori] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
   useEffect(() => {
     const fetchBarang = async () => {
       try {
-        const data = await getAllBarang();
-        setBarangList(data);
-        setFilteredBarang(data);
+        const respone = await getAllActiveBarang();
+        setBarangList(respone.data);
+        setFilteredBarang(respone.data);
       } catch (err) {
         setError("Gagal memuat data barang.");
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -28,28 +29,64 @@ const Home = () => {
     fetchBarang();
   }, []);
 
-  const handleKategoriSelect = (kategori) => {
+  const handleKategoriSelect = async (kategori) => {
     setSelectedKategori(kategori);
-    if (!kategori) {
-      setFilteredBarang(barangList);
-    } else {
-      setFilteredBarang(
-        barangList.filter((item) => item.kategori?.nama_kategori === kategori)
-      );
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getBarangByKategori(kategori);
+      setFilteredBarang(response.data);
+    } catch (err) {
+      setError("Gagal memuat barang berdasarkan kategori.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (searchKeyword) => {
+    setSearchLoading(true);
+    setSearchError("");
+
+    try {
+      const response = await searchBarangByName(searchKeyword);
+      console.log(response);
+
+      const result = response.data;
+
+      if (result.length === 0) {
+        setSearchError("Barang tidak ditemukan.");
+        setFilteredBarang([]);
+      } else {
+        setFilteredBarang(result);
+      }
+    } catch (err) {
+      setSearchError("Terjadi kesalahan saat pencarian.");
+      console.error(err);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar onKategoriSelect={handleKategoriSelect} />
+      <Navbar onSearch={handleSearch} />
       <main className="container my-5 flex-grow-1">
-        {loading && <p>Memuat barang...</p>}
+        {loading && (
+          <div className="d-flex flex-column align-items-center my-5">
+            <div className="spinner-border text-success mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="text-muted">Sedang memuat produk, mohon tunggu...</p>
+          </div>
+        )}
         {error && <p className="text-danger">{error}</p>}
         {selectedKategori && (
           <h5 className="mb-4">
             Menampilkan produk untuk kategori: <strong>{selectedKategori}</strong>
           </h5>
         )}
+        {searchError && <p className="text-danger">{searchError}</p>}
         <div className="row g-4">
           {filteredBarang.length > 0 ? (
             filteredBarang.map((product) => (
@@ -58,7 +95,7 @@ const Home = () => {
               </div>
             ))
           ) : (
-            !loading && <p>Tidak ada produk ditemukan untuk kategori ini.</p>
+            !loading && <p>Tidak ada produk ditemukan.</p>
           )}
         </div>
       </main>
