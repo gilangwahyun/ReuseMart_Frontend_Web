@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { FaUserTie, FaBuilding, FaTachometerAlt, FaBars, FaTimes } from "react-icons/fa";
+import { FaUserTie, FaBuilding, FaTachometerAlt, FaBars, FaTimes, FaMoneyBill } from "react-icons/fa";
 
-const AdminSidebar = () => {
+const OwnerSidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
 
   const toggleSidebar = () => {
@@ -39,15 +39,15 @@ const AdminSidebar = () => {
             </Link>
           </li>
           <li className="nav-item mb-2">
-            <Link to="/admin/pegawai" className="nav-link text-dark d-flex align-items-center">
-              <FaUserTie className="me-2" />
-              {isOpen && "Manajerial Pegawai"}
+            <Link to="/owner/donasi" className="nav-link text-dark d-flex align-items-center">
+              <FaMoneyBill className="me-2" />
+              {isOpen && "Manajerial Donasi"}
             </Link>
           </li>
-          <li className="nav-item">
-            <Link to="/admin/organisasi" className="nav-link text-dark d-flex align-items-center">
-              <FaBuilding className="me-2" />
-              {isOpen && "Manajerial Organisasi"}
+          <li className="nav-item mb-2">
+            <Link to="/owner/alokasi" className="nav-link text-dark d-flex align-items-center">
+              <FaMoneyBill className="me-2" />
+              {isOpen && "Manajerial Alokasi Donasi"}
             </Link>
           </li>
         </ul>
@@ -56,4 +56,4 @@ const AdminSidebar = () => {
   );
 };
 
-export default AdminSidebar;
+export default OwnerSidebar;
