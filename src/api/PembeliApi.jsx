@@ -10,3 +10,12 @@ export const createPembeli = async (userData) => {
       throw error;
     }
 };
+
+export const getPembeli = async (id) => {
+    try {
+        const response = await useAxios.get(`${API_URL}/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

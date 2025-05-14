@@ -14,6 +14,11 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<AdminDashboard />} />
         <Route path="/product/:id" element={<DetailBarang />} />
+        <Route path="/admin" element={<AdminDashboard />}>
+          <Route path="organisasi" element={<OrganisasiPage />} />
+        </Route>
+        <Route path="/penitip/profile/:id" element={<ProfilePenitip/>} />
+        <Route path="/pembeli/profile/:id" element={<ProfilePembeli/>} />   
         <Route path="/admin/organisasi" element={<RegisterOrganisasi />} />
         <Route path="/register/pembeli" element={<RegisterPembeli />} />
         {/* Add more routes as needed */}
