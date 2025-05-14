@@ -12,6 +12,7 @@ const AppRoutes = () => {
   return (
     <Router>
       <Routes>
+        <Route path="/login" element={<LoginPage/>} />
         <Route path="/" element={<AdminDashboard />} />
         <Route path="/product/:id" element={<DetailBarang />} />
         <Route path="/admin" element={<AdminDashboard />}>
