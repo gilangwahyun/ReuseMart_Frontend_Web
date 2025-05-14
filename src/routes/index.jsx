@@ -1,17 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import Home from '../pages/client/Home';
 import DetailBarang from "../pages/client/DetailBarang";
-// import AdminDashboard from '../pages/admin/AdminDashboard';
-// import RegisterOrganisasi from '../pages/auth/RegisterOrganisasi';
-// import RegisterPembeli from '../pages/auth/RegisterPembeli';
 import LoginPage from '../pages/auth/LoginPage';
 import DashboardProfilPembeli from '../pages/client/DashboardProfilPembeli';
-import 'bootstrap/dist/css/bootstrap.min.css';
-// import RegisterPembeliPage from '../pages/auth/RegisterOrganisasi';
 import CRUDPenitip from '../pages/auth/CRUDPenitip';
 import DashboardOrganisasi from '../pages/client/DashboardOrganisasi';
-
+import AdminDashboard from '../pages/admin/AdminDashboard';
+import PegawaiManagement from "../pages/admin/PegawaiManagement";
+import OrganisasiManagement from "../pages/admin/OrganisasiManagement";
+import DonasiManagement from "../pages/Owner/DonasiManagement";
+import OwnerDashboard from "../pages/Owner/OwnerDashboard";
+import RiwayatAlokasiDonasi from '../pages/Owner/RiwayatAlokasiDonasi';
 
 const AppRoutes = () => {
   return (  
@@ -23,6 +24,12 @@ const AppRoutes = () => {
         <Route path="/DashboardProfilPembeli" element={<DashboardProfilPembeli/>} />
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
+        <Route path="/" element={<AdminDashboard />} />
+        <Route path="/admin/pegawai" element={<PegawaiManagement />} />
+        <Route path="/admin/organisasi" element={<OrganisasiManagement />} />
+        <Route path='/' element={< OwnerDashboard />} />
+        <Route path='/owner/donasi' element={< DonasiManagement />} />
+        <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
       </Routes>
     </Router>
   );

@@ -11,15 +11,11 @@ import {
   FaBars, // Icon for the toggle button
 } from "react-icons/fa";
 
-const sidebarItems = [
-  { to: "/admin/dashboard", icon: <FaHome />, label: "Dashboard" },
-  { to: "/admin/pegawai", icon: <FaUserTie />, label: "Pegawai" },
-  { to: "/admin/barang-titipan", icon: <FaBoxOpen />, label: "Barang Titipan" },
-  { to: "/admin/penitip", icon: <FaUsers />, label: "Penitip" },
-  { to: "/admin/pembeli", icon: <FaShoppingCart />, label: "Pembeli" },
-  { to: "/admin/organisasi", icon: <FaBuilding />, label: "Organisasi" },
-  { to: "/admin/donasi", icon: <FaDonate />, label: "Donasi" },
-];
+
+import { FaUserTie, FaBuilding, FaTachometerAlt, FaBars, FaTimes } from "react-icons/fa";
+
+const AdminSidebar = () => {
+  const [isOpen, setIsOpen] = useState(true);
 
 const AdminSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,6 +60,53 @@ const AdminSidebar = () => {
           ))}
         </ul>
       </nav>
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div className="d-flex">
+      {/* Sidebar */}
+      <div
+        className={`bg-light border-end p-3 ${isOpen ? "vh-100" : ""}`}
+        style={{
+          width: isOpen ? "250px" : "60px",
+          transition: "width 0.3s",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          {isOpen && <h5 className="mb-0">Administrasi</h5>}
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={toggleSidebar}
+            style={{ position: "absolute", top: 10, right: 10 }}
+          >
+            {isOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </div>
+        <ul className="nav flex-column">
+          <li className="nav-item mb-2">
+            <Link to="/" className="nav-link text-dark d-flex align-items-center">
+              <FaTachometerAlt className="me-2" />
+              {isOpen && "Dashboard"}
+            </Link>
+          </li>
+          <li className="nav-item mb-2">
+            <Link to="/admin/pegawai" className="nav-link text-dark d-flex align-items-center">
+              <FaUserTie className="me-2" />
+              {isOpen && "Manajerial Pegawai"}
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link to="/admin/organisasi" className="nav-link text-dark d-flex align-items-center">
+              <FaBuilding className="me-2" />
+              {isOpen && "Manajerial Organisasi"}
+            </Link>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 };

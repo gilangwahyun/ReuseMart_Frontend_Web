@@ -3,12 +3,15 @@ import { FaShoppingCart, FaUser } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "/assets/logoReuseMart.png";
 import { getAllKategori } from "../api/KategoriBarangApi";
+import { searchBarangByName } from "../api/BarangApi";
 
-const Navbar = ({ onKategoriSelect = () => {} }) => {
+const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const [showPanel, setShowPanel] = useState(false);
   const [kategoriList, setKategoriList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [isSearchClicked, setIsSearchClicked] = useState(false); // Menambahkan state untuk kontrol tombol Cari
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,9 +63,21 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
 
   const handleKategoriClick = (namaKategori) => {
     setShowPanel(false);
-    onKategoriSelect(namaKategori); // Kirim event ke parent (jika ada)
-    navigate(`/?kategori=${namaKategori}`);
+    onKategoriSelect(namaKategori);
+    navigate(`/kategori/${namaKategori}`);
   };
+
+  const handleSearchClick = (e) => {
+    e.preventDefault();
+    if (searchKeyword.trim() === "") return;
+
+    onSearch(searchKeyword);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchKeyword(e.target.value);
+  };
+  
 
   return (
     <nav
@@ -101,12 +116,18 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
               </button>
             </li>
 
-            <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }}>
+            <form
+              className="d-flex me-auto w-50"
+              style={{ maxWidth: "400px" }}
+              onSubmit={handleSearchClick}
+            >
               <input
                 className="form-control me-2"
                 type="search"
                 placeholder="Cari produk..."
                 aria-label="Search"
+                value={searchKeyword}
+                onChange={handleSearchChange}
               />
               <button className="btn btn-outline-dark" type="submit">
                 Cari
