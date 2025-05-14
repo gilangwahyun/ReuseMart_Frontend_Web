@@ -12,6 +12,24 @@ export const getAllPegawai = async () => {
   }
 };
 
+export const getPegawaiByUserId = async (id_user) => {
+  try {
+     const response = await useAxios.get(`${API_URL}/user/${id_user}`);
+     return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getJabatanByUser = async (id_user) => {
+  try {
+     const response = await useAaxios.get(`${API_URL}/user/${id_user}/jabatan`);
+     return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Mengambil data pegawai berdasarkan ID
 export const getPegawaiById = async (id) => {
   try {

@@ -11,6 +11,15 @@ export const getAllJabatan = async () => {
   }
 };
 
+export const getJabatanByPegawai = async (id_pegawai) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/pegawai/${id_pegawai}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getJabatanById = async (id) => {
   try {
     const response = await useAxios.get(`${API_URL}/${id}`);
