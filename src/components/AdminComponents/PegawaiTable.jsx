@@ -1,0 +1,56 @@
+import React from "react";
+
+const PegawaiTable = ({ data, onEdit, onDelete }) => {
+  return (
+    <>
+      {data.length === 0 ? (
+        <div>Tidak ada data pegawai yang cocok.</div>
+      ) : (
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Tanggal Lahir</th>
+              <th>No. Telepon</th>
+              <th>Alamat</th>
+              <th>Jabatan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((pegawai) => {
+              const jabatan =
+                pegawai.jabatan?.nama_jabatan || pegawai.nama_jabatan || "-";
+
+              return (
+                <tr key={pegawai.id_pegawai || pegawai.id || Math.random()}>
+                  <td>{pegawai.nama_pegawai}</td>
+                  <td>{pegawai.tanggal_lahir}</td>
+                  <td>{pegawai.no_telepon}</td>
+                  <td>{pegawai.alamat}</td>
+                  <td>{jabatan}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-warning me-2"
+                      onClick={() => onEdit(pegawai)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => onDelete(pegawai.id_pegawai)}
+                    >
+                      Hapus
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+};
+
+export default PegawaiTable;

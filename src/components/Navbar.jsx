@@ -3,11 +3,15 @@ import { FaShoppingCart, FaUser } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "/assets/logoReuseMart.png";
 import { getAllKategori } from "../api/KategoriBarangApi";
+import { searchBarangByName } from "../api/BarangApi";
 
-const Navbar = ({ onKategoriSelect = () => {} }) => {
+const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const [showPanel, setShowPanel] = useState(false);
   const [kategoriList, setKategoriList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [isSearchClicked, setIsSearchClicked] = useState(false); // Menambahkan state untuk kontrol tombol Cari
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,8 +33,19 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
     const handleClickOutside = (e) => {
       const panel = document.getElementById("kategoriPanel");
       const toggle = document.getElementById("kategoriToggle");
-      if (panel && !panel.contains(e.target) && !toggle.contains(e.target)) {
+      const profileMenu = document.getElementById("profileMenu");
+      const profileToggle = document.getElementById("profileToggle");
+
+      if (
+        panel && !panel.contains(e.target) && !toggle.contains(e.target)
+      ) {
         setShowPanel(false);
+      }
+
+      if (
+        profileMenu && !profileMenu.contains(e.target) && !profileToggle.contains(e.target)
+      ) {
+        setShowProfileMenu(false);
       }
     };
 
@@ -42,11 +57,27 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
     setShowPanel((prev) => !prev);
   };
 
+  const toggleProfileMenu = () => {
+    setShowProfileMenu((prev) => !prev);
+  };
+
   const handleKategoriClick = (namaKategori) => {
     setShowPanel(false);
-    onKategoriSelect(namaKategori); // Kirim event ke parent (jika ada)
-    navigate(`/?kategori=${namaKategori}`);
+    onKategoriSelect(namaKategori);
+    navigate(`/kategori/${namaKategori}`);
   };
+
+  const handleSearchClick = (e) => {
+    e.preventDefault();
+    if (searchKeyword.trim() === "") return;
+
+    onSearch(searchKeyword);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchKeyword(e.target.value);
+  };
+  
 
   return (
     <nav
@@ -85,12 +116,18 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
               </button>
             </li>
 
-            <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }}>
+            <form
+              className="d-flex me-auto w-50"
+              style={{ maxWidth: "400px" }}
+              onSubmit={handleSearchClick}
+            >
               <input
                 className="form-control me-2"
                 type="search"
                 placeholder="Cari produk..."
                 aria-label="Search"
+                value={searchKeyword}
+                onChange={handleSearchChange}
               />
               <button className="btn btn-outline-dark" type="submit">
                 Cari
@@ -102,10 +139,44 @@ const Navbar = ({ onKategoriSelect = () => {} }) => {
                 <FaShoppingCart size={18} />
               </Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link text-dark" to="/profile">
+
+            <li className="nav-item position-relative">
+              <button
+                id="profileToggle"
+                className="btn nav-link text-dark"
+                onClick={toggleProfileMenu}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
                 <FaUser size={18} />
-              </Link>
+              </button>
+
+              {showProfileMenu && (
+                <div
+                  id="profileMenu"
+                  className="position-absolute end-0 mt-2 bg-white shadow rounded border"
+                  style={{ zIndex: 1000, minWidth: "150px" }}
+                >
+                  <Link
+                    to="/LoginPage"
+                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                    onClick={() => setShowProfileMenu(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                    onClick={() => setShowProfileMenu(false)}
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
             </li>
           </ul>
         </div>
