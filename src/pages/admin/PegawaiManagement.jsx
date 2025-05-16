@@ -157,7 +157,7 @@ const PegawaiManagement = () => {
           />
         )}
 
-        {/* Modal for PegawaiForm */}
+        {/* Modal PegawaiForm */}
         {modalVisible && (
           <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog">

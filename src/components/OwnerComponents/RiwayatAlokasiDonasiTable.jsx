@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { updateAlokasiDonasi } from "../../api/AlokasiDonasiApi";
 
-const RiwayatAlokasiDonasiTable = ({ alokasiDonasi = [], setAlokasiDonasi }) => {  
+const RiwayatAlokasiDonasiTable = ({ alokasiDonasi = [], setAlokasiDonasi }) => {
   const [isEditing, setIsEditing] = useState(null);
   const [tanggalDonasi, setTanggalDonasi] = useState('');
   const [namaPenerima, setNamaPenerima] = useState('');
@@ -10,6 +10,16 @@ const RiwayatAlokasiDonasiTable = ({ alokasiDonasi = [], setAlokasiDonasi }) => 
   const handleUpdate = async (id_alokasi_donasi) => {
     try {
       setLoading(true);
+
+      const original = alokasiDonasi.find((a) => a.id_alokasi_donasi === id_alokasi_donasi);
+      if (
+        original.tanggal_donasi === tanggalDonasi &&
+        original.nama_penerima === namaPenerima
+      ) {
+        alert("Tidak ada perubahan yang dilakukan.");
+        return;
+      }
+
       const updatedAlokasi = await updateAlokasiDonasi(id_alokasi_donasi, {
         tanggal_donasi: tanggalDonasi,
         nama_penerima: namaPenerima,
@@ -37,6 +47,12 @@ const RiwayatAlokasiDonasiTable = ({ alokasiDonasi = [], setAlokasiDonasi }) => 
     setIsEditing(alokasi.id_alokasi_donasi);
     setTanggalDonasi(alokasi.tanggal_donasi || '');
     setNamaPenerima(alokasi.nama_penerima || '');
+  };
+
+  const handleCancel = () => {
+    setIsEditing(null);
+    setTanggalDonasi('');
+    setNamaPenerima('');
   };
 
   return (
@@ -88,16 +104,25 @@ const RiwayatAlokasiDonasiTable = ({ alokasiDonasi = [], setAlokasiDonasi }) => 
               <td>{alokasi.barang?.penitipan_barang?.penitip?.nama_penitip ?? '-'}</td>
               <td>
                 {isEditing === alokasi.id_alokasi_donasi ? (
-                  <button
-                    className="btn btn-success"
-                    onClick={() => handleUpdate(alokasi.id_alokasi_donasi)}
-                    disabled={loading}
-                  >
-                    {loading ? 'Menyimpan...' : 'Simpan'}
-                  </button>
+                  <>
+                    <button
+                      className="btn btn-success btn-sm me-1"
+                      onClick={() => handleUpdate(alokasi.id_alokasi_donasi)}
+                      disabled={loading}
+                    >
+                      {loading ? 'Menyimpan...' : 'Simpan'}
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleCancel}
+                      disabled={loading}
+                    >
+                      Batal
+                    </button>
+                  </>
                 ) : (
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm"
                     onClick={() => handleEdit(alokasi)}
                   >
                     Edit

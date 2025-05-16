@@ -24,10 +24,10 @@ const AppRoutes = () => {
         <Route path="/DashboardProfilPembeli" element={<DashboardProfilPembeli/>} />
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
-        <Route path="/" element={<AdminDashboard />} />
+        <Route path="/DashboardAdmin" element={<AdminDashboard />} />
         <Route path="/admin/pegawai" element={<PegawaiManagement />} />
         <Route path="/admin/organisasi" element={<OrganisasiManagement />} />
-        <Route path='/' element={< OwnerDashboard />} />
+        <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
       </Routes>

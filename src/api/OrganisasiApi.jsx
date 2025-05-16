@@ -41,7 +41,16 @@ export const getOrganisasiById = async (id) => {
 export const deleteOrganisasi = async (id) => {
   try {
     const response = await useAxios.delete(`${API_URL}/${id}`);
-    return response.data; // Assuming the API returns some data
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getOrganisasiWithoutRequest = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}/without-request`);
+    return response.data;
   } catch (error) {
     throw error;
   }
