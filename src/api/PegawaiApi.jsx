@@ -23,8 +23,8 @@ export const getPegawaiByUserId = async (id_user) => {
 
 export const getJabatanByUser = async (id_user) => {
   try {
-     const response = await useAaxios.get(`${API_URL}/user/${id_user}/jabatan`);
-     return response.data;
+     const response = await useAxios.get(`${API_URL}/user/${id_user}/jabatan`);
+     return response;
   } catch (error) {
     throw error;
   }

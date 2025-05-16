@@ -114,7 +114,7 @@ const DetailBarang = () => {
             {/* DETAIL BARANG */}
             <div className="col-md-7">
               <h2>{barang.nama_barang}</h2>
-              <h4 className="text-primary">Rp{barang.harga.toLocaleString()}</h4>
+              <h4 className="text-secondary">Rp{barang.harga.toLocaleString()}</h4>
               <p>{barang.deskripsi}</p>
               <p>Berat: {barang.berat} gram</p>
               <p>Masa Garansi: {barang.masa_garansi || "Tidak ada garansi"}</p>

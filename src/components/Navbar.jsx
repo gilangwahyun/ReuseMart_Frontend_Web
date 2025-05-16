@@ -11,7 +11,7 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [isSearchClicked, setIsSearchClicked] = useState(false); // Menambahkan state untuk kontrol tombol Cari
+  const [isSearchClicked, setIsSearchClicked] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {

@@ -1,17 +1,41 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { FaUserTie, FaBuilding, FaTachometerAlt, FaBars, FaTimes, FaMoneyBill } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FaUserTie,
+  FaBuilding,
+  FaTachometerAlt,
+  FaBars,
+  FaTimes,
+  FaSignOutAlt,
+} from "react-icons/fa";
+import { Logout } from "../api/AuthApi";
 
 const OwnerSidebar = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      await Logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const sidebarItems = [
+    { to: "/DashboardOwner", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { to: "/owner/donasi", icon: <FaUserTie />, label: "Request Donasi dan Alokasi" },
+    { to: "/owner/alokasi", icon: <FaBuilding />, label: "Riwayat Alokasi" },
+    { to: "/owner/organisasi", icon: <FaBuilding />, label: "Organisasi" },
+  ];
+
   return (
     <div className="d-flex">
-      {/* Sidebar */}
       <div
         className={`bg-light border-end p-3 ${isOpen ? "vh-100" : ""}`}
         style={{
@@ -32,23 +56,24 @@ const OwnerSidebar = () => {
           </button>
         </div>
         <ul className="nav flex-column">
+          {sidebarItems.map(({ to, icon, label }) => (
+            <li className="nav-item mb-2" key={to}>
+              <Link to={to} className="nav-link text-dark d-flex align-items-center">
+                {icon}
+                {isOpen && <span className="ms-2">{label}</span>}
+              </Link>
+            </li>
+          ))}
+          {/* Tombol Logout */}
           <li className="nav-item mb-2">
-            <Link to="/" className="nav-link text-dark d-flex align-items-center">
-              <FaTachometerAlt className="me-2" />
-              {isOpen && "Dashboard"}
-            </Link>
-          </li>
-          <li className="nav-item mb-2">
-            <Link to="/owner/donasi" className="nav-link text-dark d-flex align-items-center">
-              <FaMoneyBill className="me-2" />
-              {isOpen && "Manajerial Donasi"}
-            </Link>
-          </li>
-          <li className="nav-item mb-2">
-            <Link to="/owner/alokasi" className="nav-link text-dark d-flex align-items-center">
-              <FaMoneyBill className="me-2" />
-              {isOpen && "Manajerial Alokasi Donasi"}
-            </Link>
+            <button
+              className="nav-link text-dark d-flex align-items-center"
+              onClick={handleLogout}
+              style={{ background: "none", border: "none", padding: 0 }}
+            >
+              <FaSignOutAlt />
+              {isOpen && <span className="ms-2">Logout</span>}
+            </button>
           </li>
         </ul>
       </div>

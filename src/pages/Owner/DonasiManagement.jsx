@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import OwnerSideBar from "../../components/OwnerSideBar";
-import RequestDonasiTable from "../../components/OwnerComponents/RequestDonasiTable"; // Impor komponen yang benar
-import { getAllRequestDonasi } from "../../api/RequestDonasiApi"; // Ganti dengan API yang sesuai
+import RequestDonasiTable from "../../components/OwnerComponents/RequestDonasiTable";
+import { getAllRequestDonasi } from "../../api/RequestDonasiApi";
 
 const RequestDonasiManagement = () => {
   const [requestDonasiList, setRequestDonasiList] = useState([]);
@@ -11,17 +11,17 @@ const RequestDonasiManagement = () => {
   const fetchRequestDonasi = async () => {
     setLoading(true);
     try {
-      const response = await getAllRequestDonasi(); // Ganti dengan API untuk fetch request donasi
+      const response = await getAllRequestDonasi();
       console.log("Response API Request Donasi:", response); // Debug log untuk response API
       if (Array.isArray(response)) {
-        setRequestDonasiList(response); // Pastikan data berbentuk array
-        setError(null); // Reset error jika sukses
+        setRequestDonasiList(response);
+        setError(null);
       } else {
         setError("Data tidak dalam format yang benar.");
       }
     } catch (err) {
       console.error("Gagal memuat data request donasi:", err);
-      setError("Gagal memuat data request donasi."); // Menampilkan error
+      setError("Gagal memuat data request donasi.");
     } finally {
       setLoading(false);
     }
