@@ -4,6 +4,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Home from '../pages/client/Home';
 import DetailBarang from "../pages/client/DetailBarang";
 import LoginPage from '../pages/auth/LoginPage';
+import RegisterPembeli from '../pages/auth/RegisterPembeli';
+import RegisterOrganisasi from '../pages/auth/RegisterOrganisasi';
 import DashboardProfilPembeli from '../pages/client/DashboardProfilPembeli';
 import CRUDPenitip from '../pages/auth/CRUDPenitip';
 import DashboardOrganisasi from '../pages/client/DashboardOrganisasi';
@@ -13,6 +15,7 @@ import OrganisasiManagement from "../pages/admin/OrganisasiManagement";
 import DonasiManagement from "../pages/Owner/DonasiManagement";
 import OwnerDashboard from "../pages/Owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/Owner/RiwayatAlokasiDonasi';
+import AlamatForm from '../components/AlamatForm';
 
 const AppRoutes = () => {
   return (  
@@ -21,6 +24,8 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<DetailBarang />} />
         <Route path="/LoginPage" element={<LoginPage/>} />
+        <Route path="/RegisterPembeli" element={<RegisterPembeli/>} />
+        <Route path="/RegisterOrganisasi" element={<RegisterOrganisasi/>} />
         <Route path="/DashboardProfilPembeli" element={<DashboardProfilPembeli/>} />
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
@@ -30,6 +35,7 @@ const AppRoutes = () => {
         <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
+        <Route path='/alamat/pembeli' element={< AlamatForm />} />
       </Routes>
     </Router>
   );

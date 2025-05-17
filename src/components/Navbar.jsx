@@ -169,7 +169,7 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                     Login
                   </Link>
                   <Link
-                    to="/register"
+                    to="/RegisterPembeli"
                     className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
                     onClick={() => setShowProfileMenu(false)}
                   >
