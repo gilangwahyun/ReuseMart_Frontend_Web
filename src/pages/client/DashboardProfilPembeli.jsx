@@ -22,21 +22,34 @@ const DashboardProfilePembeli = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id_user || user?.id;
 
-  // Fetch pembeli and alamat list
   const fetchPembeliAndAlamat = async () => {
     setLoading(true);
     try {
       const data = await getPembeliByUserId(userId);
       setPembeli(data);
-      const alamatData = await getAlamatByPembeliId(data.id_pembeli);
-      setAlamatList(alamatData.length > 0 ? alamatData : []);
+      
+      try {
+        // Coba ambil data alamat
+        const alamatData = await getAlamatByPembeliId(data.id_pembeli);
+        setAlamatList(alamatData || []); // Gunakan empty array jika alamatData null/undefined
+      } catch (alamatError) {
+        // Jika error 404 (alamat tidak ditemukan), set empty array
+        if (alamatError.response?.status === 404) {
+          setAlamatList([]);
+        } else {
+          // Jika error lain, log error tapi tetap tampilkan halaman
+          console.error("Error fetching alamat:", alamatError);
+          setAlamatList([]);
+        }
+      }
     } catch (err) {
-      console.error("Error fetching data:", err);
-      setError(err.message || "Failed to fetch data");
+      console.error("Error fetching pembeli data:", err);
+      setError(err.message || "Failed to fetch pembeli data");
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchPembeliAndAlamat();
@@ -155,6 +168,12 @@ const DashboardProfilePembeli = () => {
           >
             <FaSignOutAlt />
             <span className="ms-2">Logout</span>
+          </button>
+          <button
+            className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center mt-2"
+            onClick={() => navigate("/")}
+          >
+            <span className="ms-2">Home</span>
           </button>
         </>
       ) : (
