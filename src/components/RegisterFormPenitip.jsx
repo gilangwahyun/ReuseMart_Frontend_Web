@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Form, Button, Row, Col } from "react-bootstrap";
 
 export default function RegisterFormPenitip({ onSubmit, loading }) {
   const [form, setForm] = useState({
@@ -36,110 +37,126 @@ export default function RegisterFormPenitip({ onSubmit, loading }) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label>
-        Email:
-        <input
-          type="email"
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <label>
-        Password:
-        <input
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
-      </label>
+    <Form onSubmit={handleSubmit}>
+      <Row className="mb-3">
+        <Form.Group as={Col}>
+          <Form.Label>Email</Form.Label>
+          <Form.Control
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
+      <Row className="mb-3">
+        <Form.Group as={Col}>
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
       {/* Role bisa hidden jika hanya penitip */}
       <input type="hidden" name="role" value="penitip" />
-      <label>
-        Nama Penitip:
-        <input
-          type="text"
-          name="nama_penitip"
-          value={form.nama_penitip}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <label>
-        NIK:
-        <input
-          type="text"
-          name="nik"
-          value={form.nik}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <label>
-        Nomor KTP:
-        <input
-          type="text"
-          name="nomor_ktp"
-          value={form.nomor_ktp}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <label>
-        No Telepon:
-        <input
-          type="text"
-          name="no_telepon"
-          value={form.no_telepon}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <label>
-        Foto KTP:
-        <input
-          type="file"
-          name="foto_ktp"
-          accept="image/*"
-          onChange={handleFileChange}
-          required
-        />
-      </label>
-      <label>
-        Alamat:
-        <input
-          type="text"
-          name="alamat"
-          value={form.alamat}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <label>
-        Saldo:
-        <input
-          type="number"
-          name="saldo"
-          value={form.saldo}
-          onChange={handleChange}
-        />
-      </label>
-      <label>
-        Jumlah Poin:
-        <input
-          type="number"
-          name="jumlah_poin"
-          value={form.jumlah_poin}
-          onChange={handleChange}
-        />
-      </label>
-      <button type="submit" disabled={loading}>
+
+      <Row className="mb-3">
+        <Form.Group as={Col}>
+          <Form.Label>Nama Penitip</Form.Label>
+          <Form.Control
+            type="text"
+            name="nama_penitip"
+            value={form.nama_penitip}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
+      <Row className="mb-3">
+        <Form.Group as={Col} md={6}>
+          <Form.Label>NIK</Form.Label>
+          <Form.Control
+            type="text"
+            name="nik"
+            value={form.nik}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
+      <Row className="mb-3">
+        <Form.Group as={Col}>
+          <Form.Label>No Telepon</Form.Label>
+          <Form.Control
+            type="text"
+            name="no_telepon"
+            value={form.no_telepon}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
+      <Row className="mb-3">
+        <Form.Group as={Col}>
+          <Form.Label>Foto KTP</Form.Label>
+          <Form.Control
+            type="file"
+            name="foto_ktp"
+            accept="image/*"
+            onChange={handleFileChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
+      <Row className="mb-3">
+        <Form.Group as={Col}>
+          <Form.Label>Alamat</Form.Label>
+          <Form.Control
+            type="text"
+            name="alamat"
+            value={form.alamat}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+      </Row>
+
+      <Row className="mb-3">
+        <Form.Group as={Col} md={6}>
+          <Form.Label>Saldo</Form.Label>
+          <Form.Control
+            type="number"
+            name="saldo"
+            value={form.saldo}
+            onChange={handleChange}
+          />
+        </Form.Group>
+
+        <Form.Group as={Col} md={6}>
+          <Form.Label>Jumlah Poin</Form.Label>
+          <Form.Control
+            type="number"
+            name="jumlah_poin"
+            value={form.jumlah_poin}
+            onChange={handleChange}
+          />
+        </Form.Group>
+      </Row>
+
+      <Button variant="success" type="submit" disabled={loading}>
         {loading ? "Mendaftar..." : "Daftar Penitip"}
-      </button>
-    </form>
+      </Button>
+    </Form>
   );
 }

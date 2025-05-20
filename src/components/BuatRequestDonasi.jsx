@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Form, Button, Card } from 'react-bootstrap';
 
 const BuatRequestDonasi = ({ onCreate }) => {
   const [deskripsi, setDeskripsi] = useState('');
@@ -19,30 +20,39 @@ const BuatRequestDonasi = ({ onCreate }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
-      <h2>Buat Request Donasi Baru</h2>
-      <div style={{ marginBottom: '1rem' }}>
-        <label>Deskripsi: </label>
-        <input
-          type="text"
-          value={deskripsi}
-          onChange={(e) => setDeskripsi(e.target.value)}
-          required
-        />
-      </div>
-      <div style={{ marginBottom: '1rem' }}>
-        <label>Tanggal Pengajuan: </label>
-        <input
-          type="date"
-          value={tanggal}
-          onChange={(e) => setTanggal(e.target.value)}
-          required
-        />
-      </div>
-      <button type="submit" disabled={loading}>
-        {loading ? 'Menyimpan...' : 'Buat Request'}
-      </button>
-    </form>
+    <Card className="mb-4 shadow-sm">
+      <Card.Header className="bg-success text-white">
+        <h5 className="mb-0">Buat Request Donasi Baru</h5>
+      </Card.Header>
+      <Card.Body>
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Deskripsi</Form.Label>
+            <Form.Control
+              type="text"
+              value={deskripsi}
+              onChange={(e) => setDeskripsi(e.target.value)}
+              required
+              placeholder="Masukkan deskripsi request donasi"
+            />
+          </Form.Group>
+          
+          <Form.Group className="mb-3">
+            <Form.Label>Tanggal Pengajuan</Form.Label>
+            <Form.Control
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              required
+            />
+          </Form.Group>
+          
+          <Button variant="success" type="submit" disabled={loading}>
+            {loading ? 'Menyimpan...' : 'Buat Request'}
+          </Button>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 };
 
