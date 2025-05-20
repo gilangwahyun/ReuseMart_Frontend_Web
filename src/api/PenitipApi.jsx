@@ -1,5 +1,7 @@
 import useAxios from ".";
 
+const API_URL = "/penitip";
+
 export const registerPenitip = async (data) => {
   try {
     const response = await useAxios.post("/penitip", data);
@@ -12,20 +14,9 @@ export const registerPenitip = async (data) => {
 // Tampilkan semua penitip
 export const getAllPenitip = async () => {
   try {
-    console.log("Memanggil API endpoint: /penitip");
-    const response = await useAxios.get("/penitip");
-    console.log("Response dari API /penitip:", response);
-    
-    // Check if response has data property
-    if (response && response.data !== undefined) {
-      return response.data;
-    } else {
-      console.error("Respons API tidak memiliki property data:", response);
-      return [];
-    }
+    const response = await useAxios.get(API_URL);
+    return response.data;
   } catch (error) {
-    console.error("Error saat memanggil API getAllPenitip:", error);
-    // Re-throw error for caller to handle
     throw error;
   }
 };
@@ -33,12 +24,9 @@ export const getAllPenitip = async () => {
 // Tampilkan penitip berdasarkan ID
 export const getPenitipById = async (id) => {
   try {
-    console.log(`Memanggil API endpoint: /penitip/${id}`);
-    const response = await useAxios.get(`/penitip/${id}`);
-    console.log(`Response dari API /penitip/${id}:`, response);
+    const response = await useAxios.get(`${API_URL}/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error saat memanggil API getPenitipById(${id}):`, error);
     throw error;
   }
 };

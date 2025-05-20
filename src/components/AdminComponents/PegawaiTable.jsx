@@ -6,9 +6,10 @@ const PegawaiTable = ({ data, onEdit, onDelete }) => {
       {data.length === 0 ? (
         <div>Tidak ada data pegawai yang cocok.</div>
       ) : (
-        <table className="table table-striped">
+        <table className="table table-striped table-hover">
           <thead>
             <tr>
+              <th>No</th>
               <th>Nama</th>
               <th>Tanggal Lahir</th>
               <th>No. Telepon</th>
@@ -18,12 +19,13 @@ const PegawaiTable = ({ data, onEdit, onDelete }) => {
             </tr>
           </thead>
           <tbody>
-            {data.map((pegawai) => {
+            {data.map((pegawai, index) => {
               const jabatan =
                 pegawai.jabatan?.nama_jabatan || pegawai.nama_jabatan || "-";
 
               return (
-                <tr key={pegawai.id_pegawai || pegawai.id || Math.random()}>
+                <tr key={pegawai.id_pegawai || Math.random()}>
+                  <td>{index + 1}</td>
                   <td>{pegawai.nama_pegawai}</td>
                   <td>{pegawai.tanggal_lahir}</td>
                   <td>{pegawai.no_telepon}</td>
