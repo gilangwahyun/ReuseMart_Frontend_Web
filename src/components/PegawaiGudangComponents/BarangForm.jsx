@@ -3,7 +3,6 @@ import { getAllKategori } from "../../api/KategoriBarangApi";
 import { createBarang } from "../../api/BarangApi";
 import { uploadFotoBarang } from "../../api/FotoBarangApi";
 import { createNotaDetailPenitipanBarang } from "../../api/NotaDetailPenitipanApi";
-import { printNotaPenitipanBarang } from '../../api/NotaPenitipanBarangApi';
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 const BarangForm = ({ initialData = null }) => {
@@ -300,7 +299,6 @@ const BarangForm = ({ initialData = null }) => {
                   onChange={handleChange}
                 >
                   <option value="Aktif">Aktif</option>
-                  <option value="Non Aktif">Non-Aktif</option>
                 </select>
               </div>
             </div>

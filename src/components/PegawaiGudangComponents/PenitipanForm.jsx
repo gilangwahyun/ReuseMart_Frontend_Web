@@ -175,8 +175,19 @@ const handleSubmit = async (e) => {
 
   return (
     <div className="container mt-4">
+      <button
+        type="button"
+        className="btn btn-outline-success mb-3"
+        onClick={() => navigate(-1)}
+      >
+        ← Kembali
+      </button>
       <h2>Form Penitipan Barang</h2>
       {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="alert alert-warning" role="alert">
+        <strong>Perhatian:</strong> Pastikan Data Penitip dan Petugas QC sudah sesuai sebelum menyimpan.
+      </div>
 
       <form onSubmit={handleSubmit}>
         {/* Pilih Penitip */}
