@@ -4,7 +4,7 @@ const API_URL = "/penitip";
 
 export const registerPenitip = async (data) => {
   try {
-    const response = await useAxios.post("/penitip", data);
+    const response = await useAxios.post(API_URL, data);
     return response.data;
   } catch (error) {
     throw error;

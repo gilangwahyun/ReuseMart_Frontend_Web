@@ -1,8 +1,11 @@
 import React, { useState } from "react";
-import { createUser  } from "../api/AuthApiPembeli"; // Sesuaikan path sesuai kebutuhan
+import { Link, Navigate, useNavigate } from "react-router-dom"; // Import Link from react-router-dom
+import { Register  } from "../api/AuthApi"; // Sesuaikan path sesuai kebutuhan
 import { createPembeli } from "../api/PembeliApi"; // Sesuaikan path sesuai kebutuhan
+import { createKeranjang, getKeranjangByPembeli } from "../api/KeranjangApi"; // Sesuaikan path sesuai kebutuhan
 
-const Register = () => {
+const RegisterFormPembeli = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     namaPembeli: "",
     noTelepon: "",
@@ -40,7 +43,7 @@ const Register = () => {
 
     try {
       // Daftarkan pengguna terlebih dahulu
-      const userResponse = await createUser ({
+      const userResponse = await Register ({
         email: formData.email,
         password: formData.password,
         password_confirmation: formData.confirmPassword,
@@ -52,12 +55,22 @@ const Register = () => {
       localStorage.setItem('bearerToken', token);
 
       // Buat pembeli tanpa mengirim id_pembeli
-      await createPembeli({
+      const pembeliResponse = await createPembeli({
         id_user: userId,
         nama_pembeli: formData.namaPembeli,
         jumlah_poin: 0, // Atur jumlah_poin default
         no_hp_default: formData.noTelepon,
       });
+
+      console.log(pembeliResponse);
+
+      const idPembeli = pembeliResponse?.data?.id_pembeli || pembeliResponse?.id_pembeli || pembeliResponse?.pembeli?.id_pembeli;
+      
+      const keranjangResponse = await createKeranjang({
+        id_pembeli: idPembeli
+      });
+
+      console.log(keranjangResponse);
 
       setMessage("Registrasi berhasil");
       setFormData({
@@ -69,6 +82,7 @@ const Register = () => {
         role: "Pembeli",
       });
       setErrors({});
+      navigate('/');
     } catch (error) {
       console.error("Error during registration:", error.response?.data || error.message);
       setMessage("Registrasi gagal. Silakan coba lagi.");
@@ -164,9 +178,17 @@ const Register = () => {
             {loading ? "Memproses..." : "Register"}
           </button>
         </form>
+        <div className="mt-3 text-center">
+          <p>
+            Ingin daftar sebagai organisasi?{" "}
+            <Link to="/RegisterOrganisasi" className="text-primary">
+              Klik di sini
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
-export default Register;
+export default RegisterFormPembeli;

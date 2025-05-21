@@ -5,8 +5,8 @@ import {
   updatePenitip,
   deletePenitip,
   searchPenitipByName,
+  registerPenitip
 } from "../../api/PenitipApi";
-import { registerPenitip } from "../../api/AuthApiPenitip";
 import EditFormPenitip from "../../components/EditFormPenitip";
 import RegisterFormPenitip from "../../components/RegisterFormPenitip";
 

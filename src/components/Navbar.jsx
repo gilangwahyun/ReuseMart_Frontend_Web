@@ -12,6 +12,8 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearchClicked, setIsSearchClicked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +55,22 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    // Check if user is logged in and get userId
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    setIsLoggedIn(!!token);
+    
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setUserId(user.id_user);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
   const togglePanel = () => {
     setShowPanel((prev) => !prev);
   };
@@ -77,7 +95,26 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const handleSearchChange = (e) => {
     setSearchKeyword(e.target.value);
   };
-  
+
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      navigate('/DashboardProfilPembeli');
+    } else {
+      navigate('/LoginPage');
+    }
+    setShowProfileMenu(false);
+  };
+
+  const handleCartClick = (e) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      navigate('/LoginPage');
+      return;
+    }
+    if (userId) {
+      navigate(`/keranjang/${userId}`);
+    }
+  };
 
   return (
     <nav
@@ -135,9 +172,17 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
             </form>
 
             <li className="nav-item me-3">
-              <Link className="nav-link text-dark" to="/cart">
+              <button 
+                className="btn nav-link text-dark" 
+                onClick={handleCartClick}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0
+                }}
+              >
                 <FaShoppingCart size={18} />
-              </Link>
+              </button>
             </li>
 
             <li className="nav-item position-relative">
@@ -161,20 +206,45 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                   className="position-absolute end-0 mt-2 bg-white shadow rounded border"
                   style={{ zIndex: 1000, minWidth: "150px" }}
                 >
-                  <Link
-                    to="/LoginPage"
-                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    Register
-                  </Link>
+                  {isLoggedIn ? (
+                    <>
+                      <Link
+                        to="/DashboardProfilPembeli"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                        onClick={() => {
+                          localStorage.removeItem('token');
+                          setIsLoggedIn(false);
+                          setShowProfileMenu(false);
+                          navigate('/');
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/LoginPage"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        to="/RegisterPembeli"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Register
+                      </Link>
+                    </>
+                  )}
                 </div>
               )}
             </li>
