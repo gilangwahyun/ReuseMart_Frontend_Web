@@ -1,24 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import {
-  FaSignOutAlt
-} from "react-icons/fa";
-import { useParams, useNavigate } from 'react-router-dom';
-import { getPembeliByUserId } from '../../api/PembeliApi';
-import { Logout } from '../../api/AuthApi';
-import { createAlamat, updateAlamat, getAlamatByPembeliId, deleteAlamat } from '../../api/AlamatApi';
-import PembeliCard from '../../components/PembeliCard';
-import AlamatForm from '../../components/AlamatForm';
+import { useState, useEffect } from "react";
+import ProfilCard from "../../components/ProfilCard";
+import ProfilDetailTransaksi from "../../components/ProfilDetailTransaksi";
+import ProfilHistoriTransaksi from "../../components/ProfilHistoriTransaksi";
+import SidebarDashboardProfilPembeli from "../../components/SidebarDashboardProfilPembeli";
+import { getPembeliByUserId } from "../../api/PembeliApi";
+import { getTransaksiByPembeli } from "../../api/TransaksiApi";
+import { Container, Row, Col, Spinner, Alert } from 'react-bootstrap';
 
-const DashboardProfilePembeli = () => {
-  const { id } = useParams();
-  const [pembeli, setPembeli] = useState(null);
+export default function BuyerDashboard() {
+  const [profile, setProfile] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [selectedTx, setSelectedTx] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [alamatList, setAlamatList] = useState([]);
-  const [selectedAlamat, setSelectedAlamat] = useState(null);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("profile");
 
-  // Get user data from localStorage
+  // Ambil data user dari localStorage
+
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id_user || user?.id;
 
@@ -50,136 +48,117 @@ const DashboardProfilePembeli = () => {
     }
   };
 
-
   useEffect(() => {
-    fetchPembeliAndAlamat();
+    if (!userId) {
+      setError("User tidak ditemukan, silakan login kembali");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    // Ambil data pembeli berdasarkan id_user
+    getPembeliByUserId(userId)
+      .then((pembeli) => {
+        setProfile(pembeli);
+        if (pembeli) {
+          // Fetch transactions milik pembeli ini
+          return getTransaksiByPembeli(pembeli.id_pembeli);
+        }
+        throw new Error("Data pembeli tidak ditemukan");
+      })
+      .then((data) => {
+        console.log("Loaded transactions:", data);
+        setTransactions(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        setError("Gagal memuat data: " + error.message);
+        setLoading(false);
+      });
   }, [userId]);
 
-  const handleCreateAlamat = async (alamatData) => {
-    try {
-      const newAlamat = await createAlamat({ ...alamatData, id_pembeli: pembeli.id_pembeli });
-      // Update alamatList using functional update to avoid stale closure issues
-      setAlamatList(prev => [...prev, newAlamat]);
-      // Reset selection so form input is cleared for new entry
-      setSelectedAlamat(null);
-      // Optionally re-fetch alamat data to ensure fresh sync with backend
-      // await fetchPembeliAndAlamat();
-    } catch (err) {
-      console.error("Error creating alamat:", err);
-      setError(err.message || "Failed to create alamat");
+  // Handler untuk memilih transaksi
+  const handleSelectTransaction = (tx) => {
+    console.log("Selected transaction:", tx.id_transaksi);
+    setSelectedTx(tx);
+    setActiveTab("detail");
+  };
+
+  // Handler untuk navigasi sidebar
+  const handleTabSelect = (tab) => {
+    setActiveTab(tab);
+    // Jika berpindah dari detail transaksi ke tab lain, reset selected transaction
+    if (tab !== "detail") {
+      setSelectedTx(null);
     }
   };
 
-  const handleEditAlamat = async (alamatData) => {
-    try {
-      const updatedAlamat = await updateAlamat(selectedAlamat.id_alamat, alamatData);
-      setAlamatList(prev => prev.map(alamat => 
-        alamat.id_alamat === updatedAlamat.id_alamat ? updatedAlamat : alamat
-      ));
-      setSelectedAlamat(null);
-      // Optionally re-fetch alamat data if immediate update fails
-      // await fetchPembeliAndAlamat();
-    } catch (err) {
-      console.error("Error updating alamat:", err);
-      setError(err.message || "Failed to update alamat");
+  // Render content berdasarkan tab aktif
+  const renderContent = () => {
+    switch (activeTab) {
+      case "profile":
+        return profile && <ProfilCard profile={profile} />;
+      
+      case "history":
+        return (
+          <ProfilHistoriTransaksi
+            transactions={transactions}
+            onSelect={handleSelectTransaction}
+            selectedTransaction={selectedTx}
+          />
+        );
+      
+      case "detail":
+        return (
+          <ProfilDetailTransaksi
+            key={selectedTx?.id_transaksi || 'no-transaction'}
+            transaction={selectedTx}
+            onBack={() => setActiveTab("history")}
+          />
+        );
+      
+      default:
+        return profile && <ProfilCard profile={profile} />;
     }
   };
 
+  if (loading) {
+    return (
+      <Container className="py-5 text-center">
+        <Spinner animation="border" variant="success" />
+        <p className="mt-3">Memuat data profil...</p>
+      </Container>
+    );
+  }
 
-  const handleDeleteAlamat = async (id_alamat) => {
-    if (!window.confirm("Apakah kamu yakin ingin menghapus alamat ini?")) return;
-    try {
-      await deleteAlamat(id_alamat);
-      setAlamatList(prev => prev.filter(alamat => alamat.id_alamat !== id_alamat));
-    } catch (err) {
-      console.error("Error deleting alamat:", err);
-      setError(err.message || "Failed to delete alamat");
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await Logout();
-      navigate("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-danger">{error}</p>;
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">{error}</Alert>
+      </Container>
+    );
+  }
 
   return (
-    <div className="container py-4">
-      <h2>Profile Pembeli</h2>
-      {pembeli ? (
-        <>
-          <PembeliCard pembeli={pembeli} />
-          <h3>Manage Alamat</h3>
-          <AlamatForm
-            onSubmit={selectedAlamat ? handleEditAlamat : handleCreateAlamat}
-            existingAlamat={selectedAlamat}
-            onCancel={() => setSelectedAlamat(null)}
+    <Container fluid className="py-4">
+      <Row>
+        {/* Sidebar */}
+        <Col lg={3} md={4} className="mb-4">
+          <SidebarDashboardProfilPembeli
+            activeKey={activeTab}
+            onSelect={handleTabSelect}
+            hasSelectedTransaction={selectedTx !== null}
           />
-          <h4 className="mt-4">Daftar Alamat</h4>
-          <table className="table table-bordered mt-3">
-            <thead className="thead-light">
-              <tr>
-                <th>Label</th>
-                <th>Alamat Lengkap</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alamatList.length > 0 ? (
-                alamatList.map((alamat, index) => {
-                  const key = alamat.id_alamat ?? index;
-                  return (
-                    <tr key={key}>
-                      <td>{alamat.label_alamat}</td>
-                      <td>{alamat.alamat_lengkap}</td>
-                      <td>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => setSelectedAlamat(alamat)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm m-2"
-                          onClick={() => handleDeleteAlamat(alamat.id_alamat)}
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="3" className="text-center">Belum ada alamat</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <button
-            className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center"
-            onClick={handleLogout}
-          >
-            <FaSignOutAlt />
-            <span className="ms-2">Logout</span>
-          </button>
-          <button
-            className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center mt-2"
-            onClick={() => navigate("/")}
-          >
-            <span className="ms-2">Home</span>
-          </button>
-        </>
-      ) : (
-        <p>No pembeli data available.</p>
-      )}
-    </div>
+        </Col>
+
+        {/* Main Content */}
+        <Col lg={9} md={8}>
+          {renderContent()}
+        </Col>
+      </Row>
+    </Container>
+
   );
 };
 
