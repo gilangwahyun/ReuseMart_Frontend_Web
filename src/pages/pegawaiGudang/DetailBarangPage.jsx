@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBarangById, updateBarang } from '../../api/BarangApi';
 import { getFotoBarangByIdBarang } from '../../api/FotoBarangApi';
+import { getAllKategori } from "../../api/KategoriBarangApi";
 
 const DetailBarangPage = ({ isEditMode = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [barang, setBarang] = useState(null);
+  const [kategoriList, setKategoriList] = useState([]);
   const [fotoBarang, setFotoBarang] = useState([]);
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -24,10 +26,16 @@ const DetailBarangPage = ({ isEditMode = false }) => {
           return;
         }
         setBarang(data);
-        setFormData(data);
+        setFormData({
+          ...data,
+          id_kategori: data.kategori?.id_kategori || '',
+        });
 
         const fotos = await getFotoBarangByIdBarang(id);
         setFotoBarang(fotos || []);
+
+        const kategoriData = await getAllKategori();
+        setKategoriList(kategoriData || []);
       } catch (err) {
         console.error(err);
         setError('Gagal memuat data barang');
@@ -38,12 +46,13 @@ const DetailBarangPage = ({ isEditMode = false }) => {
 
     fetchData();
   }, [id]);
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'harga' || name === 'berat' ? Number(value) : value
+      [name]: (name === 'harga' || name === 'berat' || name === 'id_kategori') ? Number(value) : value
     }));
   };
 
@@ -219,8 +228,10 @@ const DetailBarangPage = ({ isEditMode = false }) => {
               >
                 <option value="">-- Pilih status --</option>
                 <option value="Aktif">Aktif</option>
-                <option value="Barang untuk Donasi">Barang untuk Donasi</option>
-                <option value="Tidak Aktif">Tidak Aktif</option>
+                <option value="Non Aktif">Non Aktif</option>
+                <option value="Habis">Habis</option>
+                <option value="Barang untuk Donasi">Tidak Aktif</option>
+                <option value="Barang sudah Didonasikan">Barang sudah Didonasikan</option>
               </select>
             ) : (
               <p className="border p-2 rounded bg-light">{barang.status_barang}</p>
@@ -230,9 +241,25 @@ const DetailBarangPage = ({ isEditMode = false }) => {
           {/* Kategori */}
           <div className="mb-3">
             <label className="form-label fw-semibold">Kategori:</label>
-            <p className="border p-2 rounded bg-light">
-              {barang.kategori?.nama_kategori || '-'}
-            </p>
+            {editMode ? (
+              <select
+                className="form-select"
+                name="id_kategori"
+                value={formData.id_kategori || ''}
+                onChange={handleChange}
+              >
+                <option value="">-- Pilih Kategori --</option>
+                {kategoriList.map((kat) => (
+                  <option key={kat.id_kategori} value={kat.id_kategori}>
+                    {kat.nama_kategori}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="border p-2 rounded bg-light">
+                {barang.kategori?.nama_kategori || '-'}
+              </p>
+            )}
           </div>
 
           {/* Info Penitipan */}

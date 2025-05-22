@@ -4,7 +4,7 @@ const API_URL = "/penitip";
 
 export const registerPenitip = async (data) => {
   try {
-    const response = await useAxios.post("/penitip", data);
+    const response = await useAxios.post(API_URL, data);
     return response.data;
   } catch (error) {
     throw error;
@@ -72,5 +72,23 @@ export const searchPenitipByName = async (nama_penitip) => {
       console.error("Fallback search error:", secondError);
       throw secondError;
     }
+  }
+};
+
+export const getRated = async (id) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/avg-rate/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const publicShow = async (id) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/public-show/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
   }
 };

@@ -1,39 +1,54 @@
 import { useState } from "react";
 import { Form, Button, Row, Col } from "react-bootstrap";
 
-export default function RegisterFormPenitip({ onSubmit, loading }) {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    role: "penitip", // bisa hidden, atau select jika multi-role
-    nama_penitip: "",
-    nik: "",
-    nomor_ktp: "",
-    no_telepon: "",
-    alamat: "",
-    saldo: "",
-    jumlah_poin: "",
+
+const RegisterPenitip = () => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    role: 'Penitip',
+    nama_penitip: '',
+    nik: '',
+    nomor_ktp: '',
+    no_telepon: '',
+    alamat: '',
+    saldo: '',
+    jumlah_poin: '',
+    foto_ktp: null,
   });
-  const [fotoKtp, setFotoKtp] = useState(null);
+
+  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (e) => {
-    setFotoKtp(e.target.files[0]);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-    if (fotoKtp) {
-      formData.append('foto_ktp', fotoKtp);
+    if (e.target.name === 'foto_ktp') {
+      setFormData({ ...formData, [e.target.name]: e.target.files[0] });
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
     }
-    onSubmit(formData);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const data = new FormData();
+    for (const key in formData) {
+      if (formData[key] !== null) {
+        data.append(key, formData[key]);
+      }
+    }
+
+    try {
+      const res = await axios.post('/api/register-penitip', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setMessage('Registrasi berhasil!');
+      console.log(res.data);
+    } catch (err) {
+      setMessage('Registrasi gagal!');
+      console.error(err.response?.data || err.message);
+    }
   };
 
   return (
@@ -159,4 +174,6 @@ export default function RegisterFormPenitip({ onSubmit, loading }) {
       </Button>
     </Form>
   );
-}
+};
+
+export default RegisterPenitip;

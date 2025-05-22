@@ -16,8 +16,37 @@ export default function BuyerDashboard() {
   const [activeTab, setActiveTab] = useState("profile");
 
   // Ambil data user dari localStorage
+
   const user = JSON.parse(localStorage.getItem("user"));
-  const userId = user?.id_user || user?.id; // pastikan ini id_user
+  const userId = user?.id_user || user?.id;
+
+  const fetchPembeliAndAlamat = async () => {
+    setLoading(true);
+    try {
+      const data = await getPembeliByUserId(userId);
+      setPembeli(data);
+      
+      try {
+        // Coba ambil data alamat
+        const alamatData = await getAlamatByPembeliId(data.id_pembeli);
+        setAlamatList(alamatData || []); // Gunakan empty array jika alamatData null/undefined
+      } catch (alamatError) {
+        // Jika error 404 (alamat tidak ditemukan), set empty array
+        if (alamatError.response?.status === 404) {
+          setAlamatList([]);
+        } else {
+          // Jika error lain, log error tapi tetap tampilkan halaman
+          console.error("Error fetching alamat:", alamatError);
+          setAlamatList([]);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching pembeli data:", err);
+      setError(err.message || "Failed to fetch pembeli data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -129,5 +158,8 @@ export default function BuyerDashboard() {
         </Col>
       </Row>
     </Container>
+
   );
-}
+};
+
+export default DashboardProfilePembeli;
