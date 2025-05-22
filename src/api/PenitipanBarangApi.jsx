@@ -51,3 +51,12 @@ export const deletePenitipanBarang = async (id) => {
     throw error;
   }
 };
+
+export const getByIdBarang = async (id) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/barang/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

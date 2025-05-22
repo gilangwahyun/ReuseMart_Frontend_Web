@@ -61,3 +61,21 @@ export const searchPenitipByName = async (nama_penitip) => {
     throw error;
   }
 };
+
+export const getRated = async (id) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/avg-rate/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const publicShow = async (id) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/public-show/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
