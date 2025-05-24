@@ -34,3 +34,12 @@ export const deleteFotoBarang = async (id_foto_barang) => {
     throw error;
   }
 };
+
+export const updateFotoBarang = async (id_foto_barang, data) => {
+  try {
+    const response = await useAxios.put(`/fotoBarang/${id_foto_barang}`, data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

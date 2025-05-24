@@ -97,10 +97,14 @@ export const updateBarangRating = async (id, barangData) => {
   }
 };
 
-export const searchBarangAllField = async (keyword) => {
+export const searchBarangAllField = async (keyword, tanggalAwal, tanggalAkhir) => {
   try {
-    const response = await useAxios.get(`/barang/search-all`, {
-      params: { keyword },
+    const params = {};
+    if (keyword) params.keyword = keyword;
+    if (tanggalAwal) params.tanggal_awal = tanggalAwal;
+    if (tanggalAkhir) params.tanggal_akhir = tanggalAkhir;
+    const response = await useAxios.get(`${API_URL}/advanced/all-search`, {
+      params,
     });
     return response.data;
   } catch (error) {

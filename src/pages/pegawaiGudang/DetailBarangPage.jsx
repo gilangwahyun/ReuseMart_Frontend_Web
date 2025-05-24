@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBarangById, updateBarang } from '../../api/BarangApi';
-import { getFotoBarangByIdBarang, uploadFotoBarang, deleteFotoBarang } from '../../api/FotoBarangApi';
+import { getFotoBarangByIdBarang, uploadFotoBarang, deleteFotoBarang, updateFotoBarang } from '../../api/FotoBarangApi';
 import { getAllKategori } from "../../api/KategoriBarangApi";
 
 const DetailBarangPage = ({ isEditMode = false }) => {
@@ -35,6 +35,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
       });
 
       const fotos = await getFotoBarangByIdBarang(id);
+      console.log(fotos);
       setFotoBarang(fotos || []);
 
       const kategoriData = await getAllKategori();
@@ -95,10 +96,35 @@ const DetailBarangPage = ({ isEditMode = false }) => {
     setNewPhotos(prev => [...prev, ...selectedFiles]);
   };
 
-  const handleDeleteFoto = (fotoId) => {
+  const handleDeleteFoto = (fotoId, isThumbnail) => {
+    if (isThumbnail) {
+      alert('Foto ini adalah thumbnail. Pilih thumbnail baru sebelum menghapus foto ini.');
+      return;
+    }
     if (window.confirm('Apakah Anda yakin ingin menghapus foto ini?')) {
-      setDeletedPhotos(prev => [...prev, fotoId]);
-      setFotoBarang(prev => prev.filter(foto => foto.id_foto_barang !== fotoId));
+      deleteFotoBarang(fotoId)
+        .then(() => {
+          setFotoBarang((prev) => prev.filter((f) => f.id_foto_barang !== fotoId));
+        })
+        .catch((err) => {
+          alert('Gagal menghapus foto.');
+          console.error(err);
+        });
+    }
+  };
+
+  const handleSetThumbnail = async (id_foto_barang) => {
+    try {
+      // Set semua foto is_thumbnail = false, lalu foto terpilih = true
+      // Backend harus handle logic ini, tapi untuk sekarang, update satu per satu
+      // (atau bisa buat endpoint khusus di backend untuk set thumbnail)
+      await updateFotoBarang(id_foto_barang, { is_thumbnail: true });
+      // Setelah update, reload foto
+      const fotos = await getFotoBarangByIdBarang(id);
+      setFotoBarang(fotos || []);
+    } catch (err) {
+      alert('Gagal mengubah thumbnail');
+      console.error(err);
     }
   };
 
@@ -152,15 +178,31 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                       height: '180px',
                       objectFit: 'cover',
                       borderRadius: '6px',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      border: foto.is_thumbnail ? '3px solid #198754' : '1px solid #ddd',
                     }}
                   />
-                  {/* Tombol hapus hanya di edit mode */}
-                  {editMode && (
+                  {/* Badge Thumbnail */}
+                  {foto.is_thumbnail === 1 && (
+                    <span className="badge bg-success position-absolute top-0 start-0 m-2">Thumbnail</span>
+                  )}
+                  {/* Tombol jadikan thumbnail */}
+                  {!foto.is_thumbnail && (
                     <button
-                      className="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                      className="btn btn-sm btn-outline-success position-absolute top-0 end-0 m-1"
                       style={{ zIndex: 2 }}
-                      onClick={() => handleDeleteFoto(foto.id_foto_barang)}
+                      onClick={() => handleSetThumbnail(foto.id_foto_barang)}
+                      title="Jadikan Thumbnail"
+                    >
+                      Jadikan Thumbnail
+                    </button>
+                  )}
+                  {/* Tombol hapus hanya di edit mode dan bukan thumbnail */}
+                  {editMode && !foto.is_thumbnail && (
+                    <button
+                      className="btn btn-sm btn-danger position-absolute bottom-0 end-0 m-1"
+                      style={{ zIndex: 2 }}
+                      onClick={() => handleDeleteFoto(foto.id_foto_barang, foto.is_thumbnail)}
                       title="Hapus foto"
                     >
                       &times;
@@ -309,6 +351,24 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                   />
                 ) : (
                   <p className="border p-2 rounded bg-light">{barang.berat} gram</p>
+                )}
+              </div>
+
+              {/* Status Garansi */}
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Status Garansi:</label>
+                {editMode ? (
+                  <input
+                    type="date"
+                    className="form-control"
+                    name="masa_garansi"
+                    value={formData.masa_garansi ? formData.masa_garansi.substring(0, 10) : ''}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <p className="border p-2 rounded bg-light">
+                    {barang.masa_garansi ? new Date(barang.masa_garansi).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Tidak ada garansi'}
+                  </p>
                 )}
               </div>
 
