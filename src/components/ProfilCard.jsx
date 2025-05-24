@@ -12,6 +12,10 @@ export default function ProfilCard({ profile }) {
               <Col>{profile.nama_pembeli}</Col>
             </Row>
             <Row className="mb-2">
+              <Col sm={4}><strong>Email:</strong></Col>
+              <Col>{profile.user.email}</Col>
+            </Row>
+            <Row className="mb-2">
               <Col sm={4}><strong>No HP:</strong></Col>
               <Col>{profile.no_hp_default}</Col>
             </Row>

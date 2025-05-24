@@ -25,3 +25,12 @@ export const uploadFotoBarang = async (formData) => {
     throw error;
   }
 };
+
+export const deleteFotoBarang = async (id_foto_barang) => {
+  try {
+    const response = await useAxios.delete(`${API_URL}/${id_foto_barang}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

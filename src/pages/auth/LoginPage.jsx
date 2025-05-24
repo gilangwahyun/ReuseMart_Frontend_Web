@@ -53,12 +53,15 @@ export default function LoginPage() {
           } else {
             switch (user.role) {
               case 'Pembeli':
-                navigate('/DashboardProfilPembeli');
+                console.log("ID User:", user.id_user);
+                navigate('/');
                 break;
               case 'Penitip':
+                console.log("ID User:", user.id_user);
                 navigate('/DashboardPenitip');
                 break;
               case 'Organisasi':
+                console.log("ID User:", user.id_user);
                 navigate('/DashboardOrganisasi');
                 break;
               default:

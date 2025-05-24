@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllBarang, searchBarangByName } from "../../api/BarangApi";
+import { getAllBarang, searchBarangAllField } from "../../api/BarangApi";
 import PenitipanBarangTable from "../../components/PegawaiGudangComponents/PenitipanBarangTable";
 import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
 
@@ -42,14 +42,10 @@ const PenitipanManagement = () => {
     setError(null);
 
     try {
-      if (keyword.trim() === "") {
-        fetchBarang();
-      } else {
-        const result = await searchBarangByName(keyword);
-        console.log(result);
-        setBarangData(result.data || []);
-      }
+      const result = await searchBarangAllField(keyword);
+      setBarangData(result || []);
     } catch (err) {
+      setBarangData([]);
       setError("Gagal melakukan pencarian.");
       console.error(err);
     } finally {
@@ -58,53 +54,53 @@ const PenitipanManagement = () => {
   };
 
   return (
-    <div className="container-fluid mt-4">
       <div className="d-flex">
         <PegawaiGudangSideBar />
-        <div className="flex-grow-1 ms-3">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="mb-0">Manajemen Penitipan Barang</h2>
-            <button className="btn btn-primary" onClick={handleAddPenitipan}>
-              + Tambah Penitipan Barang
-            </button>
-          </div>
-
-          {/* Search Bar */}
-          <div className="mb-3">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Cari nama barang..."
-              value={searchTerm}
-              onChange={handleSearch}
-            />
-          </div>
-
-          {/* Loading Spinner */}
-          {loading && (
-            <div className="d-flex justify-content-center align-items-center py-5">
-              <div className="spinner-border text-primary" role="status" aria-hidden="true"></div>
-              <span className="ms-2">Memuat data...</span>
-            </div>
-          )}
-
-          {/* Error Alert */}
-          {error && (
-            <div className="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
-              <span>{error}</span>
-              <button className="btn btn-sm btn-outline-light" onClick={fetchBarang}>
-                Coba Lagi
+        <div className="p-4 w-100">
+          <div className="flex-grow-1 ms-3">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="mb-0">Manajemen Penitipan Barang</h2>
+              <button className="btn btn-primary" onClick={handleAddPenitipan}>
+                + Tambah Penitipan Barang
               </button>
             </div>
-          )}
 
-          {/* Tabel Barang */}
-          {!loading && !error && (
-            <PenitipanBarangTable barangData={barangData} />
-          )}
+            {/* Search Bar */}
+            <div className="mb-3">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Cari nama barang..."
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+            </div>
+
+            {/* Loading Spinner */}
+            {loading && (
+              <div className="d-flex justify-content-center align-items-center py-5">
+                <div className="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                <span className="ms-2">Memuat data...</span>
+              </div>
+            )}
+
+            {/* Error Alert */}
+            {error && (
+              <div className="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+                <span>{error}</span>
+                <button className="btn btn-sm btn-outline-light" onClick={fetchBarang}>
+                  Coba Lagi
+                </button>
+              </div>
+            )}
+
+            {/* Tabel Barang */}
+            {!loading && !error && (
+              <PenitipanBarangTable barangData={barangData} />
+            )}
+          </div>
         </div>
       </div>
-    </div>
   );
 };
 

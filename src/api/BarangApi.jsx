@@ -87,3 +87,23 @@ export const searchBarangByName = async (nama_barang) => {
     throw error;
   }
 };
+
+export const updateBarangRating = async (id, barangData) => {
+  try {
+    const response = await useAxios.put(`${API_URL}/${id}/rating`, barangData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const searchBarangAllField = async (keyword) => {
+  try {
+    const response = await useAxios.get(`/barang/search-all`, {
+      params: { keyword },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

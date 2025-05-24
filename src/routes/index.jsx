@@ -36,7 +36,7 @@ const AppRoutes = () => {
         <Route path="/RegisterPembeli" element={<RegisterPembeli/>} />
         <Route path="/RegisterOrganisasi" element={<RegisterOrganisasi/>} />
         <Route path="/RegisterPenitip" element={<RegisterPenitip/>} />
-        <Route path="/DashboardProfilPembeli" element={<DashboardProfilPembeli/>} />
+        <Route path="/DashboardProfilPembeli/:id_user" element={<DashboardProfilPembeli />} />
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/DashboardPenitip" element={<DashboardPenitip/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
