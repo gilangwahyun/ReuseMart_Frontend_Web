@@ -20,6 +20,8 @@ import BarangForm from '../components/PegawaiGudangComponents/BarangForm';
 import DetailBarangPage from '../pages/pegawaiGudang/DetailBarangPage';
 import NotaPenitipanPrint from '../components/Nota/NotePenitipan';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
+import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
+import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 
 const AppRoutes = () => {
   return (  
@@ -40,6 +42,8 @@ const AppRoutes = () => {
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
+        <Route path='/pegawaiGudang/transaksi' element={< TransaksiPage />} />
+        <Route path='/pegawaiGudang/penjadwalan' element={< PenjadwalanPage />} />
         <Route path="/barang/:id" element={<DetailBarangPage />} />
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />
         <Route path='/pegawaiGudang/form-barang' element={< BarangForm />} />

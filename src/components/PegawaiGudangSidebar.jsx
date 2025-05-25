@@ -7,6 +7,9 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaExchangeAlt,
+  FaTruck,
+  FaCalendarAlt,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -31,6 +34,8 @@ const PegawaiGudangSidebar = () => {
   const sidebarItems = [
     { to: "/DashboardPegawaiGudang", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/pegawaiGudang/penitipan", icon: <FaUserTie />, label: "Manajerial Penitipan Barang" },
+    { to: "/pegawaiGudang/transaksi", icon: <FaExchangeAlt />, label: "Daftar Transaksi" },
+    { to: "/pegawaiGudang/penjadwalan", icon: <FaCalendarAlt />, label: "Penjadwalan Pengiriman" },
   ];
 
   return (

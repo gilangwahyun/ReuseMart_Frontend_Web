@@ -1,7 +1,7 @@
 import React from "react";
 import PegawaiGudangSideBar from "../../components/PegawaiGudangSidebar";
 
-const AdminDashboard = () => {
+const PegawaiGudangDashboard = () => {
   return (
     <div className="d-flex">
       <PegawaiGudangSideBar />
@@ -13,4 +13,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default PegawaiGudangDashboard;
