@@ -358,6 +358,24 @@ const DashboardPenitip = () => {
     );
   };
 
+  // Helper function to get status badge based on status_barang
+  const getStatusBadge = (statusBarang) => {
+    if (!statusBarang) return <Badge bg="secondary">Tidak Ada</Badge>;
+    
+    switch (statusBarang.toLowerCase()) {
+      case 'tersedia':
+        return <Badge bg="success">Tersedia</Badge>;
+      case 'terjual':
+        return <Badge bg="info">Terjual</Badge>;
+      case 'donasi':
+        return <Badge bg="primary">Donasi</Badge>;
+      case 'tidak aktif':
+        return <Badge bg="secondary">Tidak Aktif</Badge>;
+      default:
+        return <Badge bg="secondary">{statusBarang}</Badge>;
+    }
+  };
+
   return (
     <Container fluid className="py-4">
       <Row>
@@ -437,10 +455,13 @@ const DashboardPenitip = () => {
                       </thead>
                       <tbody>
                         {filteredBarang.map((item) => {
-                          const now = new Date();
+                          // Use status_barang from the model instead of calculating based on dates
+                          const statusBarang = item.status_barang || 'Tidak Ada';
                           const tanggalAwal = new Date(item.penitipan_info.tanggal_awal);
                           const tanggalAkhir = new Date(item.penitipan_info.tanggal_akhir);
-                          const status = tanggalAkhir >= now ? 'Aktif' : 'Selesai';
+                          const now = new Date();
+                          // Check if penitipan is still active (for extension button)
+                          const penitipanActive = tanggalAkhir >= now;
                           
                           return (
                             <tr key={item.id_barang}>
@@ -449,12 +470,10 @@ const DashboardPenitip = () => {
                               <td>{tanggalAwal.toLocaleDateString('id-ID')}</td>
                               <td>{tanggalAkhir.toLocaleDateString('id-ID')}</td>
                               <td>
-                                <Badge bg={status === 'Aktif' ? 'success' : 'secondary'}>
-                                  {status}
-                                </Badge>
+                                {getStatusBadge(statusBarang)}
                               </td>
                               <td>
-                                {status === 'Aktif' ? (
+                                {penitipanActive && statusBarang.toLowerCase() !== 'terjual' && statusBarang.toLowerCase() !== 'donasi' ? (
                                   <Button 
                                     variant="outline-primary" 
                                     size="sm"
@@ -464,7 +483,10 @@ const DashboardPenitip = () => {
                                     <FaCalendarPlus className="me-1" /> Perpanjang
                                   </Button>
                                 ) : (
-                                  <Badge bg="secondary">Selesai</Badge>
+                                  <Badge bg="secondary">
+                                    {statusBarang.toLowerCase() === 'terjual' ? 'Terjual' : 
+                                     statusBarang.toLowerCase() === 'donasi' ? 'Didonasikan' : 'Selesai'}
+                                  </Badge>
                                 )}
                               </td>
                             </tr>
