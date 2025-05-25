@@ -62,7 +62,7 @@ const NotaPenitipanDocument = ({ nota }) => (
               {detail.harga_barang.toLocaleString()}
             </Text>
             <Text>Status Garansi: {detail.status_garansi}</Text>
-            <Text>Berat barang: {detail.berat_pengajuan} kg</Text>
+            <Text>Berat barang: {detail.berat_pengajuan} g</Text>
           </View>
         ))}
       </View>
@@ -137,7 +137,7 @@ const NotaPenitipanPrint = () => {
               {detail.harga_barang.toLocaleString()}
             </p>
             <p>Status Garansi: {detail.status_garansi}</p>
-            <p>Berat barang: {detail.berat_pengajuan} kg</p>
+            <p>Berat barang: {detail.berat_pengajuan} g</p>
           </div>
         ))}
 

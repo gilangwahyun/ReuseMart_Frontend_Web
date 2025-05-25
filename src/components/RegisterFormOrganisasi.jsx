@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { createUser  } from "../api/AuthApiPembeli"; // Sesuaikan path sesuai kebutuhan
+import { Link, useNavigate } from "react-router-dom";
+import { Register  } from "../api/AuthApi"; // Sesuaikan path sesuai kebutuhan
 import { createOrganisasi } from "../api/OrganisasiApi"; // Sesuaikan path sesuai kebutuhan
 
-const Register = () => {
+const RegisterFormOrganisasi = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     namaOrganisasi: "",
     alamat: "",
@@ -47,7 +49,7 @@ const Register = () => {
     };
 
     try {
-      const userResponse = await createUser(userData);
+      const userResponse = await Register(userData);
       const token = userResponse.token;
       const userId = userResponse.user.id_user;
 
@@ -75,6 +77,7 @@ const Register = () => {
         role: "Organisasi",
       });
       setErrors({});
+      navigate('/');
     } catch (error) {
       console.error("Error during registration:", error.response?.data || error.message);
       setMessage("Registrasi gagal. Silakan coba lagi.");
@@ -197,4 +200,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default RegisterFormOrganisasi;

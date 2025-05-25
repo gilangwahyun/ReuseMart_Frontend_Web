@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaUserTie,
   FaBuilding,
@@ -11,8 +11,9 @@ import {
 import { Logout } from "../api/AuthApi";
 
 const OwnerSidebar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true); // Awalnya terbuka
   const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -29,53 +30,60 @@ const OwnerSidebar = () => {
 
   const sidebarItems = [
     { to: "/DashboardOwner", icon: <FaTachometerAlt />, label: "Dashboard" },
-    { to: "/owner/donasi", icon: <FaUserTie />, label: "Request Donasi dan Alokasi" },
-    { to: "/owner/alokasi", icon: <FaBuilding />, label: "Riwayat Alokasi" },
-    { to: "/owner/organisasi", icon: <FaBuilding />, label: "Organisasi" },
+    { to: "/owner/donasi", icon: <FaUserTie />, label: "Manajerial Donasi" },
+    { to: "/owner/alokasi", icon: <FaBuilding />, label: "Manajerial Alokasi" },
   ];
 
   return (
-    <div className="d-flex">
-      <div
-        className={`bg-light border-end p-3 ${isOpen ? "vh-100" : ""}`}
-        style={{
-          width: isOpen ? "250px" : "60px",
-          transition: "width 0.3s",
-          overflow: "hidden",
-          position: "relative",
-        }}
-      >
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          {isOpen && <h5 className="mb-0">Administrasi</h5>}
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={toggleSidebar}
-            style={{ position: "absolute", top: 10, right: 10 }}
-          >
-            {isOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        </div>
-        <ul className="nav flex-column">
-          {sidebarItems.map(({ to, icon, label }) => (
-            <li className="nav-item mb-2" key={to}>
-              <Link to={to} className="nav-link text-dark d-flex align-items-center">
-                {icon}
-                {isOpen && <span className="ms-2">{label}</span>}
-              </Link>
-            </li>
-          ))}
-          {/* Tombol Logout */}
-          <li className="nav-item mb-2">
-            <button
-              className="nav-link text-dark d-flex align-items-center"
-              onClick={handleLogout}
-              style={{ background: "none", border: "none", padding: 0 }}
+    <div
+      className={`bg-white border-end shadow-sm d-flex flex-column justify-between`}
+      style={{
+        width: isOpen ? "220px" : "70px",
+        transition: "width 0.3s",
+        height: "100vh",
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+      }}
+    >
+      {/* Header */}
+      <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
+        {isOpen && <h5 className="mb-0 text">Admin Panel</h5>}
+        <button
+          className="btn btn-sm btn-light border"
+          onClick={toggleSidebar}
+        >
+          {isOpen ? <FaTimes /> : <FaBars />}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <ul className="nav flex-column p-2 flex-grow-1">
+        {sidebarItems.map(({ to, icon, label }) => (
+          <li className="nav-item" key={to}>
+            <Link
+              to={to}
+              className={`nav-link d-flex align-items-center py-2 px-3 rounded ${
+                location.pathname === to ? "bg-success text-white" : "text-dark"
+              }`}
+              style={{ transition: "0.2s" }}
             >
-              <FaSignOutAlt />
-              {isOpen && <span className="ms-2">Logout</span>}
-            </button>
+              {icon}
+              {isOpen && <span className="ms-2">{label}</span>}
+            </Link>
           </li>
-        </ul>
+        ))}
+      </ul>
+
+      {/* Logout */}
+      <div className="p-2 border-top">
+        <button
+          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center"
+          onClick={handleLogout}
+        >
+          <FaSignOutAlt />
+          {isOpen && <span className="ms-2">Logout</span>}
+        </button>
       </div>
     </div>
   );

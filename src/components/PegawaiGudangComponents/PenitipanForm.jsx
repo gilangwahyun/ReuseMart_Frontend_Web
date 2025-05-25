@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPenitipanBarang } from "../../api/PenitipanBarangApi";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { createPenitipanBarang, deletePenitipanBarang } from "../../api/PenitipanBarangApi";
 import { getAllPenitip, getPenitipById } from "../../api/PenitipApi";
 import { getAllPegawai } from "../../api/PegawaiApi";
 import { getAllJabatan } from "../../api/JabatanApi";
-import { createNotaPenitipanBarang } from "../../api/NotaPenitipanBarangApi";
+import { createNotaPenitipanBarang, deleteNotaPenitipanBarang } from "../../api/NotaPenitipanBarangApi";
 import { ToastContainer, toast } from "react-toastify";
 
 const PenitipanBarangForm = () => {
@@ -20,6 +20,12 @@ const PenitipanBarangForm = () => {
   const [qcList, setQcList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [searchParams] = useSearchParams();
+  const idPenitipan = searchParams.get("id_penitipan");
+  const idNotaPenitipan = searchParams.get("id_nota_penitipan");
+
+  const [idNotaPenitipanState, setIdNotaPenitipanState] = useState(null);
 
   // Format date to "YYYY-MM-DDTHH:mm" for datetime-local input
   const formatToDateTimeLocal = (date) => {
@@ -155,6 +161,8 @@ const handleSubmit = async (e) => {
     setTimeout(() => {
       navigate(`/pegawaiGudang/form-barang?id_penitipan=${id_penitipan}&id_nota_penitipan=${id_nota_penitipan}`);
     }, 1000);
+
+    setIdNotaPenitipanState(id_nota_penitipan);
   } catch (error) {
     console.error("Gagal menyimpan data:", error);
     setError("Gagal menyimpan data. Pastikan semua field sudah benar.");
@@ -165,88 +173,118 @@ const handleSubmit = async (e) => {
   }
 };
 
+const handleBack = async () => {
+  if (idPenitipan) {
+    const confirmDelete = window.confirm("Apakah Anda ingin membatalkan dan menghapus data penitipan yang sudah dibuat?");
+    if (confirmDelete) {
+      try {
+        await deletePenitipanBarang(idPenitipan);
+      } catch (err) {
+        console.error("Gagal menghapus penitipan:", err);
+      }
+      navigate(-1);
+    }
+  } else {
+    navigate(-1);
+  }
+};
+
   if (loading) {
     return (
       <div className="container mt-4">
-        <p>Memuat data...</p>
+        <div className="d-flex flex-column align-items-center my-5">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="text-muted">Memuat data penitipan, mohon tunggu...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mt-4">
-      <h2>Form Penitipan Barang</h2>
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        {/* Pilih Penitip */}
-        <div className="mb-3">
-          <label className="form-label">Penitip</label>
-          <select
-            className="form-control"
-            name="id_penitip"
-            value={formData.id_penitip}
-            onChange={handleChange}
-            required
-          >
-            <option value="">-- Pilih Penitip --</option>
-            {penitipList.map((penitip) => (
-              <option key={penitip.id_penitip} value={penitip.id_penitip}>
-                {penitip.nama_penitip} (ID: {penitip.id_penitip})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Tanggal Awal (readonly) */}
-        <div className="mb-3">
-          <label className="form-label">Tanggal Awal Penitipan</label>
-          <input
-            type="datetime-local"
-            className="form-control"
-            name="tanggal_awal_penitipan"
-            value={formData.tanggal_awal_penitipan}
-            onChange={handleChange}
-            readOnly
-          />
-        </div>
-
-        {/* Tanggal Akhir (readonly) */}
-        <div className="mb-3">
-          <label className="form-label">Tanggal Akhir Penitipan</label>
-          <input
-            type="datetime-local"
-            className="form-control"
-            name="tanggal_akhir_penitipan"
-            value={formData.tanggal_akhir_penitipan}
-            onChange={handleChange}
-            readOnly
-          />
-        </div>
-
-        {/* Pilih Petugas QC */}
-        <div className="mb-3">
-          <label className="form-label">Petugas QC (Pegawai Gudang)</label>
-          <select
-            className="form-control"
-            name="nama_petugas_qc"
-            value={formData.nama_petugas_qc}
-            onChange={handleChange}
-            required
-          >
-            <option value="">-- Pilih Petugas QC --</option>
-            {qcList.map((qc) => (
-              <option key={qc.value} value={qc.value}>
-                {qc.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button type="submit" className="btn btn-success">
-          Simpan dan Tambah Barang
+    <div className="container my-5" style={{ maxWidth: 700 }}>
+      <div className="d-flex align-items-center mb-4">
+        <button
+          type="button"
+          className="btn btn-outline-success me-3"
+          onClick={handleBack}
+        >
+          ← Kembali
         </button>
-      </form>
+        <h2 className="fw-bold mb-0">Form Penitipan Barang</h2>
+      </div>
+      {error && <div className="alert alert-danger">{error}</div>}
+      <div className="card shadow-sm p-4">
+        <div className="alert alert-warning" role="alert">
+          <strong>Perhatian:</strong> Pastikan Data Penitip dan Petugas QC sudah sesuai sebelum menyimpan.
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="row g-3">
+            <div className="col-md-12">
+              <label className="form-label fw-semibold">Penitip</label>
+              <select
+                className="form-control"
+                name="id_penitip"
+                value={formData.id_penitip}
+                onChange={handleChange}
+                required
+              >
+                <option value="">-- Pilih Penitip --</option>
+                {penitipList.map((penitip) => (
+                  <option key={penitip.id_penitip} value={penitip.id_penitip}>
+                    {penitip.nama_penitip} (ID: {penitip.id_penitip})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Tanggal Awal Penitipan</label>
+              <input
+                type="datetime-local"
+                className="form-control"
+                name="tanggal_awal_penitipan"
+                value={formData.tanggal_awal_penitipan}
+                onChange={handleChange}
+                readOnly
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Tanggal Akhir Penitipan</label>
+              <input
+                type="datetime-local"
+                className="form-control"
+                name="tanggal_akhir_penitipan"
+                value={formData.tanggal_akhir_penitipan}
+                onChange={handleChange}
+                readOnly
+              />
+            </div>
+            <div className="col-md-12">
+              <label className="form-label fw-semibold">Petugas QC (Pegawai Gudang)</label>
+              <select
+                className="form-control"
+                name="nama_petugas_qc"
+                value={formData.nama_petugas_qc}
+                onChange={handleChange}
+                required
+              >
+                <option value="">-- Pilih Petugas QC --</option>
+                {qcList.map((qc) => (
+                  <option key={qc.value} value={qc.value}>
+                    {qc.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="d-flex justify-content-end mt-4">
+            <button type="submit" className="btn btn-success px-4 py-2 fw-semibold">
+              Simpan dan Tambah Barang
+            </button>
+          </div>
+        </form>
+      </div>
       <ToastContainer />
     </div>
   );

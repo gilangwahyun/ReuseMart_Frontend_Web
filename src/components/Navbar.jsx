@@ -11,7 +11,8 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [isSearchClicked, setIsSearchClicked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,15 +37,11 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
       const profileMenu = document.getElementById("profileMenu");
       const profileToggle = document.getElementById("profileToggle");
 
-      if (
-        panel && !panel.contains(e.target) && !toggle.contains(e.target)
-      ) {
+      if (panel && !panel.contains(e.target) && !toggle.contains(e.target)) {
         setShowPanel(false);
       }
 
-      if (
-        profileMenu && !profileMenu.contains(e.target) && !profileToggle.contains(e.target)
-      ) {
+      if (profileMenu && !profileMenu.contains(e.target) && !profileToggle.contains(e.target)) {
         setShowProfileMenu(false);
       }
     };
@@ -53,13 +50,23 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const togglePanel = () => {
-    setShowPanel((prev) => !prev);
-  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+    setIsLoggedIn(!!token);
 
-  const toggleProfileMenu = () => {
-    setShowProfileMenu((prev) => !prev);
-  };
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setUserId(user.id_user);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
+
+  const togglePanel = () => setShowPanel((prev) => !prev);
+  const toggleProfileMenu = () => setShowProfileMenu((prev) => !prev);
 
   const handleKategoriClick = (namaKategori) => {
     setShowPanel(false);
@@ -70,14 +77,32 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const handleSearchClick = (e) => {
     e.preventDefault();
     if (searchKeyword.trim() === "") return;
-
     onSearch(searchKeyword);
   };
 
   const handleSearchChange = (e) => {
     setSearchKeyword(e.target.value);
   };
-  
+
+  const handleProfileClick = () => {
+    if (isLoggedIn && userId) {
+      navigate(`/DashboardProfilPembeli/${userId}`);
+    } else {
+      navigate("/LoginPage");
+    }
+    setShowProfileMenu(false);
+  };
+
+  const handleCartClick = (e) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      navigate("/LoginPage");
+      return;
+    }
+    if (userId) {
+      navigate(`/keranjang/${userId}`);
+    }
+  };
 
   return (
     <nav
@@ -89,12 +114,7 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
           <img src={logo} alt="Logo" height="40" className="me-2" />
         </Link>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
+        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span className="navbar-toggler-icon"></span>
         </button>
 
@@ -105,22 +125,13 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                 className="btn nav-link text-dark"
                 id="kategoriToggle"
                 onClick={togglePanel}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
+                style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
               >
                 Kategori
               </button>
             </li>
 
-            <form
-              className="d-flex me-auto w-50"
-              style={{ maxWidth: "400px" }}
-              onSubmit={handleSearchClick}
-            >
+            <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }} onSubmit={handleSearchClick}>
               <input
                 className="form-control me-2"
                 type="search"
@@ -135,9 +146,13 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
             </form>
 
             <li className="nav-item me-3">
-              <Link className="nav-link text-dark" to="/cart">
+              <button
+                className="btn nav-link text-dark"
+                onClick={handleCartClick}
+                style={{ background: "none", border: "none", padding: 0 }}
+              >
                 <FaShoppingCart size={18} />
-              </Link>
+              </button>
             </li>
 
             <li className="nav-item position-relative">
@@ -145,12 +160,7 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                 id="profileToggle"
                 className="btn nav-link text-dark"
                 onClick={toggleProfileMenu}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
+                style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
               >
                 <FaUser size={18} />
               </button>
@@ -161,20 +171,46 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                   className="position-absolute end-0 mt-2 bg-white shadow rounded border"
                   style={{ zIndex: 1000, minWidth: "150px" }}
                 >
-                  <Link
-                    to="/LoginPage"
-                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    Register
-                  </Link>
+                  {isLoggedIn ? (
+                    <>
+                      <button
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                        onClick={handleProfileClick}
+                      >
+                        Profile
+                      </button>
+                      <button
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                        onClick={() => {
+                          localStorage.removeItem("token");
+                          localStorage.removeItem("user");
+                          setIsLoggedIn(false);
+                          setShowProfileMenu(false);
+                          window.dispatchEvent(new Event("logout"));
+                          navigate("/");
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/LoginPage"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        to="/RegisterPembeli"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Register
+                      </Link>
+                    </>
+                  )}
                 </div>
               )}
             </li>
