@@ -13,6 +13,7 @@ import DashboardOrganisasi from '../pages/client/DashboardOrganisasi';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import PegawaiManagement from "../pages/admin/PegawaiManagement";
 import OrganisasiManagement from "../pages/admin/OrganisasiManagement";
+import MerchandiseManagement from '../pages/admin/MerchandiseManagement';
 import AlamatForm from '../components/AlamatForm';
 import DashboardKeranjang from '../pages/client/DashboardKeranjang';
 import DonasiManagement from "../pages/owner/DonasiManagement";
@@ -30,6 +31,7 @@ const AppRoutes = () => {
   return (  
     <Router>
       <Routes>
+        <Route path="/kategori/:namaKategori" element={<Home />} />
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<DetailBarang />} />
         <Route path="/LoginPage" element={<LoginPage/>} />
@@ -44,6 +46,7 @@ const AppRoutes = () => {
         <Route path="/DashboardAdmin" element={<AdminDashboard />} />
         <Route path="/admin/pegawai" element={<PegawaiManagement />} />
         <Route path="/admin/organisasi" element={<OrganisasiManagement />} />
+        <Route path="/admin/merchandise" element={<MerchandiseManagement />} />
         <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />

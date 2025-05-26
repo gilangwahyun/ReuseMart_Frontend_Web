@@ -18,6 +18,7 @@ const PenitipanBarangTable = ({ barangData }) => {
             <th>Harga (Rp)</th>
             <th>Berat (g)</th>
             <th>Status Barang</th>
+            <th>Status Garansi</th>
             <th>Penitip</th>
             <th>Tgl Awal</th>
             <th>Tgl Akhir</th>
@@ -38,6 +39,13 @@ const PenitipanBarangTable = ({ barangData }) => {
                 <td>{barang.harga.toLocaleString("id-ID")}</td>
                 <td>{barang.berat}</td>
                 <td>{barang.status_barang}</td>
+                <td>
+                  {barang.masa_garansi ? (
+                    <span className="badge bg-success">Ya</span>
+                  ) : (
+                    <span className="badge bg-danger">Tidak</span>
+                  )}
+                </td>
                 <td>{penitip?.nama_penitip || "-"}</td>
                 <td>{penitipan?.tanggal_awal_penitipan?.split(" ")[0] || "-"}</td>
                 <td>{penitipan?.tanggal_akhir_penitipan?.split(" ")[0] || "-"}</td>

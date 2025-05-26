@@ -18,6 +18,8 @@ const DetailBarangPage = ({ isEditMode = false }) => {
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(isEditMode);
   const [activeTab, setActiveTab] = useState('detail'); // tab aktif
+  const [tanpaGaransi, setTanpaGaransi] = useState(false);
+  const [fotoError, setFotoError] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -52,17 +54,44 @@ const DetailBarangPage = ({ isEditMode = false }) => {
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    // Set tanpaGaransi sesuai data barang saat masuk edit mode
+    if (editMode) {
+      setTanpaGaransi(!formData.masa_garansi);
+    }
+    // eslint-disable-next-line
+  }, [editMode]);
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: (name === 'harga' || name === 'berat' || name === 'id_kategori') ? Number(value) : value
     }));
   };
 
+  const handleTanpaGaransi = (e) => {
+    setTanpaGaransi(e.target.checked);
+    if (e.target.checked) {
+      setFormData(prev => ({ ...prev, masa_garansi: '' }));
+    }
+  };
+
   const handleUpdate = async () => {
+    // Validasi minimal 2 foto
+    const fotoLamaTersisa = fotoBarang.filter(f => !deletedPhotos.includes(f.id_foto_barang));
+    const totalFoto = fotoLamaTersisa.length + newPhotos.length;
+    if (totalFoto < 2) {
+      setFotoError('Minimal harus ada 2 foto per barang!');
+      return;
+    }
+    setFotoError(null);
     try {
-      await updateBarang(id, formData);
+      const dataToSend = {
+        ...formData,
+        masa_garansi: tanpaGaransi ? null : formData.masa_garansi,
+      };
+      await updateBarang(id, dataToSend);
       // Proses hapus foto
       for (const fotoId of deletedPhotos) {
         await deleteFotoBarang(fotoId);
@@ -94,6 +123,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
   const handleFotoUpload = (files) => {
     const selectedFiles = Array.from(files);
     setNewPhotos(prev => [...prev, ...selectedFiles]);
+    setFotoError(null);
   };
 
   const handleDeleteFoto = (fotoId, isThumbnail) => {
@@ -101,15 +131,17 @@ const DetailBarangPage = ({ isEditMode = false }) => {
       alert('Foto ini adalah thumbnail. Pilih thumbnail baru sebelum menghapus foto ini.');
       return;
     }
+    // Hitung total foto setelah dihapus
+    const fotoLamaTersisa = fotoBarang.filter(f => f.id_foto_barang !== fotoId && !deletedPhotos.includes(f.id_foto_barang));
+    const totalFotoSetelahHapus = fotoLamaTersisa.length + newPhotos.length;
+    if (totalFotoSetelahHapus < 2) {
+      setFotoError('Minimal harus ada 2 foto per barang!');
+      return;
+    }
+    setFotoError(null);
     if (window.confirm('Apakah Anda yakin ingin menghapus foto ini?')) {
-      deleteFotoBarang(fotoId)
-        .then(() => {
-          setFotoBarang((prev) => prev.filter((f) => f.id_foto_barang !== fotoId));
-        })
-        .catch((err) => {
-          alert('Gagal menghapus foto.');
-          console.error(err);
-        });
+      setDeletedPhotos(prev => [...prev, fotoId]);
+      setFotoBarang((prev) => prev.filter((f) => f.id_foto_barang !== fotoId));
     }
   };
 
@@ -231,6 +263,31 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                 className="form-control"
                 onChange={(e) => handleFotoUpload(e.target.files)}
               />
+              {fotoError && (
+                <div className="text-danger mt-2" style={{ fontSize: 14 }}>{fotoError}</div>
+              )}
+              {newPhotos.length > 0 && (
+                <div className="row mt-2 g-2">
+                  {newPhotos.map((file, i) => (
+                    <div className="col-auto position-relative" key={i} style={{ width: 100 }}>
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                        style={{ zIndex: 2, padding: '2px 6px', fontSize: 12 }}
+                        onClick={() => setNewPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                        title="Hapus foto baru"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {newPhotos.length > 0 && (
                 <div className="mt-2">
                   <small className="text-muted">{newPhotos.length} foto baru akan diupload</small>
@@ -358,13 +415,28 @@ const DetailBarangPage = ({ isEditMode = false }) => {
               <div className="mb-3">
                 <label className="form-label fw-semibold">Status Garansi:</label>
                 {editMode ? (
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="masa_garansi"
-                    value={formData.masa_garansi ? formData.masa_garansi.substring(0, 10) : ''}
-                    onChange={handleChange}
-                  />
+                  <>
+                    <input
+                      type="date"
+                      className="form-control mb-2"
+                      name="masa_garansi"
+                      value={formData.masa_garansi ? formData.masa_garansi.substring(0, 10) : ''}
+                      onChange={handleChange}
+                      disabled={tanpaGaransi}
+                    />
+                    <div className="form-check mt-1">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="tanpaGaransi"
+                        checked={tanpaGaransi}
+                        onChange={handleTanpaGaransi}
+                      />
+                      <label className="form-check-label" htmlFor="tanpaGaransi">
+                        Barang tidak memiliki garansi
+                      </label>
+                    </div>
+                  </>
                 ) : (
                   <p className="border p-2 rounded bg-light">
                     {barang.masa_garansi ? new Date(barang.masa_garansi).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Tidak ada garansi'}

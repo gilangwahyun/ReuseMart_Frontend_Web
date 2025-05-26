@@ -31,6 +31,7 @@ const BarangForm = ({ initialData = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [tanpaGaransi, setTanpaGaransi] = useState(false);
+  const [fotoError, setFotoError] = useState(null);
 
   useEffect(() => {
     const fetchKategori = async () => {
@@ -90,10 +91,23 @@ const BarangForm = ({ initialData = null }) => {
   };
 
   const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
     setBarang((prev) => ({
       ...prev,
-      files: Array.from(e.target.files),
+      files,
     }));
+    if (files.length < 2) {
+      setFotoError('Minimal upload 2 foto barang!');
+    } else {
+      setFotoError(null);
+    }
+  };
+
+  const handleRemoveFile = (index) => {
+    setBarang((prev) => {
+      const newFiles = prev.files.filter((_, i) => i !== index);
+      return { ...prev, files: newFiles };
+    });
   };
 
   const resetForm = () => {
@@ -114,6 +128,12 @@ const BarangForm = ({ initialData = null }) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    if (barang.files.length < 2) {
+      setFotoError('Minimal upload 2 foto barang!');
+      setLoading(false);
+      return;
+    }
+    setFotoError(null);
 
     try {
       const barangDataToSend = {
@@ -318,14 +338,30 @@ const BarangForm = ({ initialData = null }) => {
                     accept="image/*"
                     onChange={handleFileChange}
                   />
+                  {fotoError && (
+                    <div className="text-danger mt-1" style={{ fontSize: 14 }}>{fotoError}</div>
+                  )}
                   {barang.files.length > 0 && (
-                    <ul className="mt-2" style={{ maxHeight: 100, overflowY: "auto" }}>
+                    <div className="row mt-2 g-2">
                       {barang.files.map((file, i) => (
-                        <li key={i} style={{ fontSize: 14 }}>
-                          {file.name}
-                        </li>
+                        <div className="col-auto position-relative" key={i} style={{ width: 100 }}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                            style={{ zIndex: 2, padding: '2px 6px', fontSize: 12 }}
+                            onClick={() => handleRemoveFile(i)}
+                            title="Hapus foto"
+                          >
+                            &times;
+                          </button>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
                 <div className="col-md-12">

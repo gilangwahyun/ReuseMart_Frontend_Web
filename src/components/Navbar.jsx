@@ -232,17 +232,28 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
               {loading ? (
                 <p>Memuat kategori...</p>
               ) : (
-                kategoriList.map((kategori) => (
-                  <div className="col-6 col-md-3" key={kategori.id_kategori}>
+                <>
+                  <div className="col-6 col-md-3 mb-2">
                     <button
-                      onClick={() => handleKategoriClick(kategori.nama_kategori)}
-                      className="btn btn-link text-start w-100 text-decoration-none text-dark"
-                      style={{ padding: "8px 15px", color: "#333" }}
+                      onClick={() => handleKategoriClick('Semua')}
+                      className="btn btn-link text-start w-100 text-decoration-none text-success fw-bold"
+                      style={{ padding: "8px 15px", color: "#198754" }}
                     >
-                      {kategori.nama_kategori}
+                      Semua Kategori
                     </button>
                   </div>
-                ))
+                  {kategoriList.map((kategori) => (
+                    <div className="col-6 col-md-3 mb-2" key={kategori.id_kategori}>
+                      <button
+                        onClick={() => handleKategoriClick(kategori.nama_kategori)}
+                        className="btn btn-link text-start w-100 text-decoration-none text-dark"
+                        style={{ padding: "8px 15px", color: "#333" }}
+                      >
+                        {kategori.nama_kategori}
+                      </button>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </div>
