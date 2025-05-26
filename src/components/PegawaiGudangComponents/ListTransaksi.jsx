@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Badge, Alert, Modal, Form, Spinner } from "react-bootstrap";
+import { Table, Button, Badge, Alert, Modal, Form, Spinner, Card, Row, Col } from "react-bootstrap";
 import useAxios from "../../api"; // Import the configured axios instance
 import { useNavigate } from "react-router-dom";
 import { getAllPegawai } from "../../api/PegawaiApi";
@@ -25,6 +25,15 @@ const ListTransaksi = () => {
   const [jadwalLoading, setJadwalLoading] = useState(false);
   const [jadwalError, setJadwalError] = useState(null);
   const [jadwalSuccess, setJadwalSuccess] = useState(null);
+  const [isDeliveryByCourier, setIsDeliveryByCourier] = useState(true);
+  const [timeError, setTimeError] = useState(null);
+  
+  // States for transaction detail modal
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailTransaksi, setDetailTransaksi] = useState(null);
+  const [detailItems, setDetailItems] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
   
   // State to track which transactions already have jadwal
   const [transactionWithJadwal, setTransactionWithJadwal] = useState([]);
@@ -95,6 +104,74 @@ const ListTransaksi = () => {
     }
   };
 
+  // Function to fetch transaction details
+  const fetchTransactionDetail = async (id) => {
+    setDetailLoading(true);
+    setDetailError(null);
+    try {
+      // Fetch transaction details
+      const transaksiResponse = await useAxios.get(`/transaksi/${id}`);
+      setDetailTransaksi(transaksiResponse.data);
+      
+      // Fetch items in this transaction
+      const detailResponse = await useAxios.get(`/detailTransaksi/transaksi/${id}`);
+      const items = detailResponse.data;
+      
+      console.log("Detail items:", items);
+      
+      // Placeholder image - base64 encoded small gray image with product icon
+      const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzZjNzU3ZCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItcGFja2FnZSI+PHBhdGggZD0iTTE2LjUgOS40bC05LTVWMjFsOSA1VjkuNHoiPjwvcGF0aD48cG9seWxpbmUgcG9pbnRzPSIxNi41IDMuNSA3LjUgOC41IDE2LjUgMTMuNSI+PC9wb2x5bGluZT48cG9seWxpbmUgcG9pbnRzPSIzLjI3IDYuOTYgMTIgMTIuMDEgMjAuNzMgNi45NiI+PC9wb2x5bGluZT48bGluZSB4MT0iMTIiIHkxPSIyMi4wOCIgeDI9IjEyIiB5Mj0iMTIiPjwvbGluZT48L3N2Zz4=";
+      
+      // Fetch item details and images
+      const itemsWithDetails = await Promise.all(items.map(async (item) => {
+        try {
+          // Get barang details
+          const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
+          const barang = barangResponse.data;
+          
+          // Get image URL using our new endpoint
+          let imageUrl = placeholderImage; // Default to placeholder
+          try {
+            const imageResponse = await useAxios.get(`/fotoBarang/image/${item.id_barang}`);
+            console.log(`Image response for item ${item.id_barang}:`, imageResponse.data);
+            
+            if (imageResponse.data && imageResponse.data.success && imageResponse.data.url) {
+              imageUrl = imageResponse.data.url;
+            }
+          } catch (imageError) {
+            console.error("Error fetching image URL:", imageError);
+          }
+          
+          return {
+            ...item,
+            barang,
+            imageUrl,
+            namaBarang: barang?.nama_barang || `Barang #${item.id_barang}`
+          };
+        } catch (error) {
+          console.error(`Error fetching data for item ${item.id_barang}:`, error);
+          return {
+            ...item,
+            imageUrl: placeholderImage,
+            namaBarang: `Barang #${item.id_barang}`
+          };
+        }
+      }));
+      
+      setDetailItems(itemsWithDetails);
+    } catch (error) {
+      console.error("Error fetching transaction details:", error);
+      setDetailError("Gagal memuat detail transaksi. Silakan coba lagi nanti.");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const openDetailModal = async (transaksi) => {
+    setShowDetailModal(true);
+    await fetchTransactionDetail(transaksi.id_transaksi);
+  };
+
   const getStatusBadge = (status) => {
     if (!status) {
       return <Badge bg="secondary">Tidak Ada</Badge>;
@@ -128,18 +205,57 @@ const ListTransaksi = () => {
     }
   };
 
+  // Function to check if current time is past 4 PM
+  const isPastDeadline = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    return hour >= 16; // 16 is 4 PM in 24-hour format
+  };
+
+  // Function to get minimum allowed delivery date based on time
+  const getMinDeliveryDate = () => {
+    // If past 4 PM, minimum date is tomorrow
+    if (isPastDeadline()) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    }
+    // Otherwise, today is fine
+    return new Date().toISOString().split('T')[0];
+  };
+
   // Function to open jadwal modal
   const openJadwalModal = (transaksi) => {
+    setTimeError(null);
     setSelectedTransaksi(transaksi);
+    
+    // Check shipping method - defaults
+    const isCourierDelivery = transaksi.metode_pengiriman === "Dikirim oleh Kurir";
+    setIsDeliveryByCourier(isCourierDelivery);
+    
+    const defaultStatus = isCourierDelivery ? "Sedang Dikirim" : "Menunggu Diambil";
+    
+    // Set appropriate date based on time
+    const minDeliveryDate = getMinDeliveryDate();
+
+    // Show a warning if it's past 4 PM and courier delivery
+    if (isCourierDelivery && isPastDeadline()) {
+      setTimeError(
+        "Pengiriman kurir setelah jam 16:00 (4 sore) akan dijadwalkan untuk besok."
+      );
+    }
+    
     setJadwalData({
-      ...jadwalData,
       id_transaksi: transaksi.id_transaksi,
-      tanggal: new Date().toISOString().split('T')[0],
-      status_jadwal: "Sedang Dikirim" // Default to "Sedang Dikirim"
+      id_pegawai: "", // Reset courier selection
+      tanggal: minDeliveryDate,
+      status_jadwal: defaultStatus
     });
     
-    // Fetch pegawai list for dropdown
-    fetchPegawaiList();
+    // Fetch pegawai list only if courier delivery
+    if (isCourierDelivery) {
+      fetchPegawaiList();
+    }
     
     setShowJadwalModal(true);
   };
@@ -148,9 +264,9 @@ const ListTransaksi = () => {
   const fetchPegawaiList = async () => {
     try {
       const response = await getAllPegawai();
-      // Filter pegawai who are couriers (assuming job role "Kurir")
+      // Filter pegawai who have id_jabatan = 6 (courier)
       const couriers = response.data?.filter(pegawai => 
-        pegawai.jabatan?.nama_jabatan?.toLowerCase() === "kurir"
+        pegawai.id_jabatan === 6
       ) || [];
       setPegawaiList(couriers);
     } catch (error) {
@@ -162,20 +278,10 @@ const ListTransaksi = () => {
   // Handle jadwal form input changes
   const handleJadwalInputChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'status_jadwal' && value === 'Menunggu Diambil') {
-      // If changing status to "Menunggu Diambil", clear the kurir field
-      setJadwalData({
-        ...jadwalData,
-        [name]: value,
-        id_pegawai: '' // Clear the pegawai field since it's not needed
-      });
-    } else {
-      setJadwalData({
-        ...jadwalData,
-        [name]: value
-      });
-    }
+    setJadwalData({
+      ...jadwalData,
+      [name]: value
+    });
   };
 
   // Submit jadwal form
@@ -185,15 +291,29 @@ const ListTransaksi = () => {
     setJadwalError(null);
     
     try {
-      // Prepare data based on status
+      // Validate delivery date for courier deliveries
+      if (isDeliveryByCourier && isPastDeadline()) {
+        const minAllowedDate = getMinDeliveryDate();
+        const selectedDate = jadwalData.tanggal;
+        
+        if (selectedDate < minAllowedDate) {
+          throw new Error("Untuk pengiriman kurir setelah jam 16:00, tanggal pengiriman harus besok atau lebih lambat.");
+        }
+      }
+
+      // Prepare data based on delivery method
       const formattedData = {
         id_transaksi: jadwalData.id_transaksi,
         tanggal: jadwalData.tanggal,
-        status_jadwal: jadwalData.status_jadwal
+        status_jadwal: jadwalData.status_jadwal,
+        id_pegawai: null // Default to null for all cases
       };
       
-      // Only include id_pegawai if not "Menunggu Diambil"
-      if (jadwalData.status_jadwal !== "Menunggu Diambil") {
+      // Override with actual pegawai ID if courier delivery
+      if (isDeliveryByCourier) {
+        if (!jadwalData.id_pegawai) {
+          throw new Error("Kurir harus dipilih untuk pengiriman oleh kurir");
+        }
         formattedData.id_pegawai = jadwalData.id_pegawai;
       }
       
@@ -228,7 +348,7 @@ const ListTransaksi = () => {
       }
       
       setJadwalError("Gagal membuat jadwal pengiriman: " + 
-        (error.response?.data?.message || "Terjadi kesalahan pada server"));
+        (error.response?.data?.message || error.message));
     } finally {
       setJadwalLoading(false);
     }
@@ -237,6 +357,34 @@ const ListTransaksi = () => {
   // Function to check if transaction already has jadwal
   const hasJadwal = (transactionId) => {
     return transactionWithJadwal.includes(transactionId);
+  };
+
+  // Function to check if we can create jadwal for a transaction
+  const canCreateJadwal = (transaction) => {
+    // Already has a jadwal
+    if (hasJadwal(transaction.id_transaksi)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Function to get button tooltip based on transaction status
+  const getJadwalButtonTooltip = (transaction) => {
+    if (hasJadwal(transaction.id_transaksi)) {
+      return "Jadwal sudah dibuat";
+    }
+    
+    if (transaction.metode_pengiriman === "Dikirim oleh Kurir" && isPastDeadline()) {
+      return "Jadwal pengiriman kurir setelah jam 16:00 akan dijadwalkan untuk besok";
+    }
+    
+    return "Buat jadwal pengiriman";
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
   };
 
   // If not authenticated, show login message
@@ -265,6 +413,17 @@ const ListTransaksi = () => {
           {error}
         </div>
       )}
+      {timeError && (
+        <div className="alert alert-warning alert-dismissible fade show" role="alert">
+          <strong>Perhatian!</strong> {timeError}
+          <button 
+            type="button" 
+            className="btn-close" 
+            onClick={() => setTimeError(null)} 
+            aria-label="Close"
+          ></button>
+        </div>
+      )}
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -276,6 +435,7 @@ const ListTransaksi = () => {
               <th>Total Harga</th>
               <th>Status</th>
               <th>Tanggal</th>
+              <th>Metode Pengiriman</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -288,6 +448,7 @@ const ListTransaksi = () => {
                 const totalHarga = item.total_harga;
                 const status = item.status_transaksi;
                 const tanggal = item.tanggal_transaksi;
+                const metodePengiriman = item.metode_pengiriman || "-";
                 
                 return (
                   <tr key={id}>
@@ -296,7 +457,19 @@ const ListTransaksi = () => {
                     <td>Rp {totalHarga ? totalHarga.toLocaleString() : '0'}</td>
                     <td>{getStatusBadge(status)}</td>
                     <td>{formatDate(tanggal)}</td>
+                    <td>{metodePengiriman}</td>
                     <td>
+                      {/* Detail Transaction Button */}
+                      <Button
+                        variant="info"
+                        size="sm"
+                        className="me-2 mb-2"
+                        onClick={() => openDetailModal(item)}
+                      >
+                        Detail Transaksi
+                      </Button>
+                      <br />
+                      
                       {(!status || status.toLowerCase() === "pending") && (
                         <Button
                           key={`process-${id}`}
@@ -335,7 +508,8 @@ const ListTransaksi = () => {
                           variant="info"
                           size="sm"
                           onClick={() => openJadwalModal(item)}
-                          disabled={hasJadwal(id)}
+                          disabled={!canCreateJadwal(item)}
+                          title={getJadwalButtonTooltip(item)}
                         >
                           {hasJadwal(id) ? 'Jadwal Sudah Dibuat' : 'Buat Jadwal Pengiriman'}
                         </Button>
@@ -346,7 +520,7 @@ const ListTransaksi = () => {
               })
             ) : (
               <tr key="no-data">
-                <td colSpan="6" className="text-center">
+                <td colSpan="7" className="text-center">
                   Tidak ada transaksi ditemukan
                 </td>
               </tr>
@@ -373,6 +547,12 @@ const ListTransaksi = () => {
             </Alert>
           )}
           
+          {timeError && (
+            <Alert variant="warning" className="mb-3">
+              {timeError}
+            </Alert>
+          )}
+          
           <Form onSubmit={handleSubmitJadwal}>
             <Form.Group className="mb-3">
               <Form.Label>ID Transaksi</Form.Label>
@@ -384,27 +564,32 @@ const ListTransaksi = () => {
             </Form.Group>
             
             <Form.Group className="mb-3">
-              <Form.Label>Kurir</Form.Label>
-              <Form.Select
-                name="id_pegawai"
-                value={jadwalData.id_pegawai}
-                onChange={handleJadwalInputChange}
-                required={jadwalData.status_jadwal !== "Menunggu Diambil"}
-                disabled={jadwalData.status_jadwal === "Menunggu Diambil"}
-              >
-                <option value="">-- Pilih Kurir --</option>
-                {pegawaiList.map(pegawai => (
-                  <option key={pegawai.id_pegawai} value={pegawai.id_pegawai}>
-                    {pegawai.nama_pegawai} - {pegawai.no_telepon}
-                  </option>
-                ))}
-              </Form.Select>
-              {jadwalData.status_jadwal === "Menunggu Diambil" && (
-                <small className="text-muted">
-                  Kurir tidak diperlukan untuk status Menunggu Diambil
-                </small>
-              )}
+              <Form.Label>Metode Pengiriman</Form.Label>
+              <Form.Control
+                type="text"
+                value={selectedTransaksi?.metode_pengiriman || ''}
+                disabled
+              />
             </Form.Group>
+            
+            {isDeliveryByCourier && (
+              <Form.Group className="mb-3">
+                <Form.Label>Kurir</Form.Label>
+                <Form.Select
+                  name="id_pegawai"
+                  value={jadwalData.id_pegawai}
+                  onChange={handleJadwalInputChange}
+                  required={isDeliveryByCourier}
+                >
+                  <option value="">-- Pilih Kurir --</option>
+                  {pegawaiList.map(pegawai => (
+                    <option key={pegawai.id_pegawai} value={pegawai.id_pegawai}>
+                      {pegawai.nama_pegawai} - {pegawai.no_telepon}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            )}
             
             <Form.Group className="mb-3">
               <Form.Label>Tanggal Pengiriman</Form.Label>
@@ -413,8 +598,14 @@ const ListTransaksi = () => {
                 name="tanggal"
                 value={jadwalData.tanggal}
                 onChange={handleJadwalInputChange}
+                min={isDeliveryByCourier && isPastDeadline() ? getMinDeliveryDate() : undefined}
                 required
               />
+              {isDeliveryByCourier && isPastDeadline() && (
+                <Form.Text className="text-muted">
+                  Pengiriman kurir setelah jam 16:00 hanya bisa dijadwalkan untuk besok atau lebih lambat.
+                </Form.Text>
+              )}
             </Form.Group>
             
             <Form.Group className="mb-3">
@@ -425,10 +616,16 @@ const ListTransaksi = () => {
                 onChange={handleJadwalInputChange}
                 required
               >
-                <option value="Menunggu">Menunggu Diambil</option>
-                <option value="Sedang Dikirim">Sedang Dikirim</option>
-                <option value="Sudah Diambil">Sudah Diambil</option>
-                <option value="Sudah Sampai">Sudah Sampai</option>
+                {!isDeliveryByCourier && (
+                  <option value="Menunggu Diambil">Menunggu Diambil</option>
+                )}
+                {isDeliveryByCourier && (
+                  <>
+                    <option value="Sedang Dikirim">Sedang Dikirim</option>
+                    <option value="Sudah Sampai">Sudah Sampai</option>
+                    <option value="Sudah Diambil">Sudah Diambil</option>
+                  </>
+                )}
               </Form.Select>
             </Form.Group>
             
@@ -455,6 +652,117 @@ const ListTransaksi = () => {
             </div>
           </Form>
         </Modal.Body>
+      </Modal>
+      
+      {/* Modal for transaction details */}
+      <Modal 
+        show={showDetailModal} 
+        onHide={() => setShowDetailModal(false)}
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Detail Transaksi</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {detailLoading ? (
+            <div className="text-center p-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Memuat detail transaksi...</p>
+            </div>
+          ) : detailError ? (
+            <Alert variant="danger">{detailError}</Alert>
+          ) : detailTransaksi ? (
+            <div>
+              <h5>Informasi Transaksi</h5>
+              <Table bordered size="sm" className="mb-4">
+                <tbody>
+                  <tr>
+                    <th width="35%">ID Transaksi</th>
+                    <td>{detailTransaksi.id_transaksi}</td>
+                  </tr>
+                  <tr>
+                    <th>ID Pembeli</th>
+                    <td>{detailTransaksi.id_pembeli}</td>
+                  </tr>
+                  <tr>
+                    <th>Tanggal Transaksi</th>
+                    <td>{formatDate(detailTransaksi.tanggal_transaksi)}</td>
+                  </tr>
+                  <tr>
+                    <th>Total Harga</th>
+                    <td>{formatCurrency(detailTransaksi.total_harga || 0)}</td>
+                  </tr>
+                  <tr>
+                    <th>Status</th>
+                    <td>{getStatusBadge(detailTransaksi.status_transaksi)}</td>
+                  </tr>
+                  <tr>
+                    <th>Metode Pengiriman</th>
+                    <td>{detailTransaksi.metode_pengiriman || "-"}</td>
+                  </tr>
+                </tbody>
+              </Table>
+              
+              <h5>Barang dalam Transaksi</h5>
+              {detailItems.length > 0 ? (
+                <Row>
+                  {detailItems.map((item, index) => (
+                    <Col md={6} key={item.id_detail_transaksi || index} className="mb-3">
+                      <Card>
+                        <Row className="g-0">
+                          <Col md={4} className="d-flex align-items-center justify-content-center" style={{ background: '#f8f9fa' }}>
+                            <div style={{ width: '100%', height: '120px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <img 
+                                src={item.imageUrl} 
+                                alt={`Foto ${item.namaBarang}`}
+                                style={{ 
+                                  maxWidth: '100%', 
+                                  maxHeight: '100%', 
+                                  objectFit: 'contain' 
+                                }}
+                                onError={(e) => {
+                                  console.log(`Image load failed for ${item.id_barang}`);
+                                  e.target.onerror = null;
+                                  // Use inline SVG as fallback for more reliable display
+                                  e.target.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzZjNzU3ZCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItcGFja2FnZSI+PHBhdGggZD0iTTE2LjUgOS40bC05LTVWMjFsOSA1VjkuNHoiPjwvcGF0aD48cG9seWxpbmUgcG9pbnRzPSIxNi41IDMuNSA3LjUgOC41IDE2LjUgMTMuNSI+PC9wb2x5bGluZT48cG9seWxpbmUgcG9pbnRzPSIzLjI3IDYuOTYgMTIgMTIuMDEgMjAuNzMgNi45NiI+PC9wb2x5bGluZT48bGluZSB4MT0iMTIiIHkxPSIyMi4wOCIgeDI9IjEyIiB5Mj0iMTIiPjwvbGluZT48L3N2Zz4=";
+                                }}
+                              />
+                            </div>
+                          </Col>
+                          <Col md={8}>
+                            <Card.Body>
+                              <Card.Title className="h6">{item.namaBarang || `Barang #${item.id_barang}`}</Card.Title>
+                              <Card.Text className="small mb-1">
+                                <strong>ID Barang:</strong> {item.id_barang}
+                              </Card.Text>
+                              <Card.Text className="small mb-1">
+                                <strong>Jumlah:</strong> {item.jumlah || 1}
+                              </Card.Text>
+                              {item.harga_beli && (
+                                <Card.Text className="small mb-1">
+                                  <strong>Harga:</strong> {formatCurrency(item.harga_beli)}
+                                </Card.Text>
+                              )}
+                            </Card.Body>
+                          </Col>
+                        </Row>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              ) : (
+                <p className="text-center text-muted">Tidak ada barang dalam transaksi ini</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-muted">Tidak ada detail yang tersedia</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
+            Tutup
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

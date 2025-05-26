@@ -22,9 +22,29 @@ export const getJadwalById = async (id) => {
 
 export const createJadwal = async (jadwalData) => {
   try {
-    const response = await useAxios.post(API_URL, jadwalData);
+    // Map frontend status values to backend expected values
+    const statusMapping = {
+      "Menunggu Diambil": "Menunggu Diambil",
+      "Sedang Dikirim": "Sedang Dikirim", 
+      "Sudah Sampai": "Sudah Sampai",
+      "Sudah Diambil": "Sudah Diambil"
+    };
+    
+    // Make sure to properly format the data
+    const formattedData = {
+      ...jadwalData,
+      tanggal: jadwalData.tanggal ? jadwalData.tanggal.toString() : "",
+      status_jadwal: jadwalData.status_jadwal 
+        ? (statusMapping[jadwalData.status_jadwal] || jadwalData.status_jadwal)
+        : ""
+    };
+    
+    console.log("Sending jadwal data:", formattedData);
+    
+    const response = await useAxios.post(API_URL, formattedData);
     return response.data;
   } catch (error) {
+    console.error("Error in createJadwal:", error.response?.data || error);
     throw error;
   }
 };

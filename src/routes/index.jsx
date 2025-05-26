@@ -24,6 +24,7 @@ import PenitipanBarangForm from '../components/PegawaiGudangComponents/Penitipan
 import BarangForm from '../components/PegawaiGudangComponents/BarangForm';
 import DetailBarangPage from '../pages/pegawaiGudang/DetailBarangPage';
 import NotaPenitipanPrint from '../components/Nota/NotePenitipan';
+import NotaPenjualanKurir from '../components/Nota/NotaPenjualanKurir';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
 import DaftarBarangPenitip from '../pages/client/DaftarBarangPenitip';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
@@ -62,6 +63,7 @@ const AppRoutes = () => {
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />
         <Route path='/pegawaiGudang/form-barang' element={< BarangForm />} />
         <Route path='/pegawaiGudang/nota-penitipan/print' element={< NotaPenitipanPrint />} />
+        <Route path='/pegawaiGudang/nota-pengiriman/:id_jadwal' element={< NotaPenjualanKurir />} />
       </Routes>
     </Router>
   );

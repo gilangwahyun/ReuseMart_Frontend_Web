@@ -29,7 +29,20 @@ const JadwalList = () => {
 
   const updateStatusJadwal = async (id, newStatus) => {
     try {
-      await useAxios.put(`/jadwal/${id}`, { status_jadwal: newStatus });
+      // First, fetch the current jadwal data
+      const currentJadwal = await useAxios.get(`/jadwal/${id}`);
+      
+      // Keep the original id_pegawai value (which could be null)
+      // Do not modify it or set it to 0
+      
+      // Update only the status while keeping other required fields
+      await useAxios.put(`/jadwal/${id}`, {
+        id_transaksi: currentJadwal.data.id_transaksi,
+        id_pegawai: currentJadwal.data.id_pegawai, // Keep original value
+        tanggal: currentJadwal.data.tanggal,
+        status_jadwal: newStatus
+      });
+      
       fetchJadwal(); // Refresh data after update
     } catch (error) {
       console.error("Error updating status jadwal:", error);
@@ -37,16 +50,22 @@ const JadwalList = () => {
     }
   };
 
+  const handleCetakNota = (jadwalId) => {
+    navigate(`/pegawaiGudang/nota-pengiriman/${jadwalId}`);
+  };
+
   const getStatusBadge = (status) => {
     if (!status) return <Badge bg="secondary">Tidak Ada</Badge>;
 
     switch (status) {
-      case "Menunggu":
-        return <Badge bg="warning">Menunggu</Badge>;
+      case "Menunggu Diambil":
+        return <Badge bg="warning">Menunggu Diambil</Badge>;
       case "Sedang Dikirim":
         return <Badge bg="info">Sedang Dikirim</Badge>;
-      case "Selesai":
-        return <Badge bg="success">Selesai</Badge>;
+      case "Sudah Diambil":
+        return <Badge bg="success">Sudah Diambil</Badge>;
+      case "Sudah Sampai":
+        return <Badge bg="success">Sudah Sampai</Badge>;
       case "Dibatalkan":
         return <Badge bg="danger">Dibatalkan</Badge>;
       default:
@@ -58,6 +77,11 @@ const JadwalList = () => {
     if (!dateString) return "-";
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString("id-ID", options);
+  };
+
+  // Check if it's a courier delivery (has a pegawai assigned)
+  const isCourierDelivery = (item) => {
+    return item && item.pegawai && item.id_pegawai;
   };
 
   if (loading) {
@@ -111,48 +135,43 @@ const JadwalList = () => {
                       <small className="text-muted">{item.pegawai.no_telepon}</small>
                     </>
                   ) : (
-                    "Belum ditentukan"
+                    "Diambil Mandiri"
                   )}
                 </td>
                 <td>{formatDate(item.tanggal)}</td>
                 <td>{getStatusBadge(item.status_jadwal)}</td>
                 <td>
-                  {item.status_jadwal === "Menunggu" && (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="me-2"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Sedang Dikirim")}
-                    >
-                      Mulai Pengiriman
-                    </Button>
-                  )}
+                  {/* Status update buttons */}
                   {item.status_jadwal === "Sedang Dikirim" && (
                     <Button
                       variant="success"
                       size="sm"
-                      className="me-2"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Selesai")}
+                      className="me-2 mb-2"
+                      onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Sampai")}
                     >
-                      Selesai
+                      Tandai Sudah Sampai
                     </Button>
                   )}
-                  {(item.status_jadwal === "Menunggu" || item.status_jadwal === "Sedang Dikirim") && (
+                  {item.status_jadwal === "Menunggu Diambil" && (
                     <Button
-                      variant="danger"
+                      variant="success"
                       size="sm"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Dibatalkan")}
+                      className="me-2 mb-2"
+                      onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Diambil")}
                     >
-                      Batalkan
+                      Tandai Sudah Diambil
                     </Button>
                   )}
-                  {!item.status_jadwal && (
+                  
+                  {/* Print receipt button - only for courier deliveries */}
+                  {isCourierDelivery(item) && (
                     <Button
-                      variant="outline-primary"
+                      variant="info"
                       size="sm"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Menunggu")}
+                      onClick={() => handleCetakNota(item.id_jadwal)}
+                      title="Cetak nota pengiriman"
                     >
-                      Set Status
+                      <i className="bi bi-printer"></i> Cetak Nota
                     </Button>
                   )}
                 </td>
