@@ -3,6 +3,7 @@ import { Table, Button, Badge, Alert, Card, Form, InputGroup } from "react-boots
 import { FaSearch, FaCheck, FaCheckDouble } from "react-icons/fa";
 import axios from "axios";
 import { BASE_URL } from "../../api";
+import { updateBarangStatus } from "../../api/BarangApi";
 
 const RequestPengambilanList = () => {
   const [requests, setRequests] = useState([]);
@@ -78,17 +79,43 @@ const RequestPengambilanList = () => {
   // Handle complete request
   const handleCompleteRequest = async (id) => {
     try {
+      // First get the request to get the barang_id
+      const request = requests.find(req => req.id === id);
+      if (!request || !request.barang || !request.barang.id_barang) {
+        throw new Error("Data barang tidak ditemukan");
+      }
+      
+      const barangId = request.barang.id_barang;
+      
+      // First complete the request
       const response = await axios.post(`${BASE_URL}/api/request-pengambilan/${id}/complete`, {});
       console.log("Complete response:", response.data);
       
-      // Update the local state
-      setRequests(prevRequests => 
-        prevRequests.map(req => 
-          req.id === id ? { ...req, status: "Selesai", tanggal_pengambilan: new Date().toISOString() } : req
-        )
-      );
-      
-      setSuccessMessage(`Request pengambilan ID #${id} berhasil diselesaikan.`);
+      // Then update the barang status to "Sudah Diambil"
+      try {
+        const updateBarangResponse = await updateBarangStatus(barangId, "Sudah Diambil");
+        console.log("Update barang status response:", updateBarangResponse);
+        
+        // Update the local state
+        setRequests(prevRequests => 
+          prevRequests.map(req => 
+            req.id === id ? { 
+              ...req, 
+              status: "Selesai", 
+              tanggal_pengambilan: new Date().toISOString(),
+              barang: {
+                ...req.barang,
+                status_barang: "Sudah Diambil"
+              }
+            } : req
+          )
+        );
+        
+        setSuccessMessage(`Request pengambilan ID #${id} berhasil diselesaikan dan status barang diperbarui menjadi "Sudah Diambil".`);
+      } catch (statusError) {
+        console.error("Error updating barang status:", statusError);
+        setError("Request selesai, tetapi gagal mengubah status barang: " + (statusError.response?.data?.message || statusError.message));
+      }
       
       // Refresh data
       setTimeout(() => {

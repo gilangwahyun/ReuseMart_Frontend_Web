@@ -1,23 +1,21 @@
 import { useState } from "react";
-import { Form, Button, Row, Col } from "react-bootstrap";
+import { Form, Button, Row, Col, Alert } from "react-bootstrap";
 
-
-const RegisterPenitip = () => {
+const RegisterPenitip = ({ onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'Penitip',
+    role: 'Penitip', // Default role is set to "Penitip"
     nama_penitip: '',
     nik: '',
-    nomor_ktp: '',
     no_telepon: '',
     alamat: '',
-    saldo: '',
-    jumlah_poin: '',
+    saldo: '0',
+    jumlah_poin: '0',
     foto_ktp: null,
   });
 
-  const [message, setMessage] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
 
   const handleChange = (e) => {
     if (e.target.name === 'foto_ktp') {
@@ -25,29 +23,52 @@ const RegisterPenitip = () => {
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
     }
+    
+    // Clear validation error when field is edited
+    if (validationErrors[e.target.name]) {
+      setValidationErrors({
+        ...validationErrors,
+        [e.target.name]: null
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.email) errors.email = 'Email harus diisi';
+    if (!formData.password || formData.password.length < 6) 
+      errors.password = 'Password minimal 6 karakter';
+    if (!formData.nama_penitip) errors.nama_penitip = 'Nama harus diisi';
+    if (!formData.nik || formData.nik.length !== 16) 
+      errors.nik = 'NIK harus 16 digit';
+    if (!formData.no_telepon) errors.no_telepon = 'Nomor telepon harus diisi';
+    if (!formData.alamat) errors.alamat = 'Alamat harus diisi';
+    if (!formData.foto_ktp) errors.foto_ktp = 'Foto KTP harus diunggah';
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
+    if (!validateForm()) return;
+    
+    // Create FormData object for file uploads
     const data = new FormData();
+    
+    // Add all form fields to FormData
     for (const key in formData) {
       if (formData[key] !== null) {
         data.append(key, formData[key]);
       }
     }
-
-    try {
-      const res = await axios.post('/api/register-penitip', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setMessage('Registrasi berhasil!');
-      console.log(res.data);
-    } catch (err) {
-      setMessage('Registrasi gagal!');
-      console.error(err.response?.data || err.message);
+    
+    // Use the onSubmit prop to pass the form data to the parent component
+    // This will handle creating both User and Penitip records
+    if (typeof onSubmit === 'function') {
+      onSubmit(data);
     }
   };
 
@@ -59,10 +80,16 @@ const RegisterPenitip = () => {
           <Form.Control
             type="email"
             name="email"
-            value={form.email}
+            value={formData.email}
             onChange={handleChange}
+            isInvalid={!!validationErrors.email}
             required
           />
+          {validationErrors.email && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.email}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 
@@ -72,15 +99,21 @@ const RegisterPenitip = () => {
           <Form.Control
             type="password"
             name="password"
-            value={form.password}
+            value={formData.password}
             onChange={handleChange}
+            isInvalid={!!validationErrors.password}
             required
           />
+          {validationErrors.password && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.password}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 
-      {/* Role bisa hidden jika hanya penitip */}
-      <input type="hidden" name="role" value="penitip" />
+      {/* Hidden field for role - always set to "Penitip" */}
+      <input type="hidden" name="role" value="Penitip" />
 
       <Row className="mb-3">
         <Form.Group as={Col}>
@@ -88,10 +121,16 @@ const RegisterPenitip = () => {
           <Form.Control
             type="text"
             name="nama_penitip"
-            value={form.nama_penitip}
+            value={formData.nama_penitip}
             onChange={handleChange}
+            isInvalid={!!validationErrors.nama_penitip}
             required
           />
+          {validationErrors.nama_penitip && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.nama_penitip}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 
@@ -101,10 +140,16 @@ const RegisterPenitip = () => {
           <Form.Control
             type="text"
             name="nik"
-            value={form.nik}
+            value={formData.nik}
             onChange={handleChange}
+            isInvalid={!!validationErrors.nik}
             required
           />
+          {validationErrors.nik && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.nik}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 
@@ -114,10 +159,16 @@ const RegisterPenitip = () => {
           <Form.Control
             type="text"
             name="no_telepon"
-            value={form.no_telepon}
+            value={formData.no_telepon}
             onChange={handleChange}
+            isInvalid={!!validationErrors.no_telepon}
             required
           />
+          {validationErrors.no_telepon && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.no_telepon}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 
@@ -128,9 +179,15 @@ const RegisterPenitip = () => {
             type="file"
             name="foto_ktp"
             accept="image/*"
-            onChange={handleFileChange}
+            onChange={handleChange}
+            isInvalid={!!validationErrors.foto_ktp}
             required
           />
+          {validationErrors.foto_ktp && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.foto_ktp}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 
@@ -140,32 +197,16 @@ const RegisterPenitip = () => {
           <Form.Control
             type="text"
             name="alamat"
-            value={form.alamat}
+            value={formData.alamat}
             onChange={handleChange}
+            isInvalid={!!validationErrors.alamat}
             required
           />
-        </Form.Group>
-      </Row>
-
-      <Row className="mb-3">
-        <Form.Group as={Col} md={6}>
-          <Form.Label>Saldo</Form.Label>
-          <Form.Control
-            type="number"
-            name="saldo"
-            value={form.saldo}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group as={Col} md={6}>
-          <Form.Label>Jumlah Poin</Form.Label>
-          <Form.Control
-            type="number"
-            name="jumlah_poin"
-            value={form.jumlah_poin}
-            onChange={handleChange}
-          />
+          {validationErrors.alamat && (
+            <Form.Control.Feedback type="invalid">
+              {validationErrors.alamat}
+            </Form.Control.Feedback>
+          )}
         </Form.Group>
       </Row>
 

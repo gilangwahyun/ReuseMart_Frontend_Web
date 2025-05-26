@@ -4,9 +4,15 @@ const API_URL = "/penitip";
 
 export const registerPenitip = async (data) => {
   try {
-    const response = await useAxios.post(API_URL, data);
+    // This endpoint should create both User and Penitip records
+    const response = await useAxios.post("/register-penitip", data, {
+      headers: {
+        'Content-Type': 'multipart/form-data' // Important for file uploads
+      }
+    });
     return response.data;
   } catch (error) {
+    console.error("Registration error:", error);
     throw error;
   }
 };

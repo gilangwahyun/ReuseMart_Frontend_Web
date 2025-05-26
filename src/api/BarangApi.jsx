@@ -111,3 +111,17 @@ export const searchBarangAllField = async (keyword, tanggalAwal, tanggalAkhir) =
     throw error;
   }
 };
+
+export const updateBarangStatus = async (id, status) => {
+  try {
+    console.log(`Updating barang ${id} status to: "${status}"`);
+    const response = await useAxios.put(`${API_URL}/${id}/status`, {
+      status_barang: status,
+    });
+    console.log("Status update response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating barang ${id} status:`, error);
+    throw error;
+  }
+};
