@@ -111,3 +111,13 @@ export const searchBarangAllField = async (keyword, tanggalAwal, tanggalAkhir) =
     throw error;
   }
 };
+
+export const getLaporanStokGudang = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}/laporan/stok-gudang`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching laporan stok gudang:", error);
+    throw error;
+  }
+};

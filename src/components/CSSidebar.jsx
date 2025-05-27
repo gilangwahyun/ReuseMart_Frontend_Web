@@ -2,17 +2,15 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaUserTie,
-  FaBuilding,
   FaTachometerAlt,
   FaBars,
   FaTimes,
   FaSignOutAlt,
-  FaBoxes,
-  FaChartBar,
+  FaGift,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
-const OwnerSidebar = () => {
+const CSSidebar = () => {
   const [isOpen, setIsOpen] = useState(true); // Awalnya terbuka
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,11 +29,8 @@ const OwnerSidebar = () => {
   };
 
   const sidebarItems = [
-    { to: "/DashboardOwner", icon: <FaTachometerAlt />, label: "Dashboard" },
-    { to: "/owner/donasi", icon: <FaUserTie />, label: "Manajerial Donasi" },
-    { to: "/owner/alokasi", icon: <FaBuilding />, label: "Manajerial Alokasi" },
-    { to: "/owner/laporan-stok", icon: <FaBoxes />, label: "Laporan Stok Gudang" },
-    { to: "/owner/laporan-penjualan", icon: <FaChartBar />, label: "Laporan Penjualan" },
+    { to: "/DashboardCS", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { to: "/cs/klaim-merchandise", icon: <FaGift />, label: "Klaim Merchandise" },
   ];
 
   return (
@@ -52,7 +47,7 @@ const OwnerSidebar = () => {
     >
       {/* Header */}
       <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
-        {isOpen && <h5 className="mb-0 text">Admin Panel</h5>}
+        {isOpen && <h5 className="mb-0 text">CS Panel</h5>}
         <button
           className="btn btn-sm btn-light border"
           onClick={toggleSidebar}
@@ -93,4 +88,4 @@ const OwnerSidebar = () => {
   );
 };
 
-export default OwnerSidebar;
+export default CSSidebar;

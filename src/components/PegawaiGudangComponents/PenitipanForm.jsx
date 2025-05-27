@@ -14,10 +14,12 @@ const PenitipanBarangForm = () => {
     tanggal_awal_penitipan: "",
     tanggal_akhir_penitipan: "",
     nama_petugas_qc: "",
+    id_pegawai: "",
   });
 
   const [penitipList, setPenitipList] = useState([]);
   const [qcList, setQcList] = useState([]);
+  const [hunterList, setHunterList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -86,16 +88,26 @@ const PenitipanBarangForm = () => {
           jabatanMap[jab.id_jabatan] = jab.nama_jabatan;
         });
 
-        const filteredPegawai = pegawais.filter(
+        const pegawaiGudangList = pegawais.filter(
           (pegawai) => jabatanMap[pegawai.id_jabatan] === "Pegawai Gudang"
         );
 
-        const formattedQC = filteredPegawai.map((pegawai) => ({
+        const huntersList = pegawais.filter(
+          (pegawai) => jabatanMap[pegawai.id_jabatan] === "Hunter"
+        );
+
+        const formattedQC = pegawaiGudangList.map((pegawai) => ({
           label: `${pegawai.nama_pegawai} (ID: ${pegawai.id_pegawai})`,
           value: `${pegawai.nama_pegawai} (ID: ${pegawai.id_pegawai})`,
         }));
 
+        const formattedHunter = huntersList.map((pegawai) => ({
+          label: `${pegawai.nama_pegawai}`,
+          value: pegawai.id_pegawai,
+        }));
+
         setQcList(formattedQC);
+        setHunterList(formattedHunter);
       } catch (err) {
         console.error("Gagal memuat data:", err);
         setError("Gagal memuat data penitip atau pegawai.");
@@ -127,6 +139,7 @@ const handleSubmit = async (e) => {
       tanggal_awal_penitipan: formatToDateTimeString(formData.tanggal_awal_penitipan),
       tanggal_akhir_penitipan: formatToDateTimeString(formData.tanggal_akhir_penitipan),
       nama_petugas_qc: formData.nama_petugas_qc,
+      id_pegawai: formData.id_pegawai || null,
     };
 
     const response = await createPenitipanBarang(payload);
@@ -276,6 +289,25 @@ const handleBack = async () => {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="col-md-12">
+              <label className="form-label fw-semibold">Hunter (Opsional)</label>
+              <select
+                className="form-control"
+                name="id_pegawai"
+                value={formData.id_pegawai}
+                onChange={handleChange}
+              >
+                <option value="">-- Tidak Ada Hunter --</option>
+                {hunterList.map((hunter) => (
+                  <option key={hunter.value} value={hunter.value}>
+                    {hunter.label}
+                  </option>
+                ))}
+              </select>
+              <div className="form-text text-muted">
+                Pilih Hunter jika barang ini dititipkan dengan bantuan Hunter
+              </div>
             </div>
           </div>
           <div className="d-flex justify-content-end mt-4">

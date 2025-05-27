@@ -19,6 +19,8 @@ import DashboardKeranjang from '../pages/client/DashboardKeranjang';
 import DonasiManagement from "../pages/owner/DonasiManagement";
 import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
+import LaporanStokGudangPage from '../pages/owner/LaporanStokGudangPage';
+import LaporanPenjualanPage from '../pages/owner/LaporanPenjualanPage';
 import PegawaiGudangDashboard from '../pages/pegawaiGudang/PegawaiGudangDashboard';
 import PenitipanManagement from '../pages/pegawaiGudang/PenitipanManagement';
 import PenitipanBarangForm from '../components/PegawaiGudangComponents/PenitipanForm';
@@ -26,6 +28,8 @@ import BarangForm from '../components/PegawaiGudangComponents/BarangForm';
 import DetailBarangPage from '../pages/pegawaiGudang/DetailBarangPage';
 import NotaPenitipanPrint from '../components/Nota/NotePenitipan';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
+import CSDashboard from '../pages/cs/CSDashboard';
+import KlaimMerchandiseManagement from '../pages/cs/KlaimMerchandiseManagement';
 
 const AppRoutes = () => {
   return (  
@@ -50,6 +54,8 @@ const AppRoutes = () => {
         <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
+        <Route path='/owner/laporan-stok' element={< LaporanStokGudangPage />} />
+        <Route path='/owner/laporan-penjualan' element={< LaporanPenjualanPage />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
@@ -57,6 +63,8 @@ const AppRoutes = () => {
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />
         <Route path='/pegawaiGudang/form-barang' element={< BarangForm />} />
         <Route path='/pegawaiGudang/nota-penitipan/print' element={< NotaPenitipanPrint />} />
+        <Route path='/DashboardCS' element={<CSDashboard />} />
+        <Route path='/cs/klaim-merchandise' element={<KlaimMerchandiseManagement />} />
       </Routes>
     </Router>
   );
