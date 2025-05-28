@@ -11,6 +11,9 @@ const DashboardKeranjang = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Calculate subtotal
+  const subtotal = cartItems.reduce((sum, item) => sum + item.barang.harga, 0);
 
   useEffect(() => {
     if (!userId) {
@@ -29,7 +32,6 @@ const DashboardKeranjang = () => {
       console.log('Cart response:', cartResponse);
       
       if (cartResponse && cartResponse.detail_keranjang) {
-        // Langsung gunakan detail_keranjang dari response
         setCartItems(cartResponse.detail_keranjang);
       } else {
         setCartItems([]);
@@ -45,7 +47,6 @@ const DashboardKeranjang = () => {
   const handleRemoveItem = async (detailId) => {
     try {
       await deleteDetailKeranjang(detailId);
-      // Refresh data keranjang setelah menghapus item
       fetchCartData();
     } catch (err) {
       setError('Gagal menghapus barang dari keranjang');
@@ -54,11 +55,10 @@ const DashboardKeranjang = () => {
   };
 
   const handleCheckout = () => {
-    // Navigate to transaction page with cart data
     navigate('/transaksi', { 
       state: { 
         cartItems: cartItems,
-        totalAmount: cartItems.reduce((sum, item) => sum + item.barang.harga, 0)
+        totalAmount: subtotal
       } 
     });
   };
@@ -124,10 +124,8 @@ const DashboardKeranjang = () => {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan="3" className="text-end fw-bold">Total Keseluruhan:</td>
-                <td colSpan="2" className="fw-bold">
-                  Rp {cartItems.reduce((sum, item) => sum + item.barang.harga, 0).toLocaleString()}
-                </td>
+                <td colSpan="3" className="text-end fw-bold">Total:</td>
+                <td colSpan="2" className="fw-bold">Rp {subtotal.toLocaleString()}</td>
               </tr>
             </tfoot>
           </Table>
@@ -136,13 +134,13 @@ const DashboardKeranjang = () => {
             <Col className="d-flex justify-content-end">
               <Button
                 variant="primary"
-                size="med"
+                size="lg"
                 onClick={handleCheckout}
                 className="d-flex align-items-center gap-2"
                 disabled={cartItems.length === 0}
               >
                 <FaShoppingBag />
-                Lanjut ke Pembayaran
+                Lanjut ke Pembayaran (Rp {subtotal.toLocaleString()})
               </Button>
             </Col>
           </Row>

@@ -18,6 +18,9 @@ import OwnerDashboard from "../pages/Owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/Owner/RiwayatAlokasiDonasi';
 import AlamatForm from '../components/AlamatForm';
 import DashboardKeranjang from '../pages/client/DashboardKeranjang';
+import Transaksi from '../pages/client/Transaksi';
+import Pembayaran from '../pages/client/Pembayaran';
+import VerifikasiPembayaranCS from '../pages/admin/VerifikasiPembayaranCS';
 
 const AppRoutes = () => {
   return (  
@@ -32,6 +35,9 @@ const AppRoutes = () => {
         <Route path="/DashboardProfilPembeli" element={<DashboardProfilPembeli/>} />
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
+        <Route path="/transaksi" element={< Transaksi />} />
+        <Route path="/pembayaran" element={< Pembayaran />} />
+        <Route path="/VerifikasiPembayaranCS" element={< VerifikasiPembayaranCS />} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
         <Route path="/DashboardAdmin" element={<AdminDashboard />} />
         <Route path="/admin/pegawai" element={<PegawaiManagement />} />

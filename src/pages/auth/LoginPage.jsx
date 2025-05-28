@@ -45,7 +45,7 @@ export default function LoginPage() {
                 navigate('/DashboardHunter');
                 break;
               case 6:
-                navigate('/DashboardKurir');
+                navigate('/VerifikasiPembayaranCS');
                 break;
               default:
                 navigate('/dashboard-pegawai');
