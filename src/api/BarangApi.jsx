@@ -2,6 +2,16 @@ import useAxios from ".";
 
 const API_URL = "/barang";
 
+export const getAllBarang = async () => {
+  try {
+    const response = await useAxios.get(API_URL);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 export const getAllActiveBarang = async () => {
   try {
     const response = await useAxios.get(`${API_URL}/cari-status?status=Aktif`);

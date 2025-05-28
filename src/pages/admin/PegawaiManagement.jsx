@@ -57,6 +57,7 @@ const PegawaiManagement = () => {
   const handleSubmit = async (formData) => {
     try {
       if (editingPegawai) {
+        if (!window.confirm("Apakah Anda yakin ingin mengupdate data pegawai ini?")) return;
         const pegawaiData = {
           id_user: editingPegawai.id_user,
           id_jabatan: formData.id_jabatan,
@@ -70,7 +71,7 @@ const PegawaiManagement = () => {
 
         fetchPegawai();
 
-        alert("Pegawai berhasil diperbarui!");
+        setSuccess("Pegawai berhasil dihapus.");
       } else {
         const registerResponse = await Register({
           email: formData.email,
@@ -108,6 +109,7 @@ const PegawaiManagement = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus pegawai ini?")) return;
     try {
       await deletePegawai(id);
       setSuccess("Pegawai berhasil dihapus.");
