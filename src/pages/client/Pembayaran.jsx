@@ -6,6 +6,7 @@ import { updateStatusTransaksi } from '../../api/TransaksiApi';
 import { createPembayaran } from '../../api/PembayaranApi';
 import { updateBarang } from '../../api/BarangApi';
 import { getDetailTransaksiByTransaksi } from '../../api/DetailTransaksiApi';
+import { deleteDetailKeranjangByUser } from '../../api/DetailKeranjangApi';
 
 const Pembayaran = () => {
   const location = useLocation();
@@ -115,6 +116,11 @@ const Pembayaran = () => {
           updateBarang(id, { status_barang: 'Habis' })
         );
         await Promise.all(updatePromises);
+      }
+
+      // Delete cart items for the user
+      if (location.state?.userId) {
+        await deleteDetailKeranjangByUser(location.state.userId);
       }
 
       // Tampilkan notifikasi sukses

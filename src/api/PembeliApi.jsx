@@ -28,3 +28,12 @@ export const getPembeliByUserId = async (id_user) => {
     throw error;
   }
 };
+
+export const updatePembeli = async (id, pembeliData) => {
+  try {
+    const response = await useAxios.put(`${API_URL}/${id}`, pembeliData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

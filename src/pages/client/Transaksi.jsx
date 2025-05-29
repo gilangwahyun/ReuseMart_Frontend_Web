@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Table, Row, Col, Form } from 'react-bootstrap';
 import { FaArrowLeft, FaCreditCard, FaPlus, FaTruck } from 'react-icons/fa';
 import { getAlamatByPembeliId } from '../../api/AlamatApi';
-import { getPembeliByUserId } from '../../api/PembeliApi';
+import { getPembeliByUserId, updatePembeli } from '../../api/PembeliApi';
 import { createTransaksi, createDetailTransaksi } from '../../api/TransaksiApi';
 
 const Transaksi = () => {
@@ -16,14 +16,21 @@ const Transaksi = () => {
   const [loading, setLoading] = useState(false);
   const [alamatList, setAlamatList] = useState([]);
   const [pembeli, setPembeli] = useState(null);
+  const [discount, setDiscount] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
 
   // Get user data from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id_user || user?.id;
 
-  // Constants for shipping calculation
+  // Constants for shipping and points calculation
   const FREE_SHIPPING_THRESHOLD = 1500000; // 1.5 juta
   const SHIPPING_COST = 100000; // 100 ribu
+  const POINTS_TO_RUPIAH = 10000; // 1 poin = Rp 10.000
+  const BONUS_THRESHOLD = 500000; // Threshold untuk bonus poin
+  const BONUS_PERCENTAGE = 0.2; // 20% bonus poin
+  const MAX_POINTS_DISCOUNT = 0.2; // Maksimal diskon 20% dari total belanja
 
   useEffect(() => {
     // Get cart data from navigation state
@@ -71,24 +78,69 @@ const Transaksi = () => {
     }
   };
 
-  // Calculate subtotal
-  const subtotal = cartItems.reduce((sum, item) => sum + item.barang.harga, 0);
+  // Calculate points discount
+  const calculatePointsDiscount = () => {
+    if (!usePoints || !pembeli || !pembeli.jumlah_poin || pointsToUse <= 0) return 0;
+    
+    // Hitung diskon berdasarkan poin yang digunakan
+    const pointsDiscount = pointsToUse * POINTS_TO_RUPIAH;
+    
+    // Batasi diskon maksimal 20% dari subtotal
+    const maxDiscountAmount = subtotal * MAX_POINTS_DISCOUNT;
+    
+    return Math.min(pointsDiscount, maxDiscountAmount);
+  };
+
+  // Tambahkan fungsi untuk membulatkan harga
+  const roundPrice = (price) => {
+    // Bulatkan ke ribuan terdekat
+    const remainder = price % 10000;
+    if (remainder === 0) return price; // Sudah bulat ke ribuan
+    
+    if (remainder < 5000) {
+      // Bulatkan ke bawah ke ribuan terdekat
+      return Math.floor(price / 10000) * 10000;
+    } else {
+      // Bulatkan ke atas ke ribuan terdekat
+      return Math.ceil(price / 10000) * 10000;
+    }
+  };
+
+  // Update perhitungan subtotal dengan pembulatan
+  const subtotal = cartItems.reduce((sum, item) => {
+    const roundedPrice = roundPrice(item.barang.harga);
+    return sum + roundedPrice;
+  }, 0);
   
   // Calculate shipping cost
   const calculateShippingCost = () => {
     if (paymentMethod === 'Diambil Mandiri') return 0;
-    // Untuk Diambil oleh Kurir, hitung ongkir berdasarkan total belanja
     return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
   };
   
-  // Calculate final total
+  // Calculate final total with discount
   const shippingCost = calculateShippingCost();
-  const finalTotal = subtotal + shippingCost;
+  const pointsDiscount = calculatePointsDiscount();
+  const finalTotal = subtotal + shippingCost - pointsDiscount;
 
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
+    
+    // Validasi data yang diperlukan
+    if (!userId) {
+      alert('Sesi anda telah berakhir. Silakan login kembali.');
+      navigate('/login');
+      return;
+    }
+
     if (paymentMethod === 'Dikirim oleh Kurir' && !selectedAlamatId) {
       alert('Mohon pilih alamat pengiriman');
+      return;
+    }
+
+    if (!cartItems || cartItems.length === 0) {
+      alert('Keranjang belanja kosong');
+      navigate('/keranjang');
       return;
     }
 
@@ -109,6 +161,7 @@ const Transaksi = () => {
         id_pembeli: pembeliData.id_pembeli,
         id_alamat: paymentMethod === 'Dikirim oleh Kurir' ? parseInt(selectedAlamatId) : null,
         total_harga: finalTotal,
+        diskon: pointsDiscount,
         status_transaksi: 'Belum Dibayar',
         metode_pengiriman: paymentMethod,
         tanggal_transaksi: new Date().toISOString().split('T')[0]
@@ -131,12 +184,34 @@ const Transaksi = () => {
 
       await Promise.all(detailPromises);
       
+      // Update poin pembeli jika menggunakan poin
+      if (usePoints && pointsToUse > 0) {
+        // Hitung poin dasar (1 poin per Rp 10.000)
+        let poinDidapat = Math.floor(subtotal / POINTS_TO_RUPIAH);
+        
+        // Tambah bonus 20% jika total transaksi > Rp 500.000
+        if (subtotal > BONUS_THRESHOLD) {
+          const bonusPoin = Math.floor(poinDidapat * BONUS_PERCENTAGE);
+          poinDidapat += bonusPoin;
+        }
+        
+        // Update data pembeli dengan jumlah poin baru
+        const updatedPembeliData = {
+          ...pembeliData,
+          jumlah_poin: pembeliData.jumlah_poin - pointsToUse + poinDidapat
+        };
+
+        await updatePembeli(pembeliData.id_pembeli, updatedPembeliData);
+      }
+
       alert('Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
       navigate('/pembayaran', { 
         state: { 
           transaksiId: transaksiResponse.data.id_transaksi,
           totalAmount: finalTotal,
-          barangIds: barangIds  // Pass barang IDs to payment page
+          barangIds: barangIds,
+          userId: userId,
+          startTime: new Date().toISOString()
         }
       });
     } catch (error) {
@@ -186,7 +261,7 @@ const Transaksi = () => {
                     <tr key={item.id_detail_keranjang}>
                       <td>{index + 1}</td>
                       <td>{item.barang.nama_barang}</td>
-                      <td>Rp {item.barang.harga.toLocaleString()}</td>
+                      <td>Rp {roundPrice(item.barang.harga).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -195,6 +270,16 @@ const Transaksi = () => {
                     <td colSpan="3" className="text-end">Subtotal:</td>
                     <td>Rp {subtotal.toLocaleString()}</td>
                   </tr>
+                  {pointsDiscount > 0 && (
+                    <tr>
+                      <td colSpan="3" className="text-end text-success">
+                        Diskon Poin ({pembeli?.jumlah_poin || 0} poin):
+                      </td>
+                      <td className="text-success">
+                        - Rp {pointsDiscount.toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
                   {paymentMethod === 'Dikirim oleh Kurir' && (
                     <>
                       <tr>
@@ -214,18 +299,12 @@ const Transaksi = () => {
                           )}
                         </td>
                       </tr>
-                      <tr>
-                        <td colSpan="3" className="text-end fw-bold">Total Keseluruhan:</td>
-                        <td className="fw-bold">Rp {finalTotal.toLocaleString()}</td>
-                      </tr>
                     </>
                   )}
-                  {paymentMethod === 'Diambil Mandiri' && (
-                    <tr>
-                      <td colSpan="3" className="text-end fw-bold">Total Keseluruhan:</td>
-                      <td className="fw-bold">Rp {subtotal.toLocaleString()}</td>
-                    </tr>
-                  )}
+                  <tr>
+                    <td colSpan="3" className="text-end fw-bold">Total Keseluruhan:</td>
+                    <td className="fw-bold">Rp {finalTotal.toLocaleString()}</td>
+                  </tr>
                 </tfoot>
               </Table>
             </Card.Body>
@@ -301,6 +380,47 @@ const Transaksi = () => {
                       </span>
                     )}
                   </div>
+                )}
+
+                {/* Add Points Usage Section */}
+                {pembeli && pembeli.jumlah_poin > 0 && (
+                  <Form.Group className="mb-3">
+                    <Form.Check 
+                      type="checkbox"
+                      label="Gunakan poin untuk diskon"
+                      checked={usePoints}
+                      onChange={(e) => {
+                        setUsePoints(e.target.checked);
+                        if (!e.target.checked) setPointsToUse(0);
+                      }}
+                    />
+                    {usePoints && (
+                      <>
+                        <Form.Label className="mt-2">Jumlah Poin yang Digunakan</Form.Label>
+                        <Form.Control
+                          type="number"
+                          min="0"
+                          max={pembeli.jumlah_poin}
+                          value={pointsToUse}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            setPointsToUse(Math.min(value, pembeli.jumlah_poin));
+                          }}
+                          placeholder={`Maksimal ${pembeli.jumlah_poin} poin`}
+                        />
+                        <Form.Text className="text-muted">
+                          <div>Poin tersedia: {pembeli.jumlah_poin} poin</div>
+                          <div>1 poin = Rp {POINTS_TO_RUPIAH.toLocaleString()}</div>
+                          <div>Maksimal diskon 20% dari total belanja</div>
+                          {pointsToUse > 0 && (
+                            <div className="text-success">
+                              Diskon yang didapat: Rp {(pointsToUse * POINTS_TO_RUPIAH).toLocaleString()}
+                            </div>
+                          )}
+                        </Form.Text>
+                      </>
+                    )}
+                  </Form.Group>
                 )}
 
                 <div className="d-grid gap-2">
