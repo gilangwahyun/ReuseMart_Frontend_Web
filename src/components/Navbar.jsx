@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaShoppingCart, FaUser } from "react-icons/fa";
+import { FaShoppingCart, FaUser, FaInfoCircle, FaEnvelope, FaPhone } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "/assets/logoReuseMart.png";
 import { getAllKategori } from "../api/KategoriBarangApi";
@@ -105,161 +105,184 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   };
 
   return (
-    <nav
-      className="navbar navbar-expand-lg navbar-light shadow-sm sticky-top"
-      style={{ backgroundColor: "white", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
-    >
-      <div className="container position-relative">
-        <Link className="navbar-brand d-flex align-items-center" to="/">
-          <img src={logo} alt="Logo" height="40" className="me-2" />
-        </Link>
-
-        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span className="navbar-toggler-icon"></span>
-        </button>
-
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto align-items-center w-100">
-            <li className="nav-item me-3">
-              <button
-                className="btn nav-link text-dark"
-                id="kategoriToggle"
-                onClick={togglePanel}
-                style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
-              >
-                Kategori
-              </button>
-            </li>
-
-            <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }} onSubmit={handleSearchClick}>
-              <input
-                className="form-control me-2"
-                type="search"
-                placeholder="Cari produk..."
-                aria-label="Search"
-                value={searchKeyword}
-                onChange={handleSearchChange}
-              />
-              <button className="btn btn-outline-dark" type="submit">
-                Cari
-              </button>
-            </form>
-
-            <li className="nav-item me-3">
-              <button
-                className="btn nav-link text-dark"
-                onClick={handleCartClick}
-                style={{ background: "none", border: "none", padding: 0 }}
-              >
-                <FaShoppingCart size={18} />
-              </button>
-            </li>
-
-            <li className="nav-item position-relative">
-              <button
-                id="profileToggle"
-                className="btn nav-link text-dark"
-                onClick={toggleProfileMenu}
-                style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
-              >
-                <FaUser size={18} />
-              </button>
-
-              {showProfileMenu && (
-                <div
-                  id="profileMenu"
-                  className="position-absolute end-0 mt-2 bg-white shadow rounded border"
-                  style={{ zIndex: 1000, minWidth: "150px" }}
-                >
-                  {isLoggedIn ? (
-                    <>
-                      <button
-                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
-                        onClick={handleProfileClick}
-                      >
-                        Profile
-                      </button>
-                      <button
-                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
-                        onClick={() => {
-                          localStorage.removeItem("token");
-                          localStorage.removeItem("user");
-                          setIsLoggedIn(false);
-                          setShowProfileMenu(false);
-                          window.dispatchEvent(new Event("logout"));
-                          navigate("/");
-                        }}
-                      >
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        to="/LoginPage"
-                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        to="/RegisterPembeli"
-                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        Register
-                      </Link>
-                    </>
-                  )}
-                </div>
-              )}
-            </li>
-          </ul>
+    <>
+      {/* Top Bar untuk Informasi Umum */}
+      <div className="bg-success bg-opacity-10 py-2 border-bottom">
+        <div className="container d-flex justify-content-between align-items-center">
+          <div className="d-flex gap-3">
+            <a href="mailto:info@reusemart.com" className="text-muted small text-decoration-none d-flex align-items-center">
+              <FaEnvelope className="me-1" size={12} />
+              <span>info@reusemart.com</span>
+            </a>
+            <a href="tel:+6281234567890" className="text-muted small text-decoration-none d-flex align-items-center">
+              <FaPhone className="me-1" size={12} />
+              <span>+62 812 3456 7890</span>
+            </a>
+          </div>
+          <Link to="/informasi" className="text-success small text-decoration-none d-flex align-items-center">
+            <FaInfoCircle className="me-1" size={14} />
+            <span>Informasi Umum</span>
+          </Link>
         </div>
+      </div>
+      
+      {/* Navbar Utama */}
+      <nav
+        className="navbar navbar-expand-lg navbar-light shadow-sm sticky-top"
+        style={{ backgroundColor: "white", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+      >
+        <div className="container position-relative">
+          <Link className="navbar-brand d-flex align-items-center" to="/">
+            <img src={logo} alt="Logo" height="40" className="me-2" />
+          </Link>
 
-        {/* Panel kategori */}
-        <div
-          id="kategoriPanel"
-          className="position-absolute top-100 start-0 w-100 bg-white shadow-sm border-top"
-          style={{
-            zIndex: 1000,
-            display: showPanel ? "block" : "none",
-            padding: "1rem",
-          }}
-        >
-          <div className="container py-3">
-            <div className="row">
-              {loading ? (
-                <p>Memuat kategori...</p>
-              ) : (
-                <>
-                  <div className="col-6 col-md-3 mb-2">
-                    <button
-                      onClick={() => handleKategoriClick('Semua')}
-                      className="btn btn-link text-start w-100 text-decoration-none text-success fw-bold"
-                      style={{ padding: "8px 15px", color: "#198754" }}
-                    >
-                      Semua Kategori
-                    </button>
+          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav ms-auto align-items-center w-100">
+              <li className="nav-item me-3">
+                <button
+                  className="btn nav-link text-dark"
+                  id="kategoriToggle"
+                  onClick={togglePanel}
+                  style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
+                >
+                  Kategori
+                </button>
+              </li>
+
+              <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }} onSubmit={handleSearchClick}>
+                <input
+                  className="form-control me-2"
+                  type="search"
+                  placeholder="Cari produk..."
+                  aria-label="Search"
+                  value={searchKeyword}
+                  onChange={handleSearchChange}
+                />
+                <button className="btn btn-outline-dark" type="submit">
+                  Cari
+                </button>
+              </form>
+
+              <li className="nav-item me-3">
+                <button
+                  className="btn nav-link text-dark"
+                  onClick={handleCartClick}
+                  style={{ background: "none", border: "none", padding: 0 }}
+                >
+                  <FaShoppingCart size={18} />
+                </button>
+              </li>
+
+              <li className="nav-item position-relative">
+                <button
+                  id="profileToggle"
+                  className="btn nav-link text-dark"
+                  onClick={toggleProfileMenu}
+                  style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
+                >
+                  <FaUser size={18} />
+                </button>
+
+                {showProfileMenu && (
+                  <div
+                    id="profileMenu"
+                    className="position-absolute end-0 mt-2 bg-white shadow rounded border"
+                    style={{ zIndex: 1000, minWidth: "150px" }}
+                  >
+                    {isLoggedIn ? (
+                      <>
+                        <button
+                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                          onClick={handleProfileClick}
+                        >
+                          Profile
+                        </button>
+                        <button
+                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                          onClick={() => {
+                            localStorage.removeItem("token");
+                            localStorage.removeItem("user");
+                            setIsLoggedIn(false);
+                            setShowProfileMenu(false);
+                            window.dispatchEvent(new Event("logout"));
+                            navigate("/");
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/LoginPage"
+                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          Login
+                        </Link>
+                        <Link
+                          to="/RegisterPembeli"
+                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          Register
+                        </Link>
+                      </>
+                    )}
                   </div>
-                  {kategoriList.map((kategori) => (
-                    <div className="col-6 col-md-3 mb-2" key={kategori.id_kategori}>
+                )}
+              </li>
+            </ul>
+          </div>
+
+          {/* Panel kategori */}
+          <div
+            id="kategoriPanel"
+            className="position-absolute top-100 start-0 w-100 bg-white shadow-sm border-top"
+            style={{
+              zIndex: 1000,
+              display: showPanel ? "block" : "none",
+              padding: "1rem",
+            }}
+          >
+            <div className="container py-3">
+              <div className="row">
+                {loading ? (
+                  <p>Memuat kategori...</p>
+                ) : (
+                  <>
+                    <div className="col-6 col-md-3 mb-2">
                       <button
-                        onClick={() => handleKategoriClick(kategori.nama_kategori)}
-                        className="btn btn-link text-start w-100 text-decoration-none text-dark"
-                        style={{ padding: "8px 15px", color: "#333" }}
+                        onClick={() => handleKategoriClick('Semua')}
+                        className="btn btn-link text-start w-100 text-decoration-none text-success fw-bold"
+                        style={{ padding: "8px 15px", color: "#198754" }}
                       >
-                        {kategori.nama_kategori}
+                        Semua Kategori
                       </button>
                     </div>
-                  ))}
-                </>
-              )}
+                    {kategoriList.map((kategori) => (
+                      <div className="col-6 col-md-3 mb-2" key={kategori.id_kategori}>
+                        <button
+                          onClick={() => handleKategoriClick(kategori.nama_kategori)}
+                          className="btn btn-link text-start w-100 text-decoration-none text-dark"
+                          style={{ padding: "8px 15px", color: "#333" }}
+                        >
+                          {kategori.nama_kategori}
+                        </button>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 

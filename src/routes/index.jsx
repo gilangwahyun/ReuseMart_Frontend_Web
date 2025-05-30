@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Home from '../pages/client/Home';
 import DetailBarang from "../pages/client/DetailBarang";
+import InformasiUmum from "../pages/client/InformasiUmum";
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPembeli from '../pages/auth/RegisterPembeli';
 import RegisterOrganisasi from '../pages/auth/RegisterOrganisasi';
@@ -21,6 +22,7 @@ import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
 import LaporanStokGudangPage from '../pages/owner/LaporanStokGudangPage';
 import LaporanPenjualanPage from '../pages/owner/LaporanPenjualanPage';
+import LaporanKomisiPage from '../pages/owner/LaporanKomisiPage';
 import PegawaiGudangDashboard from '../pages/pegawaiGudang/PegawaiGudangDashboard';
 import PenitipanManagement from '../pages/pegawaiGudang/PenitipanManagement';
 import PenitipanBarangForm from '../components/PegawaiGudangComponents/PenitipanForm';
@@ -38,6 +40,7 @@ const AppRoutes = () => {
         <Route path="/kategori/:namaKategori" element={<Home />} />
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<DetailBarang />} />
+        <Route path="/informasi" element={<InformasiUmum />} />
         <Route path="/LoginPage" element={<LoginPage/>} />
         <Route path="/RegisterPembeli" element={<RegisterPembeli/>} />
         <Route path="/RegisterOrganisasi" element={<RegisterOrganisasi/>} />
@@ -56,6 +59,7 @@ const AppRoutes = () => {
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
         <Route path='/owner/laporan-stok' element={< LaporanStokGudangPage />} />
         <Route path='/owner/laporan-penjualan' element={< LaporanPenjualanPage />} />
+        <Route path='/owner/laporan-komisi' element={< LaporanKomisiPage />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />

@@ -6,7 +6,8 @@ const LaporanStokGudangPage = () => {
   return (
     <div className="d-flex">
       <OwnerSidebar />
-      <div className="flex-grow-1">
+      <div className="p-4 w-100">
+        <h2 className="mb-4">Laporan Stok Gudang</h2>
         <LaporanStokGudang />
       </div>
     </div>

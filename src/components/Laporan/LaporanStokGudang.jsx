@@ -273,7 +273,7 @@ const LaporanStokGudang = () => {
                           className="btn btn-success ms-2"
                         >
                           {({ loading }) =>
-                            loading ? "Menyiapkan PDF..." : "Download Laporan PDF"
+                            loading ? "Menyiapkan PDF..." : "Unduh PDF"
                           }
                         </PDFDownloadLink>
                       )}
