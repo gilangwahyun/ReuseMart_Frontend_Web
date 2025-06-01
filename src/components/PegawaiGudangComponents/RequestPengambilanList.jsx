@@ -64,7 +64,7 @@ const RequestPengambilanList = () => {
         )
       );
       
-      setSuccessMessage(`Request pengambilan ID #${id} berhasil disetujui.`);
+      setSuccessMessage(`Request pengambilan berhasil disetujui.`);
       
       // Refresh data
       setTimeout(() => {
@@ -111,7 +111,7 @@ const RequestPengambilanList = () => {
           )
         );
         
-        setSuccessMessage(`Request pengambilan ID #${id} berhasil diselesaikan dan status barang diperbarui menjadi "Sudah Diambil".`);
+        setSuccessMessage(`Request pengambilan berhasil diselesaikan dan status barang diperbarui menjadi "Sudah Diambil".`);
       } catch (statusError) {
         console.error("Error updating barang status:", statusError);
         setError("Request selesai, tetapi gagal mengubah status barang: " + (statusError.response?.data?.message || statusError.message));
@@ -131,7 +131,6 @@ const RequestPengambilanList = () => {
   const filteredRequests = requests.filter(request => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      (request.id && request.id.toString().includes(searchLower)) ||
       (request.penitip?.nama_penitip && request.penitip.nama_penitip.toLowerCase().includes(searchLower)) ||
       (request.barang?.nama_barang && request.barang.nama_barang.toLowerCase().includes(searchLower)) ||
       (request.status && request.status.toLowerCase().includes(searchLower))
@@ -201,7 +200,7 @@ const RequestPengambilanList = () => {
                 </InputGroup.Text>
                 <Form.Control
                   type="text"
-                  placeholder="Cari berdasarkan ID, nama penitip, atau barang..."
+                  placeholder="Cari berdasarkan nama penitip atau barang..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -239,7 +238,7 @@ const RequestPengambilanList = () => {
           <Table responsive striped hover className="mb-0">
             <thead className="bg-light">
               <tr>
-                <th>ID</th>
+                <th>No.</th>
                 <th>Penitip</th>
                 <th>Barang</th>
                 <th>Tanggal Request</th>
@@ -249,9 +248,9 @@ const RequestPengambilanList = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredRequests.map((request) => (
+              {filteredRequests.map((request, index) => (
                 <tr key={request.id}>
-                  <td>#{request.id}</td>
+                  <td>{index + 1}</td>
                   <td>
                     {request.penitip?.nama_penitip || "-"}
                     {request.penitip?.no_telepon && (

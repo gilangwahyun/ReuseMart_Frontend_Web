@@ -214,14 +214,20 @@ const ListTransaksi = () => {
 
   // Function to get minimum allowed delivery date based on time
   const getMinDeliveryDate = () => {
-    // If past 4 PM, minimum date is tomorrow
+    const today = new Date();
+    // If past 4 PM, minimum date is tomorrow for couriers
     if (isPastDeadline()) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       return tomorrow.toISOString().split('T')[0]; // Format as YYYY-MM-DD
     }
     // Otherwise, today is fine
-    return new Date().toISOString().split('T')[0];
+    return today.toISOString().split('T')[0];
+  };
+
+  // For any delivery method, don't allow dates in the past
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
   };
 
   // Function to open jadwal modal
@@ -241,7 +247,7 @@ const ListTransaksi = () => {
     // Show a warning if it's past 4 PM and courier delivery
     if (isCourierDelivery && isPastDeadline()) {
       setTimeError(
-        "Pengiriman kurir setelah jam 16:00 (4 sore) akan dijadwalkan untuk besok."
+        "Pengiriman kurir setelah jam 16:00 akan dijadwalkan untuk besok."
       );
     }
     
@@ -430,8 +436,7 @@ const ListTransaksi = () => {
         <Table striped bordered hover responsive>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>ID Pembeli</th>
+              <th>No.</th>
               <th>Total Harga</th>
               <th>Status</th>
               <th>Tanggal</th>
@@ -441,10 +446,9 @@ const ListTransaksi = () => {
           </thead>
           <tbody>
             {transaksi.length > 0 ? (
-              transaksi.map((item) => {
+              transaksi.map((item, index) => {
                 // Using the correct field names based on the Transaksi model
                 const id = item.id_transaksi;
-                const idPembeli = item.id_pembeli;
                 const totalHarga = item.total_harga;
                 const status = item.status_transaksi;
                 const tanggal = item.tanggal_transaksi;
@@ -452,8 +456,7 @@ const ListTransaksi = () => {
                 
                 return (
                   <tr key={id}>
-                    <td>{id}</td>
-                    <td>{idPembeli}</td>
+                    <td>{index + 1}</td>
                     <td>Rp {totalHarga ? totalHarga.toLocaleString() : '0'}</td>
                     <td>{getStatusBadge(status)}</td>
                     <td>{formatDate(tanggal)}</td>
@@ -555,10 +558,10 @@ const ListTransaksi = () => {
           
           <Form onSubmit={handleSubmitJadwal}>
             <Form.Group className="mb-3">
-              <Form.Label>ID Transaksi</Form.Label>
+              <Form.Label>Transaksi</Form.Label>
               <Form.Control
                 type="text"
-                value={selectedTransaksi?.id_transaksi || ''}
+                value="Detail Transaksi"
                 disabled
               />
             </Form.Group>
@@ -598,12 +601,19 @@ const ListTransaksi = () => {
                 name="tanggal"
                 value={jadwalData.tanggal}
                 onChange={handleJadwalInputChange}
-                min={isDeliveryByCourier && isPastDeadline() ? getMinDeliveryDate() : undefined}
+                min={isDeliveryByCourier && isPastDeadline() 
+                    ? getMinDeliveryDate() // For courier: today or tomorrow based on time
+                    : getTodayDate()} // For mandiri: at least today
                 required
               />
               {isDeliveryByCourier && isPastDeadline() && (
                 <Form.Text className="text-muted">
                   Pengiriman kurir setelah jam 16:00 hanya bisa dijadwalkan untuk besok atau lebih lambat.
+                </Form.Text>
+              )}
+              {!isDeliveryByCourier && (
+                <Form.Text className="text-muted">
+                  Pengambilan mandiri hanya bisa dijadwalkan hari ini atau lebih lambat.
                 </Form.Text>
               )}
             </Form.Group>
@@ -622,8 +632,6 @@ const ListTransaksi = () => {
                 {isDeliveryByCourier && (
                   <>
                     <option value="Sedang Dikirim">Sedang Dikirim</option>
-                    <option value="Sudah Sampai">Sudah Sampai</option>
-                    <option value="Sudah Diambil">Sudah Diambil</option>
                   </>
                 )}
               </Form.Select>
@@ -679,10 +687,6 @@ const ListTransaksi = () => {
                   <tr>
                     <th width="35%">ID Transaksi</th>
                     <td>{detailTransaksi.id_transaksi}</td>
-                  </tr>
-                  <tr>
-                    <th>ID Pembeli</th>
-                    <td>{detailTransaksi.id_pembeli}</td>
                   </tr>
                   <tr>
                     <th>Tanggal Transaksi</th>

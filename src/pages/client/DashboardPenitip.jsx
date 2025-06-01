@@ -40,6 +40,18 @@ const DashboardPenitip = () => {
     setShowDetailModal(true);
   };
 
+  // Function to check if any barang in the penitipan has been taken
+  const hasAnyBarangTaken = (penitipanItem) => {
+    if (!penitipanItem || !penitipanItem.barang || !Array.isArray(penitipanItem.barang)) {
+      return false;
+    }
+    
+    return penitipanItem.barang.some(barang => {
+      const status = barang.status_barang?.toLowerCase() || '';
+      return status.includes('diambil');
+    });
+  };
+
   // Function to handle perpanjang (extend) button click
   const handlePerpanjangClick = (item) => {
     // Calculate the new end date (30 days after current end date)
@@ -393,20 +405,6 @@ const DashboardPenitip = () => {
 
     return (
       <Row className="mb-4">
-        <Col md={4} className="mb-3 mb-md-0">
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                <FaCalendarAlt className="text-primary" size={24} />
-              </div>
-              <div>
-                <h6 className="mb-0 text-muted">Total Penitipan</h6>
-                <h3 className="mb-0">{totalPenitipan}</h3>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4} className="mb-3 mb-md-0">
           <Card className="border-0 shadow-sm h-100">
             <Card.Body className="d-flex align-items-center">
               <div className="rounded-circle bg-success bg-opacity-10 p-3 me-3">
@@ -418,32 +416,47 @@ const DashboardPenitip = () => {
               </div>
             </Card.Body>
           </Card>
-        </Col>
-        <Col md={4} className="mb-3 mb-md-0">
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-                <FaCalendarAlt className="text-info" size={24} />
-              </div>
-              <div>
-                <h6 className="mb-0 text-muted">Total Barang</h6>
-                <h3 className="mb-0">{barangCount}</h3>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
       </Row>
     );
   };
 
   // Helper function to get status badge for penitipan
-  const getPenitipanStatusBadge = (tanggalAkhir) => {
+  const getPenitipanStatusBadge = (tanggalAkhir, penitipanItem) => {
     const now = new Date();
     const endDate = new Date(tanggalAkhir);
     
+    // Check if end date is in the future (penitipan is still active date-wise)
     if (endDate >= now) {
+      // If penitipan has items and we have the full penitipan object
+      if (penitipanItem && penitipanItem.barang && Array.isArray(penitipanItem.barang)) {
+        // Log status values for debugging
+        console.log("Checking barang statuses for penitipan:", penitipanItem.id_penitipan);
+        penitipanItem.barang.forEach(barang => {
+          console.log(`Barang ${barang.id_barang} status: '${barang.status_barang}'`);
+        });
+        
+        // Check if all items are not active or have been processed (diambil, terjual, donasi)
+        const allItemsProcessed = penitipanItem.barang.every(barang => {
+          const status = barang.status_barang || '';
+          const statusLower = status.toLowerCase();
+          
+          // Use the existing isStatusTidakAktif function for consistency
+          return isStatusTidakAktif(status) || 
+                 statusLower.includes('diambil') ||
+                 statusLower.includes('terjual') ||
+                 statusLower.includes('donasi');
+        });
+        
+        // If all items are processed and there are items, mark as "Selesai" even though date is still active
+        if (allItemsProcessed && penitipanItem.barang.length > 0) {
+          return <Badge bg="secondary">Selesai</Badge>;
+        }
+      }
+      
+      // Default active status when date is in the future
       return <Badge bg="success">Aktif</Badge>;
     } else {
+      // End date is in the past
       return <Badge bg="secondary">Selesai</Badge>;
     }
   };
@@ -483,7 +496,7 @@ const DashboardPenitip = () => {
     } else if (statusLower.includes('donasi')) {
       return <Badge bg="primary">Donasi</Badge>;
     } else if (isStatusTidakAktif(statusBarang)) {
-      return <Badge bg="secondary">Tidak Aktif</Badge>;
+      return <Badge bg="secondary">Non Aktif</Badge>;
     } else {
       return <Badge bg="secondary">{statusBarang}</Badge>;
     }
@@ -562,15 +575,8 @@ const DashboardPenitip = () => {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
-                    <h2 className="mb-0">Dashboard Penitip</h2>
+                    <h2 className="mb-0 text-success">Dashboard Penitip</h2>
                     {user && <p className="text-muted mb-0">{user.nama || ''}</p>}
-                    
-                    {/* Debug user data info */}
-                    <div className="text-muted small mt-2">
-                      <div>User ID: {user?.id_user || 'Not found'}</div>
-                      <div>Penitip ID: {user?.id_penitip || 'Not found'}</div>
-                      <div>Email: {user?.email || 'Not found'}</div>
-                    </div>
                   </div>
                 </div>
               </Card.Body>
@@ -593,25 +599,7 @@ const DashboardPenitip = () => {
               <>
                 {/* Debug Info */}
                 {debug && <Alert variant="info" className="mb-3">Debug info: {debug}</Alert>}
-                
-                {/* Search Bar */}
-                <Card className="border-0 shadow-sm mb-4">
-                  <Card.Body>
-                    <h5 className="mb-3">Cari Penitipan</h5>
-                    <InputGroup>
-                      <InputGroup.Text>
-                        <FaSearch />
-                      </InputGroup.Text>
-                      <Form.Control
-                        type="text"
-                        placeholder="Cari berdasarkan ID atau tanggal..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                      />
-                    </InputGroup>
-                  </Card.Body>
-                </Card>
-                
+
                 {/* Success Message */}
                 {successMessage && (
                   <Alert variant="success" className="mb-4" dismissible onClose={() => setSuccessMessage('')}>
@@ -621,7 +609,7 @@ const DashboardPenitip = () => {
                 
                 {/* Data Table */}
                 <Card className="border-0 shadow-sm">
-                  <Card.Header className="bg-primary text-white py-3">
+                  <Card.Header className="bg-success text-white py-3">
                     <h5 className="mb-0">Daftar Penitipan Barang</h5>
                   </Card.Header>
                   <Card.Body>
@@ -629,7 +617,6 @@ const DashboardPenitip = () => {
                       <Table responsive striped hover className="mb-0">
                         <thead>
                           <tr>
-                            <th>ID Penitipan</th>
                             <th>Tanggal Mulai</th>
                             <th>Tanggal Berakhir</th>
                             <th>Status</th>
@@ -647,14 +634,13 @@ const DashboardPenitip = () => {
                             
                             return (
                               <tr key={item.id_penitipan}>
-                                <td>{item.id_penitipan}</td>
                                 <td>{formatDate(item.tanggal_awal_penitipan)}</td>
                                 <td>{formatDate(item.tanggal_akhir_penitipan)}</td>
-                                <td>{getPenitipanStatusBadge(item.tanggal_akhir_penitipan)}</td>
+                                <td>{getPenitipanStatusBadge(item.tanggal_akhir_penitipan, item)}</td>
                                 <td>{barangCount}</td>
                                 <td className="d-flex">
                                   <Button 
-                                    variant="outline-primary" 
+                                    variant="outline-success" 
                                     size="sm"
                                     className="me-2"
                                     onClick={() => handleViewDetails(item)}
@@ -662,9 +648,9 @@ const DashboardPenitip = () => {
                                     <FaEye className="me-1" /> Detail
                                   </Button>
                                   
-                                  {isActive && (
+                                  {isActive && !hasAnyBarangTaken(item) && (
                                     <Button 
-                                      variant="outline-success" 
+                                      variant="success" 
                                       size="sm"
                                       onClick={() => handlePerpanjangClick(item)}
                                     >
@@ -700,20 +686,16 @@ const DashboardPenitip = () => {
           size="lg"
           centered
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Detail Penitipan #{selectedPenitipan?.id_penitipan}</Modal.Title>
+          <Modal.Header closeButton className="bg-success text-white">
+            <Modal.Title>Detail Penitipan</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {selectedPenitipan && (
               <>
                 <div className="mb-4">
-                  <h6 className="text-primary mb-3">Informasi Penitipan</h6>
+                  <h6 className="text-success mb-3">Informasi Penitipan</h6>
                   <Table bordered>
                     <tbody>
-                      <tr>
-                        <td className="bg-light" width="40%">ID Penitipan</td>
-                        <td>{selectedPenitipan.id_penitipan}</td>
-                      </tr>
                       <tr>
                         <td className="bg-light">Tanggal Mulai</td>
                         <td>{formatDate(selectedPenitipan.tanggal_awal_penitipan)}</td>
@@ -728,17 +710,17 @@ const DashboardPenitip = () => {
                       </tr>
                       <tr>
                         <td className="bg-light">Status</td>
-                        <td>{getPenitipanStatusBadge(selectedPenitipan.tanggal_akhir_penitipan)}</td>
+                        <td>{getPenitipanStatusBadge(selectedPenitipan.tanggal_akhir_penitipan, selectedPenitipan)}</td>
                       </tr>
                     </tbody>
                   </Table>
                 </div>
                 
-                <h6 className="text-primary mb-3">Daftar Barang ({selectedPenitipan.barang?.length || 0})</h6>
+                <h6 className="text-success mb-3">Daftar Barang ({selectedPenitipan.barang?.length || 0})</h6>
                 
                 {selectedPenitipan.barang && selectedPenitipan.barang.length > 0 ? (
                   <Table responsive striped bordered hover>
-                    <thead className="bg-light">
+                    <thead className="bg-success text-white">
                       <tr>
                         <th>Nama Barang</th>
                         <th>Kategori</th>
@@ -762,25 +744,7 @@ const DashboardPenitip = () => {
                             <td>{barang.kategori?.nama_kategori || 'Tidak ada kategori'}</td>
                             <td>Rp {barang.harga?.toLocaleString() || '0'}</td>
                             <td>{getBarangStatusBadge(barang.status_barang)}</td>
-                            <td>
-                              {showRequestButton && !isAlreadyRequested && (
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  onClick={() => handleRequestPengambilan(barang)}
-                                >
-                                  <FaHandPaper className="me-1" /> Request Ambil
-                                </Button>
-                              )}
-                              {showRequestButton && isAlreadyRequested && (
-                                <Button
-                                  variant="outline-success"
-                                  size="sm"
-                                  disabled
-                                >
-                                  <FaCheck className="me-1" /> Sudah Direquest
-                                </Button>
-                              )}
+                            <td>                           
                             </td>
                           </tr>
                         );
@@ -804,13 +768,13 @@ const DashboardPenitip = () => {
 
         {/* Extension Modal */}
         <Modal show={showExtendModal} onHide={() => setShowExtendModal(false)}>
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="bg-success text-white">
             <Modal.Title>Perpanjang Masa Penitipan</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {selectedPenitipan && (
               <div>
-                <p>Anda akan memperpanjang masa penitipan untuk ID: <strong>{selectedPenitipan.id_penitipan}</strong></p>
+                <p>Anda akan memperpanjang masa penitipan</p>
                 
                 <div className="mt-4">
                   <h6>Masa Penitipan Saat Ini:</h6>
@@ -832,13 +796,13 @@ const DashboardPenitip = () => {
                   <h6>Masa Penitipan Setelah Perpanjangan:</h6>
                   <div className="row mb-3">
                     <div className="col-5">Tanggal Mulai Baru:</div>
-                    <div className="col-7 fw-bold text-primary">
+                    <div className="col-7 fw-bold text-success">
                       {formatDate(selectedPenitipan.tanggal_akhir_penitipan)}
                     </div>
                   </div>
                   <div className="row mb-3">
                     <div className="col-5">Tanggal Akhir Baru:</div>
-                    <div className="col-7 fw-bold text-primary">
+                    <div className="col-7 fw-bold text-success">
                       {extendedEndDate && formatDate(extendedEndDate)}
                     </div>
                   </div>
@@ -848,7 +812,7 @@ const DashboardPenitip = () => {
                   </div>
                 </div>
                 
-                <Alert variant="info" className="mt-3">
+                <Alert variant="success" className="mt-3">
                   <small>
                     Perpanjangan akan menambah 30 hari pada masa penitipan Anda.
                     Masa awal penitipan baru akan dimulai dari tanggal akhir penitipan saat ini.
@@ -861,7 +825,7 @@ const DashboardPenitip = () => {
             <Button variant="secondary" onClick={() => setShowExtendModal(false)}>
               Batal
             </Button>
-            <Button variant="primary" onClick={handleExtendSubmit} disabled={extendLoading}>
+            <Button variant="success" onClick={handleExtendSubmit} disabled={extendLoading}>
               {extendLoading ? 'Memproses...' : 'Perpanjang'}
             </Button>
           </Modal.Footer>
@@ -869,7 +833,7 @@ const DashboardPenitip = () => {
 
         {/* Request Pengambilan Modal */}
         <Modal show={showRequestPengambilanModal} onHide={() => setShowRequestPengambilanModal(false)}>
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="bg-success text-white">
             <Modal.Title>Request Pengambilan Barang</Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -908,7 +872,7 @@ const DashboardPenitip = () => {
                   </Form.Text>
                 </Form.Group>
                 
-                <Alert variant="info" className="mt-3">
+                <Alert variant="success" className="mt-3">
                   <small>
                     Request pengambilan akan diproses oleh admin. Anda akan dihubungi 
                     jika request telah disetujui dan dapat mengambil barang pada tanggal yang ditentukan.
@@ -922,7 +886,7 @@ const DashboardPenitip = () => {
               Batal
             </Button>
             <Button 
-              variant="primary" 
+              variant="success" 
               onClick={handleSubmitRequestPengambilan} 
               disabled={requestPengambilanLoading || !tanggalPengambilan}
             >

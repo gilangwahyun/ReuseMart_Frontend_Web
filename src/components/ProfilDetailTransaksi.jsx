@@ -13,6 +13,12 @@ export default function ProfilDetailTransaksi({ transaction, onBack }) {
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [selectedRating, setSelectedRating] = useState(0);
 
+  // Function to safely format currency
+  const formatCurrency = (amount) => {
+    if (amount == null || isNaN(amount)) return "0";
+    return amount.toLocaleString();
+  };
+
   useEffect(() => {
     setItems([]);
     setError("");
@@ -92,19 +98,15 @@ export default function ProfilDetailTransaksi({ transaction, onBack }) {
           {transaction ? (
             <>
               <Row className="mb-2">
-                <Col sm={4}><strong>ID Transaksi:</strong></Col>
-                <Col>{transaction.id_transaksi}</Col>
-              </Row>
-              <Row className="mb-2">
                 <Col sm={4}><strong>Tanggal:</strong></Col>
                 <Col>{transaction.tanggal_transaksi}</Col>
               </Row>
               <Row className="mb-3">
                 <Col sm={4}><strong>Total:</strong></Col>
-                <Col>Rp {transaction.total_harga.toLocaleString()}</Col>
+                <Col>Rp {formatCurrency(transaction.total_harga)}</Col>
               </Row>
 
-              <h6 className="mt-3 mb-2">Item Transaksi #{transaction.id_transaksi}:</h6>
+              <h6 className="mt-3 mb-2">Item Transaksi:</h6>
 
               {loading ? (
                 <div className="text-center my-3">
@@ -123,7 +125,7 @@ export default function ProfilDetailTransaksi({ transaction, onBack }) {
                     <ListGroup.Item key={idx} className="d-flex flex-column">
                       <div className="d-flex justify-content-between align-items-center">
                         <div>{item.barang?.nama_barang || "Item tidak diketahui"}</div>
-                        <div className="text-end">Rp {item.harga_item.toLocaleString()}</div>
+                        <div className="text-end">Rp {formatCurrency(item.harga_item)}</div>
                       </div>
                       <div>{renderStarsDisplay(item.barang)}</div>
                     </ListGroup.Item>
