@@ -32,6 +32,7 @@ import NotaPenitipanPrint from '../components/Nota/NotePenitipan';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
 import CSDashboard from '../pages/cs/CSDashboard';
 import KlaimMerchandiseManagement from '../pages/cs/KlaimMerchandiseManagement';
+import RiwayatTransaksiPenitipan from '../pages/pegawaiGudang/RiwayatTransaksiPenitipan';
 
 const AppRoutes = () => {
   return (  
@@ -63,6 +64,7 @@ const AppRoutes = () => {
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
+        <Route path='/pegawaiGudang/riwayat-transaksi' element={< RiwayatTransaksiPenitipan />} />
         <Route path="/barang/:id" element={<DetailBarangPage />} />
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />
         <Route path='/pegawaiGudang/form-barang' element={< BarangForm />} />

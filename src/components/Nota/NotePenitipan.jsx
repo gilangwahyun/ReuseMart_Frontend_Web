@@ -82,6 +82,7 @@ const NotaPenitipanDocument = ({ nota }) => (
 const NotaPenitipanPrint = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id_nota_penitipan");
+  const from = searchParams.get("from");
   const [nota, setNota] = useState(null);
 
   const navigate = useNavigate();
@@ -97,6 +98,15 @@ const NotaPenitipanPrint = () => {
     };
     fetchData();
   }, [id]);
+
+  const handleNavigateBack = () => {
+    // Tentukan halaman kembali berdasarkan parameter 'from'
+    if (from === "riwayat-transaksi") {
+      navigate("/pegawaiGudang/riwayat-transaksi");
+    } else {
+      navigate("/pegawaiGudang/penitipan");
+    }
+  };
 
   if (!nota) {
     return <p>Memuat data nota...</p>;
@@ -174,7 +184,7 @@ const NotaPenitipanPrint = () => {
 
         <button
           className="btn btn-outline-secondary"
-          onClick={() => navigate("/pegawaiGudang/penitipan")}
+          onClick={handleNavigateBack}
         >
           Kembali
         </button>

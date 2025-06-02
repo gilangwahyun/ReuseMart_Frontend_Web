@@ -2,6 +2,16 @@ import useAxios from ".";
 
 const API_URL = "/notaPenitipanBarang";
 
+// Ambil semua data nota penitipan barang
+export const getAllNotaPenitipanBarang = async () => {
+  try {
+    const response = await useAxios.get(API_URL);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Buat data nota detail penitipan baru
 export const createNotaPenitipanBarang = async (notaPenitipanData) => {
   try {
@@ -21,6 +31,16 @@ export const getNotaPenitipanBarangById = async (id) => {
   }
 };
 
+// Mendapatkan nota berdasarkan id_penitipan
+export const getNotaByPenitipanId = async (id_penitipan) => {
+  try {
+    const response = await useAxios.get(`${API_URL}?id_penitipan=${id_penitipan}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const printNotaPenitipanBarang = async (notaId) => {
   try {
     const response = await useAxios.get(`${API_URL}/${notaId}/cetak`, {
@@ -29,6 +49,21 @@ export const printNotaPenitipanBarang = async (notaId) => {
     const file = new Blob([response.data], { type: 'application/pdf' });
     const fileURL = URL.createObjectURL(file);
     window.open(fileURL, "_blank");
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Mencetak nota berdasarkan id_penitipan
+export const printNotaByPenitipanId = async (id_penitipan) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/cetak/${id_penitipan}`, {
+      responseType: 'blob',
+    });
+    const file = new Blob([response.data], { type: 'application/pdf' });
+    const fileURL = URL.createObjectURL(file);
+    window.open(fileURL, "_blank");
+    return fileURL;
   } catch (error) {
     throw error;
   }
