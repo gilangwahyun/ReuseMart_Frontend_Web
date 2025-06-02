@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  FaUserTie,
-  FaBuilding,
+  FaUserCircle,
+  FaBoxOpen,
   FaTachometerAlt,
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaExchangeAlt,
+  FaHandPaper
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
-const OwnerSidebar = () => {
-  const [isOpen, setIsOpen] = useState(true); // Awalnya terbuka
+const PenitipSidebar = () => {
+  const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,9 +31,8 @@ const OwnerSidebar = () => {
   };
 
   const sidebarItems = [
-    { to: "/DashboardOwner", icon: <FaTachometerAlt />, label: "Dashboard" },
-    { to: "/owner/donasi", icon: <FaUserTie />, label: "Manajerial Donasi" },
-    { to: "/owner/alokasi", icon: <FaBuilding />, label: "Manajerial Alokasi" },
+    { to: "/DashboardPenitip", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { to: "/DashboardPenitip/daftar-barang", icon: <FaBoxOpen />, label: "Daftar Barang" },
   ];
 
   return (
@@ -48,7 +49,7 @@ const OwnerSidebar = () => {
     >
       {/* Header */}
       <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
-        {isOpen && <h5 className="mb-0 text">Admin Panel</h5>}
+        {isOpen && <h5 className="mb-0 text">Penitip Panel</h5>}
         <button
           className="btn btn-sm btn-light border"
           onClick={toggleSidebar}
@@ -57,29 +58,31 @@ const OwnerSidebar = () => {
         </button>
       </div>
 
-      {/* Navigation */}
-      <ul className="nav flex-column p-2 flex-grow-1">
-        {sidebarItems.map(({ to, icon, label }) => (
-          <li className="nav-item" key={to}>
-            <Link
-              to={to}
-              className={`nav-link d-flex align-items-center py-2 px-3 rounded ${
-                location.pathname === to ? "bg-success text-white" : "text-dark"
-              }`}
-              style={{ transition: "0.2s" }}
-            >
-              {icon}
-              {isOpen && <span className="ms-2">{label}</span>}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* Menu Items */}
+      <div className="flex-grow-1 overflow-auto">
+        <ul className="nav flex-column mt-2">
+          {sidebarItems.map((item, index) => (
+            <li key={index} className="nav-item">
+              <Link
+                to={item.to}
+                className={`nav-link d-flex align-items-center py-3 px-3 ${
+                  location.pathname === item.to ? "active text-primary" : "text-secondary"
+                }`}
+              >
+                <span className="fs-5 me-3">{item.icon}</span>
+                {isOpen && <span>{item.label}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      {/* Logout */}
-      <div className="p-2 border-top">
+      {/* Footer - Logout */}
+      <div className="p-3 border-top">
         <button
-          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center"
           onClick={handleLogout}
+          className="btn btn-outline-danger d-flex align-items-center"
+          style={{ width: isOpen ? "100%" : "auto" }}
         >
           <FaSignOutAlt />
           {isOpen && <span className="ms-2">Logout</span>}
@@ -89,4 +92,4 @@ const OwnerSidebar = () => {
   );
 };
 
-export default OwnerSidebar;
+export default PenitipSidebar;

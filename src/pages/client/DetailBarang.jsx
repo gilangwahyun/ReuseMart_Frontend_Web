@@ -8,7 +8,10 @@ import { getDiskusiByBarang } from "../../api/DiskusiApi"; // Import the new API
 import { createDiskusi } from "../../api/DiskusiApi"; // Import the new API function
 import { getKeranjangByPembeli, getKeranjangById, getKeranjangByIdUser } from "../../api/KeranjangApi";
 import { createDetailKeranjang } from "../../api/DetailKeranjangApi";
+import { getByIdBarang } from "../../api/PenitipanBarangApi";
+import { getRated } from "../../api/PenitipApi";
 import { toast } from "react-toastify";
+import { FaStar } from "react-icons/fa";
 
 const DetailBarang = () => {
   const { id } = useParams();
@@ -16,6 +19,9 @@ const DetailBarang = () => {
   const [barang, setBarang] = useState(null);
   const [fotoBarang, setFotoBarang] = useState([]);
   const [diskusi, setDiskusi] = useState([]); // State for diskusi
+  const [penitipan, setPenitipan] = useState(null);
+  const [rataRataRating, setRataRataRating] = useState(null);
+  const [jumlahRating, setJumlahRating] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newDiskusi, setNewDiskusi] = useState(""); // Add state for new comment
@@ -53,6 +59,22 @@ const DetailBarang = () => {
         // Fetch diskusi related to the barang
         const diskusiResult = await getDiskusiByBarang(id);
         setDiskusi(diskusiResult);
+
+        // Fetch penitipan by id barang
+        const penitipanResult = await getByIdBarang(id);
+        console.log('penitipanResult:', penitipanResult);
+
+        if (penitipanResult && penitipanResult.penitip) {
+          setPenitipan(penitipanResult);
+
+          // Ambil langsung dari hasil respons, bukan dari state
+          const ratingResult = await getRated(penitipanResult.penitip.id_penitip);
+          console.log('ratingResult:', ratingResult);
+          setRataRataRating(ratingResult.rata_rata_rating);
+          setJumlahRating(ratingResult.jumlah_barang_terjual_dan_terrating);
+        } else {
+          setPenitipan(null);
+        }
       } catch (err) {
         setError("Gagal memuat detail barang");
         console.error(err);
@@ -219,7 +241,29 @@ const DetailBarang = () => {
               <p>{barang.deskripsi}</p>
               <p>Berat: {barang.berat} gram</p>
               <p>Masa Garansi: {barang.masa_garansi || "Tidak ada garansi"}</p>
+              <div className="border-top border-bottom py-3 mt-4">
+                <div className="d-flex flex-column">
+                  <strong style={{ fontSize: '1.1rem' }}>
+                    {penitipan?.penitip.nama_penitip}
+                  </strong>
 
+                  {rataRataRating !== undefined && rataRataRating !== null && (
+                    <div className="d-flex align-items-center mt-1" style={{ fontSize: '0.95rem' }}>
+                      <FaStar style={{ 
+                        color: '#fff', 
+                        stroke: '#000', 
+                        strokeWidth: 20, 
+                        fontSize: '1rem',
+                        marginRight: '6px' 
+                      }} />
+                      <span className="me-2">{rataRataRating.toFixed(1)}</span>
+                      <span className="text-muted" style={{ fontSize: '0.9rem' }}>
+                        ({jumlahRating})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
               <button 
                 className="btn btn-success mt-3" 
                 onClick={handleAddToCart}

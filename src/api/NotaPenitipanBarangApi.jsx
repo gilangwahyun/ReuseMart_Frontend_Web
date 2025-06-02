@@ -33,3 +33,12 @@ export const printNotaPenitipanBarang = async (notaId) => {
     throw error;
   }
 };
+
+export const deleteNotaPenitipanBarang = async (id) => {
+  try {
+    const response = await useAxios.delete(`${API_URL}/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

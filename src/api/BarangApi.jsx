@@ -87,3 +87,41 @@ export const searchBarangByName = async (nama_barang) => {
     throw error;
   }
 };
+
+export const updateBarangRating = async (id, barangData) => {
+  try {
+    const response = await useAxios.put(`${API_URL}/${id}/rating`, barangData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const searchBarangAllField = async (keyword, tanggalAwal, tanggalAkhir) => {
+  try {
+    const params = {};
+    if (keyword) params.keyword = keyword;
+    if (tanggalAwal) params.tanggal_awal = tanggalAwal;
+    if (tanggalAkhir) params.tanggal_akhir = tanggalAkhir;
+    const response = await useAxios.get(`${API_URL}/advanced/all-search`, {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateBarangStatus = async (id, status) => {
+  try {
+    console.log(`Updating barang ${id} status to: "${status}"`);
+    const response = await useAxios.put(`${API_URL}/${id}/status`, {
+      status_barang: status,
+    });
+    console.log("Status update response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating barang ${id} status:`, error);
+    throw error;
+  }
+};
