@@ -100,7 +100,7 @@ const Pembayaran = () => {
       const formData = new FormData();
       formData.append('id_transaksi', transaksiId);
       formData.append('harga_barang', totalAmount);
-      formData.append('tanggal_pembayaran', new Date().toISOString().split('T')[0]);
+      formData.append('tanggal_pembayaran', new Date().toISOString().replace('T', ' ').substring(0, 19)); // Format: 'YYYY-MM-DD HH:MM:SS'
       formData.append('bukti_transfer', buktiTransfer);
       formData.append('status_verifikasi', 'Belum Diverifikasi');
 
