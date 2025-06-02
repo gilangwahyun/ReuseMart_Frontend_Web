@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
+import { BsBoxSeam } from "react-icons/bs"; 
+
 import {
   getAllActiveBarang,
   searchBarangByName,
@@ -11,6 +13,7 @@ import {
 
 const Home = () => {
   const [barangList, setBarangList] = useState([]);
+  const [userName, setUserName] = useState("");
   const [filteredBarang, setFilteredBarang] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,14 +22,25 @@ const Home = () => {
   const [searchError, setSearchError] = useState("");
   const navigate = useNavigate();
 
+  // Cek apakah user sudah login dengan melihat token di localStorage
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+
   useEffect(() => {
     const fetchBarang = async () => {
       try {
         const response = await getAllActiveBarang();
-        setBarangList(response.data);
-        setFilteredBarang(response.data);
+
+        if (Array.isArray(response.data) && response.data.length === 0) {
+          // Data kosong, set state tetap tanpa error
+          setBarangList([]);
+          setFilteredBarang([]);
+          // Optional: bisa set pesan kosong kalau mau tampilkan di UI
+        } else {
+          setBarangList(response.data);
+          setFilteredBarang(response.data);
+        }
       } catch (err) {
-        setError("Gagal memuat data barang.");
+        alert("Gagal memuat data barang."); // Ini hanya untuk error fetch, bukan data kosong
       } finally {
         setLoading(false);
       }
@@ -49,6 +63,26 @@ const Home = () => {
   //     setLoading(false);
   //   }
   // };
+
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  const userData = localStorage.getItem("user");
+  
+  if (token) {
+    setIsLoggedIn(true); // Jika kamu ingin tracking state ini juga
+  }
+
+  if (userData) {
+    try {
+      const user = JSON.parse(userData);
+      if (user.nama) {
+        setUserName(user.nama);
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+  }
+}, []);
 
   const handleSearch = async (searchKeyword) => {
     setSearchLoading(true);
@@ -82,10 +116,31 @@ const Home = () => {
     }
   };
 
+  useEffect(() => {
+    const handleLogoutEvent = () => {
+      setUserName("");
+      setIsLoggedIn(false);
+    };
+
+    window.addEventListener("logout", handleLogoutEvent);
+
+    return () => {
+      window.removeEventListener("logout", handleLogoutEvent);
+    };
+  }, []);
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navbar onSearch={handleSearch} />
 
+      {isLoggedIn && userName && (
+        <div className="container mt-3">
+          <p className="m-0">
+            Selamat Datang,{" "}
+            <span className="fw-bold fs-5">{userName}</span>!
+          </p>
+        </div>
+      )}
       {/* CTA Banner */}
       <div className="container mt-4">
         <div
@@ -97,9 +152,14 @@ const Home = () => {
             <button onClick={scrollToProducts} className="btn btn-light me-3">
               Lihat Produk
             </button>
-            <button onClick={() => navigate("/LoginPage")} className="btn btn-outline-light">
-              Masuk
-            </button>
+            {!isLoggedIn && (
+              <button
+                onClick={() => navigate("/LoginPage")}
+                className="btn btn-outline-light"
+              >
+                Masuk
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -136,7 +196,12 @@ const Home = () => {
               </div>
             ))
           ) : (
-            !loading && <p className="text-muted">Tidak ada produk ditemukan.</p>
+            !loading && (
+              <div className="text-center text-muted my-5">
+                <BsBoxSeam size={80} className="mb-3" />
+                <p>Tidak ada produk ditemukan.</p>
+              </div>
+            )
           )}
         </div>
       </main>

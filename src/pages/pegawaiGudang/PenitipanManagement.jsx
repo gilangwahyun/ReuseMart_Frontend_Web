@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllBarang, searchBarangByName } from "../../api/BarangApi";
+import { getAllBarang, searchBarangAllField } from "../../api/BarangApi";
 import PenitipanBarangTable from "../../components/PegawaiGudangComponents/PenitipanBarangTable";
 import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
 
@@ -9,6 +9,9 @@ const PenitipanManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [tanggalAwal, setTanggalAwal] = useState("");
+  const [tanggalAkhir, setTanggalAkhir] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -20,8 +23,14 @@ const PenitipanManagement = () => {
       const dataBarang = response || [];
       setBarangData(dataBarang);
     } catch (err) {
-      setError("Gagal memuat data barang.");
-      console.error(err);
+      let errorMsg = "Gagal memuat data barang.";
+      if (err.response) {
+        errorMsg += ` [${err.response.status}] ${JSON.stringify(err.response.data)}`;
+      } else if (err.message) {
+        errorMsg += ` (${err.message})`;
+      }
+      setError(errorMsg);
+      console.error("Fetch Barang Error:", err);
     } finally {
       setLoading(false);
     }
@@ -35,32 +44,53 @@ const PenitipanManagement = () => {
     navigate(`/pegawaiGudang/form-penitipan`);
   };
 
-  const handleSearch = async (e) => {
-    const keyword = e.target.value;
-    setSearchTerm(keyword);
-    setLoading(true);
+  const handleReset = async () => {
+    setSearchTerm("");
+    setTanggalAwal("");
+    setTanggalAkhir("");
     setError(null);
+    setSearchLoading(true);
+    await fetchBarang();
+    setSearchLoading(false);
+  };
 
+  const handleCari = async (e) => {
+    e && e.preventDefault();
+    setSearchLoading(true);
+    setError(null);
     try {
-      if (keyword.trim() === "") {
-        fetchBarang();
+      if (!searchTerm.trim() && !tanggalAwal && !tanggalAkhir) {
+        await fetchBarang();
+        setSearchLoading(false);
+        return;
+      }
+      const result = await searchBarangAllField(searchTerm, tanggalAwal, tanggalAkhir);
+      if (!result || result.length === 0) {
+        setBarangData([]);
+        setError("Barang tidak ditemukan.");
       } else {
-        const result = await searchBarangByName(keyword);
-        console.log(result);
-        setBarangData(result.data || []);
+        setBarangData(result);
+        setError(null);
       }
     } catch (err) {
-      setError("Gagal melakukan pencarian.");
-      console.error(err);
+      let errorMsg = "Gagal melakukan pencarian.";
+      if (err.response) {
+        errorMsg += ` [${err.response.status}] ${JSON.stringify(err.response.data)}`;
+      } else if (err.message) {
+        errorMsg += ` (${err.message})`;
+      }
+      setBarangData([]);
+      setError(errorMsg);
+      console.error("Search Error:", err);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
 
   return (
-    <div className="container-fluid mt-4">
-      <div className="d-flex">
-        <PegawaiGudangSideBar />
+    <div className="d-flex">
+      <PegawaiGudangSideBar />
+      <div className="p-4 w-100">
         <div className="flex-grow-1 ms-3">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="mb-0">Manajemen Penitipan Barang</h2>
@@ -69,15 +99,72 @@ const PenitipanManagement = () => {
             </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="mb-3">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Cari nama barang..."
-              value={searchTerm}
-              onChange={handleSearch}
-            />
+          {/* Card Pencarian */}
+          <div className="card mb-4 shadow-sm">
+            <form className="card-body" onSubmit={handleCari}>
+              <div className="row g-3 align-items-end">
+                <div className="col-md-4">
+                  <label htmlFor="searchTerm" className="form-label fw-semibold">
+                    Pencarian Umum (Nama/Kategori/Status/DSB)
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="searchTerm"
+                    name="searchTerm"
+                    placeholder="Cari nama barang..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label htmlFor="tanggalAwal" className="form-label fw-semibold">
+                    Filter Tanggal Awal Penitipan
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="tanggalAwal"
+                    name="tanggalAwal"
+                    value={tanggalAwal}
+                    onChange={e => setTanggalAwal(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label htmlFor="tanggalAkhir" className="form-label fw-semibold">
+                    Filter Tanggal Akhir Penitipan
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="tanggalAkhir"
+                    name="tanggalAkhir"
+                    value={tanggalAkhir}
+                    onChange={e => setTanggalAkhir(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-2 d-flex gap-2">
+                  <button
+                    type="submit"
+                    className="btn btn-success w-100 d-flex align-items-center justify-content-center"
+                    disabled={searchLoading}
+                  >
+                    {searchLoading && (
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    )}
+                    Cari
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary w-100"
+                    onClick={handleReset}
+                    disabled={searchLoading}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
 
           {/* Loading Spinner */}

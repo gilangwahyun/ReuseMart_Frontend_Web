@@ -11,10 +11,15 @@ const ProductCard = ({ product }) => {
         const fotos = await getFotoBarangByIdBarang(product.id_barang);
         
         if (fotos && fotos.length > 0) {
-          // Pilih foto pertama dengan id_foto_barang terkecil
-          console.log("Foto yang diterima:", fotos);
-          const sortedFotos = fotos.sort((a, b) => a.id_foto_barang - b.id_foto_barang);
-          setThumbnailFoto(sortedFotos[0]);
+          // Pilih foto dengan is_thumbnail === true
+          const thumbnail = fotos.find(f => f.is_thumbnail);
+          if (thumbnail) {
+            setThumbnailFoto(thumbnail);
+          } else {
+            // Fallback ke foto pertama (id_foto_barang terkecil)
+            const sortedFotos = fotos.sort((a, b) => a.id_foto_barang - b.id_foto_barang);
+            setThumbnailFoto(sortedFotos[0]);
+          }
         }
       } catch (error) {
         console.error("Error fetching foto barang:", error);
