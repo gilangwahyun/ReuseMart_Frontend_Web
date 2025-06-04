@@ -685,10 +685,6 @@ const ListTransaksi = () => {
               <Table bordered size="sm" className="mb-4">
                 <tbody>
                   <tr>
-                    <th width="35%">ID Transaksi</th>
-                    <td>{detailTransaksi.id_transaksi}</td>
-                  </tr>
-                  <tr>
                     <th>Tanggal Transaksi</th>
                     <td>{formatDate(detailTransaksi.tanggal_transaksi)}</td>
                   </tr>
@@ -735,10 +731,7 @@ const ListTransaksi = () => {
                           </Col>
                           <Col md={8}>
                             <Card.Body>
-                              <Card.Title className="h6">{item.namaBarang || `Barang #${item.id_barang}`}</Card.Title>
-                              <Card.Text className="small mb-1">
-                                <strong>ID Barang:</strong> {item.id_barang}
-                              </Card.Text>
+                              <Card.Title className="h6">{item.namaBarang || 'Barang'}</Card.Title>
                               <Card.Text className="small mb-1">
                                 <strong>Jumlah:</strong> {item.jumlah || 1}
                               </Card.Text>

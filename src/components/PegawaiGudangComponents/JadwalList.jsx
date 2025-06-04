@@ -7,6 +7,12 @@ import { createBatchKomisiPerusahaan } from "../../api/KomisiPerusahaanApi";
 import { createBatchKomisiPenitip } from "../../api/KomisiPenitipApi";
 import { updatePembeliPoints } from "../../api/PembeliApi";
 import { getDetailTransaksiByTransaksi, getPenitipanPegawaiByTransaksi, getPenitipanPenitipByTransaksi } from "../../api/DetailTransaksiApi";
+import { 
+  generateUniqueInvoiceNumber, 
+  createNotaPenjualanBarang, 
+  getNotaPenjualanByTransaksiId 
+} from "../../api/NotaPenjualanBarangApi";
+import { createBatchNotaDetailPenjualan } from "../../api/NotaDetailPenjualanApi";
 
 const JadwalList = () => {
   const [jadwal, setJadwal] = useState([]);
@@ -347,30 +353,96 @@ const JadwalList = () => {
         
         if (transaction && transaction.data) {
           try {
+            // Get transaction details to calculate the correct points
+            const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaction.data.id_transaksi}`);
+            const detailTransaksiData = detailTransaksiResponse.data;
+            
+            // Get complete item details for accurate pricing
+            const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
+              try {
+                const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
+                const barang = barangResponse.data;
+                
+                return {
+                  ...item,
+                  harga: item.harga_beli || barang?.harga || 0
+                };
+              } catch (error) {
+                console.error(`Error fetching barang ${item.id_barang} details:`, error);
+                return {
+                  ...item,
+                  harga: item.harga_beli || 0
+                };
+              }
+            }));
+            
+            // Calculate accurate total amount from items
+            const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
+            
+            // Calculate points based on the same formula used in receipts
+            // Base points: 1 point per 10,000 rupiah
+            let points = Math.floor(totalAmount / 10000);
+            
+            // Add 20% bonus for purchases over 500,000
+            if (totalAmount > 500000) {
+              points = Math.floor(points * 1.2); // Add 20% bonus
+            }
+            
+            console.log(`Calculated points for transaction: ${points} (total amount: ${totalAmount})`);
+            
             const pointsData = {
               id_pembeli: transaction.data.id_pembeli,
-              total_harga: transaction.data.total_harga
+              total_harga: totalAmount  // Use the calculated total for accuracy
             };
             
             console.log("Updating buyer points with data:", pointsData);
-            await updatePembeliPoints(pointsData);
-            console.log("Buyer points updated successfully");
+            const pointsResponse = await updatePembeliPoints(pointsData);
+            console.log("Buyer points updated successfully:", pointsResponse);
+            
+            // Optional: Show the points in the status message
+            if (!silent) {
+              const pointsAdded = pointsResponse?.data?.total_new_points || points;
+              const currentTotalPoints = pointsResponse?.data?.current_total_points || "updated";
+              
+              setStatusMessage({
+                type: "success",
+                text: `Status berhasil diperbarui. ${pointsAdded} poin ditambahkan ke akun pembeli`
+              });
+            }
           } catch (error) {
             console.error("Error updating buyer points:", error);
+            // Still show success message for status update even if points update fails
+            if (!silent) {
+              setStatusMessage({
+                type: "success",
+                text: "Status berhasil diperbarui, tetapi terjadi kesalahan saat memperbarui poin pembeli"
+              });
+            }
           }
+        } else if (!silent) {
+          setStatusMessage({
+            type: "success",
+            text: "Status berhasil diperbarui"
+          });
         }
       }
       else if (newStatus === "Hangus" && createCommission) {
         console.log("Creating company commission for hangus status update");
         await createHangusKomisi(currentJadwal.data);
-      }
-      
-      if (!silent) {
+        if (!silent) {
+          setStatusMessage({
+            type: "success",
+            text: "Status berhasil diperbarui menjadi Hangus"
+          });
+        }
+      } else if (!silent) {
         setStatusMessage({
           type: "success",
           text: "Status berhasil diperbarui"
         });
-        
+      }
+      
+      if (!silent) {
         fetchJadwal();
         setProcessingStatus(false);
       }
@@ -392,8 +464,194 @@ const JadwalList = () => {
     }
   };
 
-  const handleCetakNota = (jadwalId) => {
-    navigate(`/pegawaiGudang/nota-pengiriman/${jadwalId}`);
+  const handleCetakNota = async (jadwalId) => {
+    try {
+      setStatusMessage(null); // Clear any previous error messages
+      
+      // Get the jadwal data first
+      const jadwalResponse = await useAxios.get(`/jadwal/${jadwalId}`);
+      const jadwalData = jadwalResponse.data;
+      
+      if (!jadwalData) {
+        console.error("Jadwal data not found");
+        setStatusMessage({
+          type: "danger",
+          text: "Data jadwal tidak ditemukan"
+        });
+        return;
+      }
+
+      const transaksiId = jadwalData.id_transaksi;
+      
+      // Check if a nota already exists for this transaction
+      let existingNota = null;
+      let invoiceNumber = "";
+      try {
+        existingNota = await getNotaPenjualanByTransaksiId(transaksiId);
+        if (existingNota) {
+          console.log("Nota already exists with number:", existingNota.nomor_nota);
+          invoiceNumber = existingNota.nomor_nota;
+          
+          // Navigate based on delivery type
+          if (jadwalData.id_pegawai) {
+            navigate(`/pegawaiGudang/nota-pengiriman/${jadwalId}`);
+          } else {
+            navigate(`/pegawaiGudang/nota-pengambilan/${jadwalId}`);
+          }
+          return;
+        }
+      } catch (error) {
+        // If we get an error, it might mean the endpoint doesn't exist yet
+        console.log("Could not check for existing nota, proceeding with creation:", error);
+      }
+      
+      // First get transaction details and other necessary data
+      const transaksiResponse = await useAxios.get(`/transaksi/${transaksiId}`);
+      const transaksiData = transaksiResponse.data;
+      
+      // Get pembeli data
+      const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+      const pembeliData = pembeliResponse.data;
+      
+      // Get pembeli user data to get email
+      let buyerEmail = "Email tidak tersedia";
+      if (pembeliData.id_user) {
+        try {
+          const pembeliUserResponse = await useAxios.get(`/pembeli/user/${pembeliData.id_user}`);
+          if (pembeliUserResponse.data?.user?.email) {
+            buyerEmail = pembeliUserResponse.data.user.email;
+          }
+        } catch (error) {
+          console.error("Error fetching pembeli user data:", error);
+        }
+      }
+      
+      // Get alamat data
+      const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
+      const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+      
+      // Format address for storage
+      const formattedAddress = alamatData ? alamatData.alamat_lengkap : 'Alamat tidak tersedia';
+      
+      // Get transaction items
+      const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiId}`);
+      const detailTransaksiData = detailTransaksiResponse.data;
+      
+      // Get complete item details
+      const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
+        try {
+          const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
+          const barang = barangResponse.data;
+          
+          return {
+            ...item,
+            barang: barang,
+            nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`,
+            harga: item.harga_beli || barang?.harga || 0
+          };
+        } catch (error) {
+          console.error(`Error fetching barang ${item.id_barang} details:`, error);
+          return {
+            ...item,
+            nama_barang: `Barang #${item.id_barang}`,
+            harga: item.harga_beli || 0
+          };
+        }
+      }));
+      
+      // Calculate total amount
+      const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
+      
+      // Calculate points based on total amount (1 point per 10,000 rupiah)
+      const calculatePoints = (amount) => {
+        let points = Math.floor(amount / 10000);
+        
+        // Add 20% bonus for purchases over 500,000
+        if (amount > 500000) {
+          points = Math.floor(points * 1.2);
+        }
+        
+        return points;
+      };
+      
+      const points = calculatePoints(totalAmount);
+      
+      // Generate a unique invoice number with transaction ID
+      if (!invoiceNumber) {
+        invoiceNumber = await generateUniqueInvoiceNumber(transaksiId);
+        console.log("Generated new invoice number:", invoiceNumber);
+      }
+      
+      // Function to format datetime with time for MySQL compatibility
+      const formatDateWithTime = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        // Return in MySQL compatible format (YYYY-MM-DD HH:MM:SS)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      };
+      
+      // Create the nota
+      const notaData = {
+        id_transaksi: transaksiId,
+        nomor_nota: invoiceNumber,
+        tanggal_pesan: transaksiData.tanggal_transaksi,
+        tanggal_lunas: transaksiData.tanggal_transaksi,
+        tanggal_ambil: formatDateWithTime(jadwalData.tanggal),
+        tanggal_kirim: formatDateWithTime(jadwalData.tanggal),
+        nama_kurir: jadwalData.id_pegawai ? jadwalData.pegawai?.nama_pegawai || 'Kurir tidak tersedia' : '(diambil sendiri)',
+        total_harga: totalAmount,
+        ongkos_kirim: 0,
+        potongan_diskon: 0,
+        poin_diperoleh: points,
+        total_setelah_diskon: totalAmount,
+        alamat_pembeli: formattedAddress,
+        nama_pembeli: pembeliData.nama_pembeli,
+        email_pembeli: buyerEmail,
+      };
+      
+      console.log("Creating nota with data:", notaData);
+      const createdNota = await createNotaPenjualanBarang(notaData);
+      console.log("Received nota creation response:", createdNota);
+      
+      // Extract id_nota_penjualan from the response, handling different response formats
+      const notaPenjualanId = createdNota.data?.id_nota_penjualan || createdNota?.id_nota_penjualan;
+      
+      if (!notaPenjualanId) {
+        console.error("Failed to get id_nota_penjualan from response:", createdNota);
+        throw new Error("ID nota penjualan tidak ditemukan dalam respon");
+      }
+      
+      // Create nota detail for each item
+      const notaDetailsData = itemsWithDetails.map(item => ({
+        id_nota_penjualan: notaPenjualanId,
+        nama_barang: item.nama_barang,
+        harga_barang: item.harga
+      }));
+      
+      console.log("Creating nota details with data:", notaDetailsData);
+      await createBatchNotaDetailPenjualan(notaDetailsData);
+      
+      // Navigate to the correct receipt page
+      if (jadwalData.id_pegawai) {
+        navigate(`/pegawaiGudang/nota-pengiriman/${jadwalId}`);
+      } else {
+        navigate(`/pegawaiGudang/nota-pengambilan/${jadwalId}`);
+      }
+      
+    } catch (error) {
+      console.error("Error creating nota:", error);
+      setStatusMessage({
+        type: "danger",
+        text: `Gagal membuat nota: ${error.message}`
+      });
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -583,7 +841,7 @@ const JadwalList = () => {
                     <Button
                       variant="info"
                       size="sm"
-                      onClick={() => navigate(`/pegawaiGudang/nota-pengambilan/${item.id_jadwal}`)}
+                      onClick={() => handleCetakNota(item.id_jadwal)}
                       title="Cetak nota pengambilan"
                     >
                       <i className="bi bi-printer"></i> Cetak Nota

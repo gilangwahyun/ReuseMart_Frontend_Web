@@ -111,7 +111,7 @@ const RequestPengambilanList = () => {
           )
         );
         
-        setSuccessMessage(`Request pengambilan berhasil diselesaikan dan status barang diperbarui menjadi "Sudah Diambil".`);
+        setSuccessMessage(`Request pengambilan berhasil diselesaikan.`);
       } catch (statusError) {
         console.error("Error updating barang status:", statusError);
         setError("Request selesai, tetapi gagal mengubah status barang: " + (statusError.response?.data?.message || statusError.message));

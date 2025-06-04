@@ -886,7 +886,7 @@ const DaftarBarangPenitip = () => {
               
               <Alert variant="success" className="mt-3">
                 <small>
-                  Request pengambilan akan diproses oleh admin. Anda akan dihubungi 
+                  Request pengambilan akan diproses oleh Pegawai Gudang. Anda akan dihubungi 
                   jika request telah disetujui dan dapat mengambil barang pada tanggal yang ditentukan.
                 </small>
               </Alert>
