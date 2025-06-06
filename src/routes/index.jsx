@@ -34,6 +34,7 @@ import DaftarBarangPenitip from '../pages/client/DaftarBarangPenitip';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
 import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPage';
+import KurirDeliveryTrackingPage from '../pages/pegawaiGudang/KurirDeliveryTrackingPage';
 
 const AppRoutes = () => {
   return (  
@@ -65,6 +66,7 @@ const AppRoutes = () => {
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
         <Route path='/pegawaiGudang/transaksi' element={< TransaksiPage />} />
         <Route path='/pegawaiGudang/penjadwalan' element={< PenjadwalanPage />} />
+        <Route path='/pegawaiGudang/kurirDelivery' element={< KurirDeliveryTrackingPage />} />
         <Route path='/pegawaiGudang/requestPengambilan' element={< RequestPengambilanPage />} />
         <Route path="/barang/:id" element={<DetailBarangPage />} />
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />

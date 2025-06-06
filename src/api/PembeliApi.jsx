@@ -37,3 +37,15 @@ export const updatePembeli = async (id, pembeliData) => {
     throw error;
   }
 };
+
+export const updatePembeliPoints = async (data) => {
+  try {
+    console.log("Updating pembeli points with data:", data);
+    const response = await useAxios.post(`/pembeli/update-points`, data);
+    console.log("Points update response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating pembeli points:", error);
+    throw error;
+  }
+};

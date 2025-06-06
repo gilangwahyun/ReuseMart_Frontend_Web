@@ -359,18 +359,34 @@ const JadwalList = () => {
             console.error("Error updating buyer points:", error);
           }
         }
+        
+        // Add notification message for status changes
+        if (!silent) {
+          setStatusMessage({
+            type: "success",
+            text: `Status berhasil diperbarui menjadi ${newStatus}. Notifikasi telah dikirim ke pembeli dan penitip.`
+          });
+        }
       }
       else if (newStatus === "Hangus" && createCommission) {
         console.log("Creating company commission for hangus status update");
         await createHangusKomisi(currentJadwal.data);
+        
+        if (!silent) {
+          setStatusMessage({
+            type: "success",
+            text: "Status berhasil diperbarui menjadi Hangus."
+          });
+        }
       }
-      
-      if (!silent) {
+      else if (!silent) {
         setStatusMessage({
           type: "success",
           text: "Status berhasil diperbarui"
         });
-        
+      }
+      
+      if (!silent) {
         fetchJadwal();
         setProcessingStatus(false);
       }
@@ -404,6 +420,8 @@ const JadwalList = () => {
         return <Badge bg="warning">Menunggu Diambil</Badge>;
       case "Sedang Dikirim":
         return <Badge bg="info">Sedang Dikirim</Badge>;
+      case "Sedang di Kurir":
+        return <Badge bg="primary">Sedang di Kurir</Badge>;
       case "Sudah Diambil":
         return <Badge bg="success">Sudah Diambil</Badge>;
       case "Sudah Sampai":
@@ -477,6 +495,42 @@ const JadwalList = () => {
     return daysPassed >= 2;
   };
 
+  // Function to update jadwal status
+  const updateJadwalStatus = async (jadwalId, newStatus) => {
+    try {
+      setProcessingStatus(true);
+      setStatusMessage(null);
+      
+      // Get current jadwal data
+      const jadwalResponse = await useAxios.get(`/jadwal/${jadwalId}`);
+      const currentJadwal = jadwalResponse.data;
+      
+      // Update the status
+      const response = await useAxios.put(`/jadwal/${jadwalId}`, {
+        ...currentJadwal,
+        id_transaksi: currentJadwal.id_transaksi,
+        id_pegawai: currentJadwal.id_pegawai,
+        tanggal: currentJadwal.tanggal,
+        status_jadwal: newStatus
+      });
+      
+      setStatusMessage({
+        type: "success",
+        text: `Status berhasil diperbarui menjadi ${newStatus}`
+      });
+      
+      fetchJadwal(); // Refresh the jadwal list
+    } catch (error) {
+      console.error("Error updating jadwal status:", error);
+      setStatusMessage({
+        type: "danger",
+        text: `Gagal mengubah status: ${error.response?.data?.message || error.message}`
+      });
+    } finally {
+      setProcessingStatus(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -519,6 +573,7 @@ const JadwalList = () => {
         <thead className="bg-light">
           <tr>
             <th>No.</th>
+            <th>Id transaksi</th>
             <th>Kurir</th>
             <th>Tanggal</th>
             <th>Status</th>
@@ -530,6 +585,7 @@ const JadwalList = () => {
             jadwal.map((item, index) => (
               <tr key={item.id_jadwal}>
                 <td>{index + 1}</td>
+                <td>{item.id_transaksi}</td>
                 <td>
                   {item.pegawai ? (
                     <>
@@ -546,16 +602,30 @@ const JadwalList = () => {
                 <td>{getStatusBadge(item.status_jadwal)}</td>
                 <td>
                   {item.status_jadwal === "Sedang Dikirim" && (
-                    <Button
-                      variant="success"
-                      size="sm"
-                      className="me-2 mb-2"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Sampai")}
-                      disabled={processingStatus}
-                    >
-                      Tandai Sudah Sampai
-                    </Button>
+                    <>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="me-2 mb-2"
+                        onClick={() => updateStatusJadwal(item.id_jadwal, "Sedang di Kurir")}
+                        disabled={processingStatus}
+                        title="Tandai barang sedang di kurir dan kirim notifikasi"
+                      >
+                        Tandai Sedang di Kurir
+                      </Button>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        className="me-2 mb-2"
+                        onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Sampai")}
+                        disabled={processingStatus}
+                        title="Tandai barang sudah sampai dan kirim notifikasi"
+                      >
+                        Tandai Sudah Sampai
+                      </Button>
+                    </>
                   )}
+                  
                   {item.status_jadwal === "Menunggu Diambil" && (
                     <Button
                       variant="success"
@@ -563,9 +633,25 @@ const JadwalList = () => {
                       className="me-2 mb-2"
                       onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Diambil")}
                       disabled={processingStatus}
+                      title="Tandai barang sudah diambil dan kirim notifikasi"
                     >
                       Tandai Sudah Diambil
                     </Button>
+                  )}
+                  
+                  {item.status_jadwal === "Sedang di Kurir" && (
+                    <>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        className="me-2 mb-2"
+                        onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Sampai")}
+                        disabled={processingStatus}
+                        title="Tandai barang sudah sampai dan kirim notifikasi"
+                      >
+                        Tandai Sudah Sampai
+                      </Button>
+                    </>
                   )}
                   
                   {isCourierDelivery(item) && (

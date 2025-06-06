@@ -316,9 +316,6 @@ const DetailBarang = () => {
                     {diskusi.map((item) => (
                       <li key={item.id_diskusi} className="list-group-item">
                         <p className="mb-0">{item.komen}</p>
-                        <small className="text-muted">
-                          {new Date(item.created_at).toLocaleString('id-ID')}
-                        </small>
                       </li>
                     ))}
                   </ul>

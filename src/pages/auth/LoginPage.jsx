@@ -39,7 +39,7 @@ export default function LoginPage() {
                 navigate('/DashboardPegawaiGudang');
                 break;
               case 4:
-                navigate('/CRUDPenitip');
+                navigate('/VerifikasiPembayaranCS');
                 break;
               case 5:
                 navigate('/DashboardHunter');
