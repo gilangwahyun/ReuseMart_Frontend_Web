@@ -33,6 +33,7 @@ const PenitipSidebar = () => {
   const sidebarItems = [
     { to: "/DashboardPenitip", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/DashboardPenitip/daftar-barang", icon: <FaBoxOpen />, label: "Daftar Barang" },
+    { to: "/DashboardPenitip/pengambilan-barang", icon: <FaHandPaper />, label: "Pengambilan Barang" },
   ];
 
   return (

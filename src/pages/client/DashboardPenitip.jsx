@@ -791,7 +791,7 @@ const DashboardPenitip = () => {
                         <th>Kategori</th>
                         <th>Harga</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        {/* <th>Aksi</th> */}
                       </tr>
                     </thead>
                     <tbody>
@@ -809,8 +809,8 @@ const DashboardPenitip = () => {
                             <td>{barang.kategori?.nama_kategori || 'Tidak ada kategori'}</td>
                             <td>Rp {barang.harga?.toLocaleString() || '0'}</td>
                             <td>{getBarangStatusBadge(barang.status_barang)}</td>
-                            <td>                           
-                            </td>
+                            {/* <td>                           
+                            </td> */}
                           </tr>
                         );
                       })}

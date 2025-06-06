@@ -28,6 +28,7 @@ import NotaPenjualanKurir from '../components/Nota/NotaPenjualanKurir';
 import NotaPenjualanPembeli from '../components/Nota/NotaPenjualanPembeli';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
 import DaftarBarangPenitip from '../pages/client/DaftarBarangPenitip';
+import PengambilanBarang from '../pages/client/PengambilanBarang';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
 import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPage';
@@ -46,6 +47,7 @@ const AppRoutes = () => {
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/DashboardPenitip" element={<DashboardPenitip/>} />
         <Route path="/DashboardPenitip/daftar-barang" element={<DaftarBarangPenitip/>} />
+        <Route path="/DashboardPenitip/pengambilan-barang" element={<PengambilanBarang/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
         <Route path="/DashboardAdmin" element={<AdminDashboard />} />

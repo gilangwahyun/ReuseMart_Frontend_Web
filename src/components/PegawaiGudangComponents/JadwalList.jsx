@@ -832,6 +832,7 @@ const JadwalList = () => {
                       size="sm"
                       onClick={() => handleCetakNota(item.id_jadwal)}
                       title="Cetak nota pengiriman"
+                      disabled={item.status_jadwal === "Sudah Sampai" || item.status_jadwal === "Hangus"}
                     >
                       <i className="bi bi-printer"></i> Cetak Nota
                     </Button>
@@ -843,6 +844,7 @@ const JadwalList = () => {
                       size="sm"
                       onClick={() => handleCetakNota(item.id_jadwal)}
                       title="Cetak nota pengambilan"
+                      disabled={item.status_jadwal === "Sudah Diambil" || item.status_jadwal === "Hangus"}
                     >
                       <i className="bi bi-printer"></i> Cetak Nota
                     </Button>
