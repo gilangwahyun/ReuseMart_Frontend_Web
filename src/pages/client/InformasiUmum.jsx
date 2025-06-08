@@ -103,7 +103,7 @@ const BerandaTab = () => {
       {/* Banner Utama */}
       <div className="bg-success text-white p-4 rounded mb-4">
         <div className="text-center py-4">
-          <FaRecycle size={48} className="mb-3" />
+          <img src={logo} alt="Logo ReuseMart" className="mb-3" style={{ height: '80px', filter: 'brightness(0) invert(1)' }} />
           <h2 className="fw-bold mb-3">Selamat Datang di ReuseMart</h2>
           <p className="lead">Platform Konsinyasi Barang Bekas</p>
         </div>
@@ -342,7 +342,7 @@ const TentangKamiTab = () => {
       
       <div className="bg-light rounded mb-4" style={{ height: '200px' }}>
         <div className="h-100 d-flex align-items-center justify-content-center">
-          <FaRecycle size={60} className="text-muted" />
+          <img src={logo} alt="Logo ReuseMart" style={{ height: '120px' }} />
         </div>
       </div>
       

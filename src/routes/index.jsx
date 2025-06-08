@@ -38,7 +38,7 @@ const AppRoutes = () => {
   return (  
     <Router>
       <Routes>
-        <Route path="/kategori/:namaKategori" element={<Home />} />
+        <Route path="/kategori/:kategori" element={<Home />} />
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<DetailBarang />} />
         <Route path="/informasi" element={<InformasiUmum />} />

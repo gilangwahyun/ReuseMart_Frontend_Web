@@ -6,6 +6,7 @@ import { getAllPegawai } from "../../api/PegawaiApi";
 import { getAllJabatan } from "../../api/JabatanApi";
 import { createNotaPenitipanBarang, deleteNotaPenitipanBarang } from "../../api/NotaPenitipanBarangApi";
 import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 const PenitipanBarangForm = () => {
   const navigate = useNavigate();
@@ -22,6 +23,10 @@ const PenitipanBarangForm = () => {
   const [hunterList, setHunterList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [tanggalAwalDisplay, setTanggalAwalDisplay] = useState('');
+  const [tanggalAkhirDisplay, setTanggalAkhirDisplay] = useState('');
 
   const [searchParams] = useSearchParams();
   const idPenitipan = searchParams.get("id_penitipan");
@@ -53,17 +58,36 @@ const PenitipanBarangForm = () => {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   };
 
+  // Format tanggal untuk tampilan yang lebih baik
+  const formatDisplayDateTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) + ' WIB';
+  };
+
   // Set tanggal awal dan akhir saat pertama kali mount
   useEffect(() => {
     const now = new Date();
     const future = new Date(now);
     future.setDate(future.getDate() + 30);
 
+    const nowFormatted = formatToDateTimeLocal(now);
+    const futureFormatted = formatToDateTimeLocal(future);
+
     setFormData((prev) => ({
       ...prev,
-      tanggal_awal_penitipan: formatToDateTimeLocal(now),
-      tanggal_akhir_penitipan: formatToDateTimeLocal(future),
+      tanggal_awal_penitipan: nowFormatted,
+      tanggal_akhir_penitipan: futureFormatted,
     }));
+
+    setTanggalAwalDisplay(formatDisplayDateTime(now));
+    setTanggalAkhirDisplay(formatDisplayDateTime(future));
   }, []);
 
   // Fetch penitip, pegawai, dan jabatan
@@ -111,6 +135,7 @@ const PenitipanBarangForm = () => {
       } catch (err) {
         console.error("Gagal memuat data:", err);
         setError("Gagal memuat data penitip atau pegawai.");
+        toast.error("Gagal memuat data penitip atau pegawai.");
       } finally {
         setLoading(false);
       }
@@ -125,13 +150,23 @@ const PenitipanBarangForm = () => {
       ...prev,
       [name]: value,
     }));
+
+    // Update tampilan tanggal jika yang diubah adalah tanggal
+    if (name === 'tanggal_awal_penitipan') {
+      setTanggalAwalDisplay(formatDisplayDateTime(value));
+    }
+    if (name === 'tanggal_akhir_penitipan') {
+      setTanggalAkhirDisplay(formatDisplayDateTime(value));
+    }
   };
 
-const handleSubmit = async (e) => {
+const handleSubmitClick = (e) => {
   e.preventDefault();
+  setShowConfirmModal(true);
+};
 
-  const confirm = window.confirm("Apakah Anda yakin ingin menyimpan data ini?");
-  if (!confirm) return;
+const handleSubmit = async () => {
+  setShowConfirmModal(false);
 
   try {
     const payload = {
@@ -186,20 +221,23 @@ const handleSubmit = async (e) => {
   }
 };
 
-const handleBack = async () => {
+const handleBackClick = () => {
   if (idPenitipan) {
-    const confirmDelete = window.confirm("Apakah Anda ingin membatalkan dan menghapus data penitipan yang sudah dibuat?");
-    if (confirmDelete) {
-      try {
-        await deletePenitipanBarang(idPenitipan);
-      } catch (err) {
-        console.error("Gagal menghapus penitipan:", err);
-      }
-      navigate(-1);
-    }
+    setShowDeleteModal(true);
   } else {
     navigate(-1);
   }
+};
+
+const handleDelete = async () => {
+  try {
+    await deletePenitipanBarang(idPenitipan);
+    toast.info("Data penitipan telah dihapus");
+  } catch (err) {
+    console.error("Gagal menghapus penitipan:", err);
+    toast.error("Gagal menghapus data penitipan");
+  }
+  navigate(-1);
 };
 
   if (loading) {
@@ -221,7 +259,7 @@ const handleBack = async () => {
         <button
           type="button"
           className="btn btn-outline-success me-3"
-          onClick={handleBack}
+          onClick={handleBackClick}
         >
           ← Kembali
         </button>
@@ -232,7 +270,7 @@ const handleBack = async () => {
         <div className="alert alert-warning" role="alert">
           <strong>Perhatian:</strong> Pastikan Data Penitip dan Petugas QC sudah sesuai sebelum menyimpan.
         </div>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmitClick}>
           <div className="row g-3">
             <div className="col-md-12">
               <label className="form-label fw-semibold">Penitip</label>
@@ -261,6 +299,9 @@ const handleBack = async () => {
                 onChange={handleChange}
                 readOnly
               />
+              <div className="form-text text-dark fw-medium mt-1">
+                {tanggalAwalDisplay}
+              </div>
             </div>
             <div className="col-md-6">
               <label className="form-label fw-semibold">Tanggal Akhir Penitipan</label>
@@ -272,6 +313,9 @@ const handleBack = async () => {
                 onChange={handleChange}
                 readOnly
               />
+              <div className="form-text text-dark fw-medium mt-1">
+                {tanggalAkhirDisplay}
+              </div>
             </div>
             <div className="col-md-12">
               <label className="form-label fw-semibold">Petugas QC (Pegawai Gudang)</label>
@@ -317,7 +361,50 @@ const handleBack = async () => {
           </div>
         </form>
       </div>
-      <ToastContainer />
+      
+      {/* Modal Konfirmasi Simpan */}
+      {showConfirmModal && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Konfirmasi Simpan Data</h5>
+                <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>Apakah Anda yakin ingin menyimpan data penitipan ini?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmModal(false)}>Tidak</button>
+                <button type="button" className="btn btn-success" onClick={handleSubmit}>Ya, Simpan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Konfirmasi Hapus */}
+      {showDeleteModal && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Konfirmasi Hapus</h5>
+                <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>Apakah Anda ingin membatalkan dan menghapus data penitipan yang sudah dibuat?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Tidak</button>
+                <button type="button" className="btn btn-danger" onClick={handleDelete}>Ya, Hapus</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };

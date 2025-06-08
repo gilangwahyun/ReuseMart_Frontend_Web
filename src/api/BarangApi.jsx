@@ -77,6 +77,10 @@ export const getBarangByKategori = async (namaKategori) => {
 
 export const searchBarangByName = async (nama_barang) => {
   try {
+    if (!nama_barang || nama_barang.trim() === "") {
+      return await getAllActiveBarang();
+    }
+
     console.log("Mencari barang dengan kata kunci:", nama_barang);
     const response = await useAxios.get(`${API_URL}/cari`, {
       params: { nama_barang },

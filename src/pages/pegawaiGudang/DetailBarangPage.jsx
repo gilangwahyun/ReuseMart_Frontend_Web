@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getBarangById, updateBarang } from '../../api/BarangApi';
 import { getFotoBarangByIdBarang, uploadFotoBarang, deleteFotoBarang, updateFotoBarang } from '../../api/FotoBarangApi';
 import { getAllKategori } from "../../api/KategoriBarangApi";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const DetailBarangPage = ({ isEditMode = false }) => {
   const { id } = useParams();
@@ -20,6 +22,31 @@ const DetailBarangPage = ({ isEditMode = false }) => {
   const [activeTab, setActiveTab] = useState('detail'); // tab aktif
   const [tanpaGaransi, setTanpaGaransi] = useState(false);
   const [fotoError, setFotoError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Fungsi formatter tanggal dan waktu
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) + ' WIB';
+  };
+
+  // Fungsi formatter hanya tanggal
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   const fetchData = async () => {
     try {
@@ -77,7 +104,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdateClick = () => {
     // Validasi minimal 2 foto
     const fotoLamaTersisa = fotoBarang.filter(f => !deletedPhotos.includes(f.id_foto_barang));
     const totalFoto = fotoLamaTersisa.length + newPhotos.length;
@@ -86,7 +113,13 @@ const DetailBarangPage = ({ isEditMode = false }) => {
       return;
     }
     setFotoError(null);
+    // Tampilkan modal konfirmasi
+    setShowConfirmModal(true);
+  };
+
+  const handleUpdate = async () => {
     try {
+      setShowConfirmModal(false);
       const dataToSend = {
         ...formData,
         masa_garansi: tanpaGaransi ? null : formData.masa_garansi,
@@ -103,7 +136,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
         formDataFoto.append('foto', file);
         await uploadFotoBarang(formDataFoto);
       }
-      alert('Barang berhasil diperbarui!');
+      toast.success('Barang berhasil diperbarui!');
       setBarang(formData);
       setEditMode(false);
       setNewPhotos([]);
@@ -111,7 +144,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Gagal memperbarui barang.');
+      toast.error('Gagal memperbarui barang.');
     }
   };
 
@@ -128,7 +161,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
 
   const handleDeleteFoto = (fotoId, isThumbnail) => {
     if (isThumbnail) {
-      alert('Foto ini adalah thumbnail. Pilih thumbnail baru sebelum menghapus foto ini.');
+      toast.warning('Foto ini adalah thumbnail. Pilih thumbnail baru sebelum menghapus foto ini.');
       return;
     }
     // Hitung total foto setelah dihapus
@@ -154,8 +187,9 @@ const DetailBarangPage = ({ isEditMode = false }) => {
       // Setelah update, reload foto
       const fotos = await getFotoBarangByIdBarang(id);
       setFotoBarang(fotos || []);
+      toast.success('Thumbnail berhasil diubah');
     } catch (err) {
-      alert('Gagal mengubah thumbnail');
+      toast.error('Gagal mengubah thumbnail');
       console.error(err);
     }
   };
@@ -439,7 +473,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                   </>
                 ) : (
                   <p className="border p-2 rounded bg-light">
-                    {barang.masa_garansi ? new Date(barang.masa_garansi).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Tidak ada garansi'}
+                    {barang.masa_garansi ? formatDate(barang.masa_garansi) : 'Tidak ada garansi'}
                   </p>
                 )}
               </div>
@@ -493,7 +527,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
               {/* Tombol Simpan / Batal */}
               {editMode && (
                 <div className="d-flex gap-3">
-                  <button className="btn btn-success" onClick={handleUpdate}>
+                  <button className="btn btn-success" onClick={handleUpdateClick}>
                     💾 Simpan Perubahan
                   </button>
                   <button className="btn btn-secondary" onClick={handleCancel}>
@@ -506,7 +540,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
 
           {activeTab === 'penitipan' && (
             <>
-              <h5>Informasi Penitipan</h5>
+              <h6 className="fw-bold">Informasi Penitip</h6>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Nama Penitip:</label>
                 <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.nama_penitip || '-'}</p>
@@ -520,19 +554,33 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                 <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.no_telepon || '-'}</p>
               </div>
               <hr />
-              <h6 className="fw-bold">Masa Penitipan</h6>
+              <h6 className="fw-bold">Informasi Penitipan</h6>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Tanggal Awal Penitipan:</label>
-                <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.tanggal_awal_penitipan || '-'}</p>
+                <p className="border p-2 rounded bg-light">
+                  {formatDateTime(barang.penitipan_barang?.tanggal_awal_penitipan)}
+                </p>
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Tanggal Akhir Penitipan:</label>
-                <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.tanggal_akhir_penitipan || '-'}</p>
+                <p className="border p-2 rounded bg-light">
+                  {formatDateTime(barang.penitipan_barang?.tanggal_akhir_penitipan)}
+                </p>
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Nama Petugas QC:</label>
                 <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.nama_petugas_qc || '-'}</p>
               </div>
+              
+              {/* Informasi Hunter */}
+              {barang.penitipan_barang?.pegawai && (
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Hunter:</label>
+                  <p className="border p-2 rounded bg-light">
+                    {barang.penitipan_barang?.pegawai?.nama_pegawai} (ID: {barang.penitipan_barang?.pegawai?.id_pegawai})
+                  </p>
+                </div>
+              )}
             </>
           )}
 
@@ -545,7 +593,14 @@ const DetailBarangPage = ({ isEditMode = false }) => {
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Tanggal Transaksi:</label>
-                <p className="border p-2 rounded bg-light">{barang.detail_transaksi?.transaksi?.tanggal_transaksi || '-'}</p>
+                <p className="border p-2 rounded bg-light">
+                  {formatDateTime(barang.detail_transaksi?.transaksi?.tanggal_transaksi)}
+                </p>
+              </div>
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Rating Pembeli:</label>
+                <p className="border p-2 rounded bg-light">{(barang.rating)}
+                </p>
               </div>
             </>
           )}
@@ -555,7 +610,9 @@ const DetailBarangPage = ({ isEditMode = false }) => {
               <h5>Informasi Donasi</h5>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Tanggal Donasi:</label>
-                <p className="border p-2 rounded bg-light">{barang.alokasi_donasi.tanggal_donasi || '-'}</p>
+                <p className="border p-2 rounded bg-light">
+                  {formatDateTime(barang.alokasi_donasi?.tanggal_donasi)}
+                </p>
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Organisasi yang Menerima:</label>
@@ -565,6 +622,30 @@ const DetailBarangPage = ({ isEditMode = false }) => {
           )}
         </div>
       </div>
+      
+      {/* Toast Container */}
+      <ToastContainer position="top-center" autoClose={3000} />
+      
+      {/* Modal Konfirmasi */}
+      {showConfirmModal && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Konfirmasi Perubahan</h5>
+                <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>Apakah Anda yakin ingin menyimpan perubahan pada data barang ini?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmModal(false)}>Tidak</button>
+                <button type="button" className="btn btn-success" onClick={handleUpdate}>Ya, Simpan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

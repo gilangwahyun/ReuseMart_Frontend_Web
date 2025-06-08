@@ -28,6 +28,7 @@ const PenitipanManagement = () => {
     status_garansi: '',
     tanggalAwal: '',
     tanggalAkhir: '',
+    status_barang: '',
   });
 
   const navigate = useNavigate();
@@ -86,7 +87,45 @@ const PenitipanManagement = () => {
   };
 
   const handleFilterReset = () => {
-    setFilter({ nama_penitip: '', nama_petugas_qc: '', kategori: '', status_garansi: '', tanggalAwal: '', tanggalAkhir: '' });
+    setFilter({ nama_penitip: '', nama_petugas_qc: '', kategori: '', status_garansi: '', tanggalAwal: '', tanggalAkhir: '', status_barang: '' });
+  };
+
+  const handleFilterBarangNonAktif = async () => {
+    setSearchLoading(true);
+    setError(null);
+    try {
+      const allBarang = await getAllBarang();
+      
+      const today = new Date();
+      
+      const filtered = allBarang.filter(b => {
+        if (!b.penitipan_barang?.tanggal_akhir_penitipan) {
+          return false;
+        }
+        
+        const tanggalAkhir = new Date(b.penitipan_barang.tanggal_akhir_penitipan);
+        
+        const selisihHari = Math.round((tanggalAkhir - today) / (1000 * 60 * 60 * 24));
+        console.log(selisihHari);
+        
+        return selisihHari === 0;
+      });
+      
+      setBarangData(filtered);
+      
+    } catch (err) {
+      let errorMsg = 'Gagal melakukan filter barang habis masa penitipan.';
+      if (err.response) {
+        errorMsg += ` [${err.response.status}] ${JSON.stringify(err.response.data)}`;
+      } else if (err.message) {
+        errorMsg += ` (${err.message})`;
+      }
+      setBarangData([]);
+      setError(errorMsg);
+      console.error('Filter Barang Error:', err);
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   const handleFilterSearch = async (e) => {
@@ -103,63 +142,95 @@ const PenitipanManagement = () => {
       if (filter.nama_petugas_qc) params.nama_petugas_qc = filter.nama_petugas_qc;
       if (filter.kategori) params.kategori = filter.kategori;
       if (filter.status_garansi) params.status_garansi = filter.status_garansi;
+      if (filter.status_barang) params.status_barang = filter.status_barang;
 
-      // Jika keyword/tanggal kosong dan filter lain terisi, lakukan filter di frontend
-      const isKeywordTanggalKosong = !params.keyword && !params.tanggal_awal && !params.tanggal_akhir;
-      const isFilterLainTerisi = params.nama_penitip || params.nama_petugas_qc || params.kategori || params.status_garansi;
-      if (isKeywordTanggalKosong && isFilterLainTerisi) {
-        // Ambil semua barang lalu filter di frontend
-        const allBarang = await getAllBarang();
-        let filtered = allBarang;
-        if (params.nama_penitip) {
-          filtered = filtered.filter(b => b.penitipan_barang?.penitip?.nama_penitip === params.nama_penitip);
-        }
-        if (params.nama_petugas_qc) {
-          filtered = filtered.filter(b =>
-            b.penitipan_barang?.nama_petugas_qc &&
-            b.penitipan_barang.nama_petugas_qc.toLowerCase().includes(params.nama_petugas_qc.toLowerCase())
-          );
-        }
-        if (params.kategori) {
-          filtered = filtered.filter(b => b.kategori?.nama_kategori === params.kategori);
-        }
-        if (params.status_garansi) {
-          if (params.status_garansi === 'ada') {
-            filtered = filtered.filter(b => b.masa_garansi);
-          } else if (params.status_garansi === 'tidak') {
-            filtered = filtered.filter(b => !b.masa_garansi);
-          }
-        }
-        setBarangData(filtered);
-        setError(filtered.length === 0 ? 'Barang tidak ditemukan.' : null);
-        setSearchLoading(false);
-        return;
-      }
-
-      // Jika semua kosong, fetch semua data
+      // Jika tidak ada parameter, ambil semua data
       if (Object.keys(params).length === 0) {
         await fetchBarang();
         setSearchLoading(false);
         return;
       }
 
-      // Jika ada keyword/tanggal, tetap gunakan searchBarangAllField
-      const result = await searchBarangAllField(
-        params.keyword,
-        params.tanggal_awal,
-        params.tanggal_akhir,
-        params.nama_penitip,
-        params.nama_petugas_qc,
-        params.kategori,
-        params.status_garansi
-      );
-      if (!result || result.length === 0) {
-        setBarangData([]);
-        setError('Barang tidak ditemukan.');
-      } else {
-        setBarangData(result);
-        setError(null);
+      // Ambil semua data barang terlebih dahulu
+      const allBarang = await getAllBarang();
+      
+      // Filter data berdasarkan parameter yang diberikan
+      let filtered = allBarang;
+      
+      // Filter by keyword jika ada
+      if (params.keyword) {
+        const keyword = params.keyword.toLowerCase();
+        filtered = filtered.filter(b => 
+          (b.id_barang && b.id_barang.toString().includes(keyword)) ||
+          (b.nama_barang && b.nama_barang.toLowerCase().includes(keyword)) ||
+          (b.harga && b.harga.toString().includes(keyword)) ||
+          (b.deskripsi && b.deskripsi.toLowerCase().includes(keyword)) ||
+          (b.berat && b.berat.toString().includes(keyword)) ||
+          (b.status_barang && b.status_barang.toLowerCase().includes(keyword)) ||
+          (b.kategori?.nama_kategori && b.kategori.nama_kategori.toLowerCase().includes(keyword)) ||
+          (b.penitipan_barang?.penitip?.nama_penitip && b.penitipan_barang.penitip.nama_penitip.toLowerCase().includes(keyword)) ||
+          (b.penitipan_barang?.nama_petugas_qc && b.penitipan_barang.nama_petugas_qc.toLowerCase().includes(keyword))
+        );
       }
+      
+      // Filter by tanggal awal
+      if (params.tanggal_awal) {
+        filtered = filtered.filter(b => 
+          b.penitipan_barang?.tanggal_awal_penitipan && 
+          new Date(b.penitipan_barang.tanggal_awal_penitipan).toISOString().split('T')[0] === params.tanggal_awal
+        );
+      }
+      
+      // Filter by tanggal akhir
+      if (params.tanggal_akhir) {
+        filtered = filtered.filter(b => 
+          b.penitipan_barang?.tanggal_akhir_penitipan && 
+          new Date(b.penitipan_barang.tanggal_akhir_penitipan).toISOString().split('T')[0] === params.tanggal_akhir
+        );
+      }
+      
+      // Filter by nama penitip
+      if (params.nama_penitip) {
+        filtered = filtered.filter(b => 
+          b.penitipan_barang?.penitip?.nama_penitip === params.nama_penitip
+        );
+      }
+      
+      // Filter by nama petugas QC
+      if (params.nama_petugas_qc) {
+        filtered = filtered.filter(b => 
+          b.penitipan_barang?.nama_petugas_qc && 
+          b.penitipan_barang.nama_petugas_qc.toLowerCase().includes(params.nama_petugas_qc.toLowerCase())
+        );
+      }
+      
+      // Filter by kategori
+      if (params.kategori) {
+        filtered = filtered.filter(b => 
+          b.kategori?.nama_kategori === params.kategori
+        );
+      }
+      
+      // Filter by status garansi
+      if (params.status_garansi) {
+        if (params.status_garansi === 'ada') {
+          filtered = filtered.filter(b => b.masa_garansi);
+        } else if (params.status_garansi === 'tidak') {
+          filtered = filtered.filter(b => !b.masa_garansi);
+        }
+      }
+
+      // Filter by status_barang
+      if (params.status_barang) {
+        filtered = filtered.filter(b => 
+          b.status_barang === params.status_barang
+        );
+      }
+
+      // Update state dengan hasil filter
+      setBarangData(filtered);
+      setError(filtered.length === 0 ? 'Barang tidak ditemukan.' : null);
+      
     } catch (err) {
       let errorMsg = 'Gagal melakukan pencarian.';
       if (err.response) {
@@ -227,10 +298,18 @@ const PenitipanManagement = () => {
                     Filter
                   </button>
                 </div>
-                <div className="col-md-2">
+                <div className="col-md-2 d-flex gap-2">
                   <button
                     type="button"
-                    className="btn btn-secondary w-100"
+                    className="btn btn-primary w-50"
+                    onClick={handleFilterBarangNonAktif}
+                    disabled={searchLoading}
+                  >
+                    Barang Habis Masa Penitipan
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary w-50"
                     onClick={handleReset}
                     disabled={searchLoading}
                   >
@@ -267,6 +346,17 @@ const PenitipanManagement = () => {
                       {kategoriList.map((k) => (
                         <option key={k.id_kategori} value={k.nama_kategori}>{k.nama_kategori}</option>
                       ))}
+                    </select>
+                  </div>
+                  <div className="col-md-2">
+                    <label className="form-label">Status Barang</label>
+                    <select className="form-select" name="status_barang" value={filter.status_barang} onChange={handleFilterChange}>
+                      <option value="">Semua</option>
+                      <option value="Aktif">Aktif</option>
+                      <option value="Non Aktif">Non Aktif</option>
+                      <option value="Habis">Habis</option>
+                      <option value="Barang untuk Donasi">Barang untuk Donasi</option>
+                      <option value="Barang sudah Didonasikan">Barang sudah Didonasikan</option>
                     </select>
                   </div>
                   <div className="col-md-2">

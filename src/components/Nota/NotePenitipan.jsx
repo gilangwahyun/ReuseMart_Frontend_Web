@@ -61,7 +61,7 @@ const NotaPenitipanDocument = ({ nota }) => (
               <Text style={stylesPdf.bold}>{detail.nama_barang}</Text> - Rp{" "}
               {detail.harga_barang.toLocaleString()}
             </Text>
-            <Text>Status Garansi: {detail.status_garansi}</Text>
+            <Text>Status Garansi: {detail.status_garansi ? detail.status_garansi : "Tidak Ada Garansi"}</Text>
             <Text>Berat barang: {detail.berat_pengajuan} g</Text>
           </View>
         ))}
@@ -146,7 +146,7 @@ const NotaPenitipanPrint = () => {
               <strong>{detail.nama_barang}</strong> - Rp{" "}
               {detail.harga_barang.toLocaleString()}
             </p>
-            <p>Status Garansi: {detail.status_garansi}</p>
+            <p>Status Garansi ON: {detail.status_garansi ? detail.status_garansi : "Tidak Ada Garansi"}</p>
             <p>Berat barang: {detail.berat_pengajuan} g</p>
           </div>
         ))}

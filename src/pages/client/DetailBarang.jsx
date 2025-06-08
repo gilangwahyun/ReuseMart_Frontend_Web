@@ -10,8 +10,10 @@ import { getKeranjangByPembeli, getKeranjangById, getKeranjangByIdUser } from ".
 import { createDetailKeranjang } from "../../api/DetailKeranjangApi";
 import { getByIdBarang } from "../../api/PenitipanBarangApi";
 import { getRated } from "../../api/PenitipApi";
+import { getTopSeller } from "../../api/BadgeApi";
 import { toast } from "react-toastify";
-import { FaStar } from "react-icons/fa";
+import { FaStar, FaInfoCircle } from "react-icons/fa";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const DetailBarang = () => {
   const { id } = useParams();
@@ -30,6 +32,7 @@ const DetailBarang = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const carouselRef = useRef(null);
+  const [topSellerBadge, setTopSellerBadge] = useState(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -74,6 +77,12 @@ const DetailBarang = () => {
           console.log('ratingResult:', ratingResult);
           setRataRataRating(ratingResult.rata_rata_rating);
           setJumlahRating(ratingResult.jumlah_barang_terjual_dan_terrating);
+
+          // Cek apakah penitip adalah TOP SELLER
+          const topSellerResult = await getTopSeller();
+          if (topSellerResult.data && topSellerResult.data.id_penitip === penitipanResult.penitip.id_penitip) {
+            setTopSellerBadge(topSellerResult.data);
+          }
         } else {
           setPenitipan(null);
         }
@@ -308,11 +317,30 @@ const DetailBarang = () => {
                     <h4 className="text-success mb-3" style={{ fontWeight: 700 }}>Rp{barang.harga.toLocaleString()}</h4>
                     <ul className="list-unstyled mb-3" style={{ fontSize: '1rem' }}>
                       <li><strong>Berat:</strong> {barang.berat} gram</li>
-                      <li><strong>Garansi:</strong> {barang.masa_garansi ? new Date(barang.masa_garansi).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : "Tidak ada garansi"}</li>
+                      <li><strong>Garansi (Sampai):</strong> {barang.masa_garansi ? new Date(barang.masa_garansi).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : "Tidak ada garansi"}</li>
                     </ul>
                     <p className="mb-3" style={{ fontSize: '1.05rem' }}>{barang.deskripsi}</p>
                     <div className="d-flex align-items-center mb-2" style={{ fontSize: '0.98rem' }}>
                       <strong>{penitipan?.penitip.nama_penitip}</strong>
+                      {topSellerBadge && (
+                        <div className="badge bg-warning text-white ms-2 d-flex align-items-center" 
+                             style={{ fontSize: '0.8rem', padding: '0.35em 0.65em' }}>
+                          <FaStar className="me-1" style={{ fontSize: '0.9rem' }} />
+                          {topSellerBadge.nama_badge}
+                          <OverlayTrigger
+                            placement="top"
+                            overlay={
+                              <Tooltip id={`tooltip-${topSellerBadge.id_badge}`}>
+                                Penitip dengan performa penjualan terbaik bulan lalu
+                              </Tooltip>
+                            }
+                          >
+                            <div className="ms-1 d-flex align-items-center" style={{ cursor: 'help' }}>
+                              <FaInfoCircle style={{ fontSize: '0.9rem' }} />
+                            </div>
+                          </OverlayTrigger>
+                        </div>
+                      )}
                       {rataRataRating !== undefined && rataRataRating !== null && (
                         <span className="ms-2 d-inline-flex align-items-center" style={{ color: '#222', fontWeight: 500 }}>
                           <FaStar className="me-1" style={{ color: 'transparent', stroke: '#222', strokeWidth: 40, fontSize: '1.1rem' }} />

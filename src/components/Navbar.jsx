@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { FaShoppingCart, FaUser, FaInfoCircle, FaEnvelope, FaPhone } from "react-icons/fa";
+import { FaShoppingCart, FaUser, FaInfoCircle, FaEnvelope, FaPhone, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaSearch, FaTimes, FaList } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "/assets/logoReuseMart.png";
 import { getAllKategori } from "../api/KategoriBarangApi";
 import { searchBarangByName } from "../api/BarangApi";
 
-const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
+const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {}, activeKategori = null }) => {
   const [showPanel, setShowPanel] = useState(false);
   const [kategoriList, setKategoriList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +13,7 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,13 +53,15 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
+    const userDataStr = localStorage.getItem("user");
     setIsLoggedIn(!!token);
 
-    if (userData) {
+    if (userDataStr) {
       try {
-        const user = JSON.parse(userData);
+        const user = JSON.parse(userDataStr);
         setUserId(user.id_user);
+        setUserData(user);
+        console.log("Data user dari localStorage:", user);
       } catch (error) {
         console.error("Error parsing user data:", error);
       }
@@ -71,12 +74,11 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
   const handleKategoriClick = (namaKategori) => {
     setShowPanel(false);
     onKategoriSelect(namaKategori);
-    navigate(`/kategori/${namaKategori}`);
+    setSearchKeyword(""); // Reset pencarian saat memilih kategori
   };
 
   const handleSearchClick = (e) => {
-    e.preventDefault();
-    if (searchKeyword.trim() === "") return;
+    if (e) e.preventDefault();
     onSearch(searchKeyword);
   };
 
@@ -84,13 +86,40 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
     setSearchKeyword(e.target.value);
   };
 
+  const handleSearchKeyDown = (e) => {
+    // Deteksi jika user menekan Enter di input pencarian
+    if (e.key === 'Enter') {
+      handleSearchClick();
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchKeyword("");
+    onSearch("");
+  };
+
   const handleProfileClick = () => {
     if (isLoggedIn && userId) {
-      navigate(`/DashboardProfilPembeli/${userId}`);
+      if (userData && userData.role === "Pembeli") {
+        navigate(`/DashboardProfilPembeli/${userId}`);
+      } else if (userData && userData.role === "Penitip") {
+        navigate(`/DashboardPenitip`);
+      }
+      console.log(userData);
     } else {
       navigate("/LoginPage");
     }
     setShowProfileMenu(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    setUserData(null);
+    setShowProfileMenu(false);
+    window.dispatchEvent(new Event("logout"));
+    navigate("/");
   };
 
   const handleCartClick = (e) => {
@@ -102,6 +131,92 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
     if (userId) {
       navigate(`/keranjang/${userId}`);
     }
+  };
+
+  const getUserDisplayName = (user) => {
+    // Cek semua kemungkinan nama yang bisa ditampilkan berdasarkan struktur data
+    if (!user) return '';
+    
+    // Cek untuk pembeli
+    if (user.role === "Pembeli") {
+      if (user.pembeli?.nama_pembeli) return user.pembeli.nama_pembeli;
+      if (user.nama_pembeli) return user.nama_pembeli;
+    }
+    
+    // Cek untuk penitip
+    if (user.role === "Penitip") {
+      if (user.penitip?.nama_penitip) return user.penitip.nama_penitip;
+      if (user.nama_penitip) return user.nama_penitip;
+    }
+    
+    // Fallback ke properti nama umum
+    if (user.nama) return user.nama;
+    if (user.name) return user.name;
+    
+    return '';
+  };
+
+  const showUserMenu = () => {
+    if (!isLoggedIn) {
+      return (
+        <div
+          id="profileMenu"
+          className="position-absolute end-0 mt-2 bg-white shadow rounded-3 border"
+          style={{ zIndex: 1000, minWidth: "220px" }}
+        >
+          <div className="p-3 border-bottom">
+            <div className="fw-bold text-dark">Selamat Datang</div>
+            <div className="small text-muted">Silakan masuk untuk melanjutkan</div>
+          </div>
+          <Link
+            to="/LoginPage"
+            className="dropdown-item py-2 px-3 d-flex align-items-center text-decoration-none"
+            onClick={() => setShowProfileMenu(false)}
+          >
+            <FaSignInAlt className="me-2 text-success" size={14} />
+            <span className="text-dark">Masuk</span>
+          </Link>
+          <Link
+            to="/RegisterPembeli"
+            className="dropdown-item py-2 px-3 d-flex align-items-center text-decoration-none"
+            onClick={() => setShowProfileMenu(false)}
+          >
+            <FaUserPlus className="me-2 text-success" size={14} />
+            <span className="text-dark">Daftar</span>
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        id="profileMenu"
+        className="position-absolute end-0 mt-2 bg-white shadow rounded-3 border"
+        style={{ zIndex: 1000, minWidth: "220px" }}
+      >
+        <div className="p-3 border-bottom">
+          <div className="fw-bold text-dark">
+            {getUserDisplayName(userData)}
+          </div>
+          <div className="small text-muted">{userData?.email}</div>
+          <div className="small text-success">{userData?.role}</div>
+        </div>
+        <button
+          className="dropdown-item py-2 px-3 d-flex align-items-center w-100 text-start border-0 bg-transparent"
+          onClick={handleProfileClick}
+        >
+          <FaUser className="me-2 text-success" size={14} />
+          <span className="text-dark">Profil Saya</span>
+        </button>
+        <button
+          className="dropdown-item py-2 px-3 d-flex align-items-center w-100 text-start border-0 bg-transparent"
+          onClick={handleLogout}
+        >
+          <FaSignOutAlt className="me-2 text-danger" size={14} />
+          <span className="text-danger">Keluar</span>
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -144,28 +259,49 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
             <ul className="navbar-nav ms-auto align-items-center w-100">
               <li className="nav-item me-3">
                 <button
-                  className="btn nav-link text-dark"
+                  className="btn nav-link d-flex align-items-center"
                   id="kategoriToggle"
                   onClick={togglePanel}
                   style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
                 >
-                  Kategori
+                  <FaList className="me-1" size={14} />
+                  <span className="text-dark">
+                    {activeKategori ? `Kategori: ${activeKategori}` : "Kategori"}
+                  </span>
                 </button>
               </li>
 
-              <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }} onSubmit={handleSearchClick}>
-                <input
-                  className="form-control me-2"
-                  type="search"
-                  placeholder="Cari produk..."
-                  aria-label="Search"
-                  value={searchKeyword}
-                  onChange={handleSearchChange}
-                />
-                <button className="btn btn-outline-dark" type="submit">
-                  Cari
-                </button>
-              </form>
+              <div className="position-relative me-auto" style={{ maxWidth: "400px", width: "50%" }}>
+                <div className="input-group">
+                  <input
+                    className="form-control"
+                    type="search"
+                    placeholder="Cari produk..."
+                    aria-label="Search"
+                    value={searchKeyword}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleSearchKeyDown}
+                  />
+                  {searchKeyword && (
+                    <button 
+                      className="btn btn-outline-secondary border-0" 
+                      type="button"
+                      onClick={clearSearch}
+                      title="Hapus pencarian"
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                  <button 
+                    className="btn btn-success" 
+                    type="button" 
+                    onClick={handleSearchClick}
+                    title="Cari"
+                  >
+                    <FaSearch size={14} />
+                  </button>
+                </div>
+              </div>
 
               <li className="nav-item me-3">
                 <button
@@ -180,61 +316,21 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
               <li className="nav-item position-relative">
                 <button
                   id="profileToggle"
-                  className="btn nav-link text-dark"
+                  className="btn nav-link d-flex align-items-center"
                   onClick={toggleProfileMenu}
-                  style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
+                  style={{ background: "none", border: "none", cursor: "pointer" }}
                 >
-                  <FaUser size={18} />
+                  <div className="position-relative">
+                    <FaUser size={18} className="text-dark" />
+                  </div>
+                  {isLoggedIn && userData && (
+                    <span className="ms-2 d-none d-md-inline text-dark">
+                      {getUserDisplayName(userData)}
+                    </span>
+                  )}
                 </button>
 
-                {showProfileMenu && (
-                  <div
-                    id="profileMenu"
-                    className="position-absolute end-0 mt-2 bg-white shadow rounded border"
-                    style={{ zIndex: 1000, minWidth: "150px" }}
-                  >
-                    {isLoggedIn ? (
-                      <>
-                        <button
-                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
-                          onClick={handleProfileClick}
-                        >
-                          Profile
-                        </button>
-                        <button
-                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
-                          onClick={() => {
-                            localStorage.removeItem("token");
-                            localStorage.removeItem("user");
-                            setIsLoggedIn(false);
-                            setShowProfileMenu(false);
-                            window.dispatchEvent(new Event("logout"));
-                            navigate("/");
-                          }}
-                        >
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          to="/LoginPage"
-                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          Login
-                        </Link>
-                        <Link
-                          to="/RegisterPembeli"
-                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          Register
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                )}
+                {showProfileMenu && showUserMenu()}
               </li>
             </ul>
           </div>
@@ -258,8 +354,10 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                     <div className="col-6 col-md-3 mb-2">
                       <button
                         onClick={() => handleKategoriClick('Semua')}
-                        className="btn btn-link text-start w-100 text-decoration-none text-success fw-bold"
-                        style={{ padding: "8px 15px", color: "#198754" }}
+                        className={`btn btn-link text-start w-100 text-decoration-none fw-bold ${
+                          activeKategori === 'Semua' || !activeKategori ? 'text-success' : 'text-dark'
+                        }`}
+                        style={{ padding: "8px 15px" }}
                       >
                         Semua Kategori
                       </button>
@@ -268,8 +366,10 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {} }) => {
                       <div className="col-6 col-md-3 mb-2" key={kategori.id_kategori}>
                         <button
                           onClick={() => handleKategoriClick(kategori.nama_kategori)}
-                          className="btn btn-link text-start w-100 text-decoration-none text-dark"
-                          style={{ padding: "8px 15px", color: "#333" }}
+                          className={`btn btn-link text-start w-100 text-decoration-none ${
+                            activeKategori === kategori.nama_kategori ? 'text-success fw-bold' : 'text-dark'
+                          }`}
+                          style={{ padding: "8px 15px" }}
                         >
                           {kategori.nama_kategori}
                         </button>
