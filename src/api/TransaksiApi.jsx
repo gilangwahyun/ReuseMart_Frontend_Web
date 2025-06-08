@@ -31,3 +31,26 @@ export const getLaporanPenjualanBulanan = async (tahun = new Date().getFullYear(
     throw error;
   }
 };
+
+export const getLaporanKomisi = async (tahun = new Date().getFullYear(), bulan = null) => {
+  try {
+    const params = new URLSearchParams();
+    params.append('tahun', tahun);
+    if (bulan) {
+      params.append('bulan', bulan);
+    }
+    
+    const response = await useAxios.get(`${API_URL}/laporan/komisi`, {
+      params: { tahun, bulan }
+    });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Gagal mengambil data laporan komisi');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching laporan komisi:", error);
+    throw error;
+  }
+};

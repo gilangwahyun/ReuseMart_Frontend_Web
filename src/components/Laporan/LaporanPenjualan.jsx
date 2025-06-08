@@ -252,8 +252,9 @@ const LaporanPenjualan = () => {
       doc.setFont("helvetica", "normal");
       doc.text(`© ${new Date().getFullYear()} ReUse Mart - Halaman 2 dari 2`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
       
-      // Simpan PDF
-      doc.save(`Laporan_Penjualan_${tahun}.pdf`);
+      // Format nama file: ReUseMart_Laporan_[Jenis]_[Bulan]_[Tahun]_[TanggalCetak]
+      const tanggalCetakStr = new Date().toISOString().split('T')[0];
+      doc.save(`ReUseMart_Laporan_Penjualan_${tahun}_${tanggalCetakStr}.pdf`);
     });
   };
 

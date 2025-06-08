@@ -1,79 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { getLaporanStokGudang } from "../../api/BarangApi";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  PDFDownloadLink,
-} from "@react-pdf/renderer";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
-// Style untuk PDF
-const stylesPdf = StyleSheet.create({
-  page: { fontFamily: "Helvetica", fontSize: 11, padding: 20 },
-  header: { 
-    marginBottom: 20,
-  },
-  headerLeft: {
-    textAlign: "left",
-    marginBottom: 5,
-  },
-  companyName: {
-    fontSize: 16,
-    fontWeight: 700,
-    fontFamily: "Helvetica-Bold",
-  },
-  title: { 
-    fontSize: 18, 
-    marginTop: 10,
-    marginBottom: 5,
-    textAlign: "center",
-    fontFamily: "Helvetica-Bold",
-  },
-  infoRow: {
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  table: { 
-    display: "table", 
-    width: "100%", 
-    borderStyle: "solid", 
-    borderWidth: 1,
-    borderColor: "#000",
-    marginBottom: 10,
-    marginTop: 10,
-  },
-  tableRow: { 
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#000",
-  },
-  tableHeader: {
-    backgroundColor: "#f2f2f2",
-    fontFamily: "Helvetica-Bold",
-  },
-  tableCell: {
-    padding: 5,
-    fontSize: 9,
-    textAlign: "left",
-    borderRightWidth: 1,
-    borderRightColor: "#000",
-  },
-  summarySection: {
-    marginTop: 20,
-    textAlign: "right",
-    fontSize: 11,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 30,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    fontSize: 10,
-  }
-});
+// Fungsi untuk memformat tanggal dan waktu lokal Indonesia
 
 // Fungsi untuk memformat tanggal dan waktu lokal Indonesia
 const formatDateTimeLong = (dateStr) => {
@@ -88,113 +18,75 @@ const formatDateTimeLong = (dateStr) => {
   });
 };
 
-// Komponen PDF untuk Laporan Stok Gudang
-const LaporanStokGudangDocument = ({ data }) => (
-  <Document>
-    <Page size="A4" style={stylesPdf.page} orientation="landscape">
-      {/* Header */}
-      <View style={stylesPdf.header}>
-        <View style={stylesPdf.headerLeft}>
-          <Text style={stylesPdf.companyName}>ReUse Mart</Text>
-          <Text>Jl. Green Eco Park No. 456 Yogyakarta</Text>
-        </View>
-        
-        <Text style={stylesPdf.title}>Laporan Stok Gudang</Text>
-        
-        <View style={stylesPdf.infoRow}>
-          <Text>Tanggal Cetak: {formatDateTimeLong(data.tanggal_cetak)}</Text>
-          <Text>Total Barang: {data.total_barang}</Text>
-        </View>
-      </View>
-      
-      {/* Tabel */}
-      <View style={stylesPdf.table}>
-        {/* Header Tabel */}
-        <View style={[stylesPdf.tableRow, stylesPdf.tableHeader]}>
-          <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-            <Text>ID Barang</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "15%" }]}>
-            <Text>Nama Barang</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "8%" }]}>
-            <Text>Harga (Rp)</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-            <Text>Status</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-            <Text>ID Penitip</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "12%" }]}>
-            <Text>Nama Penitip</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "12%" }]}>
-            <Text>Tanggal Penitipan</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-            <Text>ID Hunter</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "12%" }]}>
-            <Text>Nama Hunter</Text>
-          </View>
-          <View style={[stylesPdf.tableCell, { width: "8%", borderRightWidth: 0 }]}>
-            <Text>Perpanjangan</Text>
-          </View>
-        </View>
-        
-        {/* Baris Data */}
-        {data.data.map((item, index) => (
-          <View key={index} style={stylesPdf.tableRow}>
-            <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-              <Text>{item.id_barang}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "15%" }]}>
-              <Text>{item.nama_barang}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "8%" }]}>
-              <Text>{Number(item.harga).toLocaleString()}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-              <Text>{item.status_barang}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-              <Text>{item.penitip ? item.penitip.id_penitip : "-"}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "12%" }]}>
-              <Text>{item.penitip ? item.penitip.nama_penitip : "-"}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "12%" }]}>
-              <Text>
-                {item.penitipan ? item.penitipan.tanggal_awal_penitipan : "-"}
-              </Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "6%" }]}>
-              <Text>{item.hunter ? item.hunter.id_pegawai : "-"}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "12%" }]}>
-              <Text>{item.hunter ? item.hunter.nama_pegawai : "-"}</Text>
-            </View>
-            <View style={[stylesPdf.tableCell, { width: "8%", borderRightWidth: 0 }]}>
-              <Text>{item.ada_perpanjangan}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-      
-      <View style={stylesPdf.footer}>
-        <Text>© {new Date().getFullYear()} ReUse Mart - Laporan ini dicetak pada {formatDateTimeLong(data.tanggal_cetak)}</Text>
-      </View>
-    </Page>
-  </Document>
-);
-
 // Komponen Utama
 const LaporanStokGudang = () => {
   const [laporanData, setLaporanData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  const handlePrintPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const tanggalCetak = new Date();
+    
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("ReUse Mart", 15, 15);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text("Jl. Green Eco Park No. 456 Yogyakarta", 15, 22);
+    
+    // Judul laporan
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Laporan Stok Gudang", doc.internal.pageSize.width / 2, 35, { align: 'center' });
+    
+    // Info laporan
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Tanggal Cetak: ${formatDateTimeLong(tanggalCetak)}`, 15, 45);
+    doc.text(`Total Barang: ${laporanData.total_barang}`, 15, 52);
+    
+    // Tabel data
+    const tableColumn = [
+      "No", "ID Barang", "Nama Barang", "Harga", "Status",
+      "ID Penitip", "Nama Penitip", "Tanggal Penitipan",
+      "ID Hunter", "Nama Hunter", "Perpanjangan"
+    ];
+    
+    const tableRows = laporanData.data.map((item, index) => [
+      index + 1,
+      item.id_barang,
+      item.nama_barang,
+      `Rp ${Number(item.harga).toLocaleString()}`,
+      item.status_barang,
+      item.penitip ? item.penitip.id_penitip : "-",
+      item.penitip ? item.penitip.nama_penitip : "-",
+      item.penitipan ? formatDateTimeLong(item.penitipan.tanggal_awal_penitipan) : "-",
+      item.hunter ? item.hunter.id_pegawai : "-",
+      item.hunter ? item.hunter.nama_pegawai : "-",
+      item.ada_perpanjangan
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 60,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [40, 167, 69] },
+      alternateRowStyles: { fillColor: [240, 240, 240] }
+    });
+
+    // Footer
+    doc.setFontSize(10);
+    doc.text(`© ${new Date().getFullYear()} ReUse Mart`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+
+    // Format nama file: ReUseMart_Laporan_[Jenis]_[TanggalCetak]
+    const tanggalCetakStr = new Date().toISOString().split('T')[0];
+    doc.save(`ReUseMart_Laporan_StokGudang_${tanggalCetakStr}.pdf`);
+  };
 
   // Mengambil data laporan
   const fetchLaporanData = async () => {
@@ -267,15 +159,12 @@ const LaporanStokGudang = () => {
                     </div>
                     <div className="text-end">
                       {laporanData && (
-                        <PDFDownloadLink
-                          document={<LaporanStokGudangDocument data={laporanData} />}
-                          fileName={`LaporanStokGudang_${new Date().toISOString().slice(0,10)}.pdf`}
-                          className="btn btn-success ms-2"
+                        <button 
+                          className="btn btn-success"
+                          onClick={handlePrintPDF}
                         >
-                          {({ loading }) =>
-                            loading ? "Menyiapkan PDF..." : "Unduh PDF"
-                          }
-                        </PDFDownloadLink>
+                          <i className="fas fa-file-pdf me-2"></i> Unduh PDF
+                        </button>
                       )}
                     </div>
                   </div>
