@@ -19,6 +19,24 @@ export const getAllRequestDonasi = async () => {
   }
 };
 
+// Search function for request donasi
+export const searchRequestDonasi = async (keyword) => {
+  try {
+    console.log(`Searching request donasi with keyword: ${keyword}`);
+    const response = await useAxios.get(`${API_URL}/search?keyword=${encodeURIComponent(keyword)}`);
+    
+    if (!response || !response.data) {
+      console.error("Invalid response from searchRequestDonasi:", response);
+      return [];
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error searching request donasi with keyword ${keyword}:`, error);
+    return [];
+  }
+};
+
 export const createRequestDonasi = async (data) => {
   try {
     console.log("Creating request donasi with data:", data);

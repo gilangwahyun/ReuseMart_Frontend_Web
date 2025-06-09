@@ -7,6 +7,8 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaReceipt,
+  FaClipboardList,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -32,6 +34,8 @@ const OwnerSidebar = () => {
     { to: "/DashboardOwner", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/owner/donasi", icon: <FaUserTie />, label: "Manajerial Donasi" },
     { to: "/owner/alokasi", icon: <FaBuilding />, label: "Manajerial Alokasi" },
+    { to: "/owner/nota-donasi", icon: <FaReceipt />, label: "Nota Donasi" },
+    { to: "/owner/request-donasi", icon: <FaClipboardList />, label: "Request Donasi" },
   ];
 
   return (

@@ -18,8 +18,11 @@ import DashboardKeranjang from '../pages/client/DashboardKeranjang';
 import DonasiManagement from "../pages/owner/DonasiManagement";
 import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
+import NotaDonasi from '../pages/Owner/NotaDonasi';
 import PegawaiGudangDashboard from '../pages/pegawaiGudang/PegawaiGudangDashboard';
 import PenitipanManagement from '../pages/pegawaiGudang/PenitipanManagement';
+import NotaDonasiPrint from '../components/Nota/NotaDonasiPrint';
+import NotaDonasiAll from '../components/Nota/NotaDonasiAll';
 import PenitipanBarangForm from '../components/PegawaiGudangComponents/PenitipanForm';
 import BarangForm from '../components/PegawaiGudangComponents/BarangForm';
 import DetailBarangPage from '../pages/pegawaiGudang/DetailBarangPage';
@@ -32,6 +35,9 @@ import PengambilanBarang from '../pages/client/PengambilanBarang';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
 import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPage';
+import ListRequestDonasi from '../components/OwnerComponents/ListRequestDonasi';
+import RequestDonasiAll from '../components/Nota/RequestDonasiAll';
+import RequestDonasiDetail from '../components/Nota/RequestDonasiDetail';
 
 const AppRoutes = () => {
   return (  
@@ -56,6 +62,12 @@ const AppRoutes = () => {
         <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
+        <Route path='/owner/nota-donasi' element={< NotaDonasi />} />
+        <Route path='/owner/nota-donasi/print/:id_alokasi' element={< NotaDonasiPrint />} />
+        <Route path='/owner/nota-donasi/print-all' element={< NotaDonasiAll />} />
+        <Route path='/owner/request-donasi' element={< ListRequestDonasi />} />
+        <Route path='/owner/request-donasi/print-all' element={< RequestDonasiAll />} />
+        <Route path='/owner/request-donasi/detail/:id_request' element={< RequestDonasiDetail />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
