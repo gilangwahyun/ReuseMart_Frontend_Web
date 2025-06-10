@@ -139,22 +139,22 @@ const DetailBarang = () => {
         const result = await createDetailKeranjang(detailKeranjangData);
         
         if (result.message === "Barang sudah ada di keranjang") {
-          toast.warning("Barang sudah ada di keranjang");
+          alert("Barang sudah ada di keranjang");
         } else {
-          toast.success("Barang berhasil ditambahkan ke keranjang");
+          alert("Barang berhasil ditambahkan ke keranjang!");
         }
       } catch (err) {
         console.error("Error getting keranjang:", err);
         if (err.response?.status === 404) {
-          toast.error("Keranjang tidak ditemukan");
+          alert("Keranjang tidak ditemukan");
         } else {
-          toast.error(err.response?.data?.message || "Gagal mengakses keranjang");
+          alert(err.response?.data?.message || "Gagal mengakses keranjang");
         }
         return;
       }
     } catch (err) {
       console.error("Error adding to cart:", err);
-      toast.error(err.response?.data?.message || "Gagal menambahkan ke keranjang");
+      alert(err.response?.data?.message || "Gagal menambahkan ke keranjang");
     } finally {
       setAddingToCart(false);
     }
@@ -316,9 +316,6 @@ const DetailBarang = () => {
                     {diskusi.map((item) => (
                       <li key={item.id_diskusi} className="list-group-item">
                         <p className="mb-0">{item.komen}</p>
-                        <small className="text-muted">
-                          {new Date(item.created_at).toLocaleString('id-ID')}
-                        </small>
                       </li>
                     ))}
                   </ul>

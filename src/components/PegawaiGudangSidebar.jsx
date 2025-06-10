@@ -11,6 +11,7 @@ import {
   FaTruck,
   FaCalendarAlt,
   FaHandPaper,
+  FaShippingFast,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -38,6 +39,7 @@ const PegawaiGudangSidebar = () => {
     { to: "/pegawaiGudang/requestPengambilan", icon: <FaHandPaper />, label: "Request Pengambilan" },
     { to: "/pegawaiGudang/transaksi", icon: <FaExchangeAlt />, label: "Daftar Transaksi" },
     { to: "/pegawaiGudang/penjadwalan", icon: <FaCalendarAlt />, label: "Penjadwalan Pengiriman" },
+    // { to: "/pegawaiGudang/kurirDelivery", icon: <FaShippingFast />, label: "Tracking Kurir" },
   ];
 
   return (

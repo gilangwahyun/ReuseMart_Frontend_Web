@@ -15,6 +15,9 @@ import PegawaiManagement from "../pages/admin/PegawaiManagement";
 import OrganisasiManagement from "../pages/admin/OrganisasiManagement";
 import AlamatForm from '../components/AlamatForm';
 import DashboardKeranjang from '../pages/client/DashboardKeranjang';
+import Transaksi from '../pages/client/Transaksi';
+import Pembayaran from '../pages/client/Pembayaran';
+import VerifikasiPembayaranCS from '../pages/admin/VerifikasiPembayaranCS';
 import DonasiManagement from "../pages/owner/DonasiManagement";
 import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
@@ -41,6 +44,7 @@ import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPag
 import ListRequestDonasi from '../components/OwnerComponents/ListRequestDonasi';
 import RequestDonasiAll from '../components/Nota/RequestDonasiAll';
 import RequestDonasiDetail from '../components/Nota/RequestDonasiDetail';
+import KurirDeliveryTrackingPage from '../pages/pegawaiGudang/KurirDeliveryTrackingPage';
 
 const AppRoutes = () => {
   return (  
@@ -60,6 +64,9 @@ const AppRoutes = () => {
         <Route path="/DashboardPenitip/laporan-pendapatan" element={<LaporanPendapatanPenitip/>} />
         <Route path="/DashboardPenitip/laporan-pendapatan/print" element={<LaporanPendapatanPenitipPDF/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
+        <Route path="/transaksi" element={< Transaksi />} />
+        <Route path="/pembayaran" element={< Pembayaran />} />
+        <Route path="/VerifikasiPembayaranCS" element={< VerifikasiPembayaranCS />} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
         <Route path="/DashboardAdmin" element={<AdminDashboard />} />
         <Route path="/admin/pegawai" element={<PegawaiManagement />} />
@@ -78,6 +85,7 @@ const AppRoutes = () => {
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
         <Route path='/pegawaiGudang/transaksi' element={< TransaksiPage />} />
         <Route path='/pegawaiGudang/penjadwalan' element={< PenjadwalanPage />} />
+        <Route path='/pegawaiGudang/kurirDelivery' element={< KurirDeliveryTrackingPage />} />
         <Route path='/pegawaiGudang/requestPengambilan' element={< RequestPengambilanPage />} />
         <Route path="/barang/:id" element={<DetailBarangPage />} />
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />

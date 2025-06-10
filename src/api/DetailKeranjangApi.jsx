@@ -55,3 +55,12 @@ export const deleteDetailKeranjang = async (id) => {
     throw error;
   }
 };
+
+export const deleteDetailKeranjangByUser = async (userId) => {
+  try {
+    const response = await useAxios.delete(`${API_URL}/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

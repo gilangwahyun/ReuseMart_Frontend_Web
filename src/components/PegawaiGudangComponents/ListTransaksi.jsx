@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Badge, Alert, Modal, Form, Spinner, Card, Row, Col } from "react-bootstrap";
-import useAxios from "../../api"; // Import the configured axios instance
+import useAxios, { BASE_URL } from "../../api"; // Import the configured axios instance with BASE_URL
 import { useNavigate } from "react-router-dom";
 import { getAllPegawai } from "../../api/PegawaiApi";
 import { createJadwal } from "../../api/JadwalApi";
@@ -10,6 +10,7 @@ const ListTransaksi = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [showOnlyUnscheduled, setShowOnlyUnscheduled] = useState(true);
   const navigate = useNavigate();
   
   // States for jadwal creation
@@ -48,6 +49,14 @@ const ListTransaksi = () => {
       return;
     }
 
+    // Add this to verify and debug the token
+    console.log("Current token:", token.substring(0, 15) + "...");
+    
+    // Check if the token format looks valid
+    if (!token.includes(".")) { 
+      console.warn("Token format doesn't appear to be valid JWT");
+    }
+
     fetchTransaksi();
     fetchJadwalData();
   }, []);
@@ -56,20 +65,73 @@ const ListTransaksi = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await useAxios.get("/transaksi");
-      setTransaksi(response.data);
+      console.log("Attempting to fetch transactions...");
+      
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem("token")}`,
+        'Accept': 'application/json'
+      };
+      
+      const response = await useAxios.get("/transaksi", { headers });
+      let transaksiData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+
+      // Ambil nama barang untuk setiap transaksi
+      const transaksiWithNamaBarang = await Promise.all(
+        transaksiData.map(async (trx) => {
+          try {
+            // Ambil detail transaksi (bisa berisi banyak barang)
+            const detailResponse = await useAxios.get(`/detailTransaksi/transaksi/${trx.id_transaksi}`);
+            const detailItems = detailResponse.data;
+            // Gabungkan nama barang (jika lebih dari satu, pisahkan dengan koma)
+            let namaBarang = "-";
+            if (Array.isArray(detailItems) && detailItems.length > 0) {
+              // Ambil nama barang dari setiap detail
+              const barangNames = await Promise.all(
+                detailItems.map(async (item) => {
+                  try {
+                    const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
+                    return barangResponse.data?.nama_barang || `Barang #${item.id_barang}`;
+                  } catch {
+                    return `Barang #${item.id_barang}`;
+                  }
+                })
+              );
+              namaBarang = barangNames.join(", ");
+            }
+            return { ...trx, nama_barang: namaBarang };
+          } catch (err) {
+            return { ...trx, nama_barang: "-" };
+          }
+        })
+      );
+
+      setTransaksi(transaksiWithNamaBarang);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching transaksi:", error);
-      if (error.status === 401) {
-        setIsAuthenticated(false);
-        setError("Sesi Anda telah berakhir. Silakan login kembali.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        setTimeout(() => navigate("/LoginPage"), 2000);
+      
+      // More detailed error reporting
+      if (error.response) {
+        console.error("Error response status:", error.response.status);
+        console.error("Error response data:", error.response.data);
+        
+        if (error.response.status === 401) {
+          setIsAuthenticated(false);
+          setError("Sesi Anda telah berakhir. Silakan login kembali.");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setTimeout(() => navigate("/LoginPage"), 2000);
+        } else {
+          setError(`Gagal memuat data transaksi (${error.response.status}): ${error.response.data?.message || "Silakan coba lagi nanti."}`);
+        }
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+        setError("Server tidak merespon. Periksa koneksi internet Anda atau coba lagi nanti.");
       } else {
-        setError("Gagal memuat data transaksi. Silakan coba lagi nanti.");
+        console.error("Error message:", error.message);
+        setError(`Gagal memuat data: ${error.message}`);
       }
+      
       setLoading(false);
     }
   };
@@ -328,7 +390,12 @@ const ListTransaksi = () => {
       const response = await createJadwal(formattedData);
       console.log('Jadwal creation response:', response);
       
-      setJadwalSuccess("Jadwal pengiriman berhasil dibuat!");
+      // Customize success message based on delivery method
+      if (isDeliveryByCourier) {
+        setJadwalSuccess("Jadwal pengiriman berhasil dibuat! Notifikasi telah dikirim ke kurir, pembeli, dan pemilik barang.");
+      } else {
+        setJadwalSuccess("Jadwal pengambilan berhasil dibuat! Notifikasi telah dikirim ke pembeli dan pemilik barang.");
+      }
       
       // Update UI
       fetchTransaksi();
@@ -344,7 +411,7 @@ const ListTransaksi = () => {
           tanggal: new Date().toISOString().split('T')[0],
           status_jadwal: "Sedang Dikirim"
         });
-      }, 1500);
+      }, 2500); // Increase timeout slightly to give more time to read the notification message
     } catch (error) {
       console.error("Error creating jadwal:", error);
       
@@ -363,6 +430,12 @@ const ListTransaksi = () => {
   // Function to check if transaction already has jadwal
   const hasJadwal = (transactionId) => {
     return transactionWithJadwal.includes(transactionId);
+  };
+
+  // Function to filter transactions based on filter state
+  const filteredTransaksi = () => {
+    if (!showOnlyUnscheduled) return transaksi;
+    return transaksi.filter(item => !hasJadwal(item.id_transaksi));
   };
 
   // Function to check if we can create jadwal for a transaction
@@ -430,6 +503,63 @@ const ListTransaksi = () => {
           ></button>
         </div>
       )}
+      
+      {/* Add API test button */}
+      <div className="mb-3">
+        <Button 
+          variant="outline-primary" 
+          onClick={fetchTransaksi} 
+          disabled={loading}
+          className="me-2"
+        >
+          {loading ? (
+            <>
+              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+              <span className="ms-1">Memuat...</span>
+            </>
+          ) : (
+            "Refresh Data"
+          )}
+        </Button>
+        
+        <Button 
+          variant={showOnlyUnscheduled ? "primary" : "outline-primary"} 
+          onClick={() => setShowOnlyUnscheduled(!showOnlyUnscheduled)} 
+          className="me-2"
+        >
+          {showOnlyUnscheduled ? "Tampilkan Semua" : "Hanya Belum Ada Jadwal"}
+        </Button>
+        
+        <Button 
+          variant="outline-secondary" 
+          onClick={() => {
+            // Test direct API access without Axios interceptors
+            console.log("Testing direct API connection...");
+            const token = localStorage.getItem("token");
+            fetch(`${BASE_URL}/api/transaksi`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+              }
+            })
+            .then(response => {
+              console.log("Direct fetch response:", response);
+              return response.json();
+            })
+            .then(data => {
+              console.log("Direct fetch data:", data);
+              alert("API test successful! Check console for details.");
+            })
+            .catch(error => {
+              console.error("Direct fetch error:", error);
+              alert(`API test failed: ${error.message}`);
+            });
+          }}
+        >
+          Test API Connection
+        </Button>
+      </div>
+      
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -437,6 +567,7 @@ const ListTransaksi = () => {
           <thead>
             <tr>
               <th>No.</th>
+              <th>Nama Barang</th>
               <th>Total Harga</th>
               <th>Status</th>
               <th>Tanggal</th>
@@ -445,8 +576,8 @@ const ListTransaksi = () => {
             </tr>
           </thead>
           <tbody>
-            {transaksi.length > 0 ? (
-              transaksi.map((item, index) => {
+            {filteredTransaksi().length > 0 ? (
+              filteredTransaksi().map((item, index) => {
                 // Using the correct field names based on the Transaksi model
                 const id = item.id_transaksi;
                 const totalHarga = item.total_harga;
@@ -457,6 +588,7 @@ const ListTransaksi = () => {
                 return (
                   <tr key={id}>
                     <td>{index + 1}</td>
+                    <td>{item.nama_barang}</td>
                     <td>Rp {totalHarga ? totalHarga.toLocaleString() : '0'}</td>
                     <td>{getStatusBadge(status)}</td>
                     <td>{formatDate(tanggal)}</td>
@@ -524,7 +656,9 @@ const ListTransaksi = () => {
             ) : (
               <tr key="no-data">
                 <td colSpan="7" className="text-center">
-                  Tidak ada transaksi ditemukan
+                  {showOnlyUnscheduled 
+                    ? "Tidak ada transaksi yang belum memiliki jadwal" 
+                    : "Tidak ada transaksi ditemukan"}
                 </td>
               </tr>
             )}
@@ -540,7 +674,14 @@ const ListTransaksi = () => {
         <Modal.Body>
           {jadwalSuccess && (
             <Alert variant="success" className="mb-3">
-              {jadwalSuccess}
+              <Alert.Heading>Berhasil!</Alert.Heading>
+              <p>{jadwalSuccess}</p>
+              <p className="mb-0">
+                <i className="bi bi-bell"></i> {' '}
+                {isDeliveryByCourier ? 
+                  "Notifikasi akan muncul di aplikasi mobile kurir, pembeli, dan pemilik barang." : 
+                  "Notifikasi akan muncul di aplikasi mobile pembeli dan pemilik barang."}
+              </p>
             </Alert>
           )}
           
@@ -632,6 +773,7 @@ const ListTransaksi = () => {
                 {isDeliveryByCourier && (
                   <>
                     <option value="Sedang Dikirim">Sedang Dikirim</option>
+                    <option value="Sedang di Kurir">Sedang di Kurir</option>
                   </>
                 )}
               </Form.Select>

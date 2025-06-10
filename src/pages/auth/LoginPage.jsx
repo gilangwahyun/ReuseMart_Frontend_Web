@@ -39,13 +39,13 @@ export default function LoginPage() {
                 navigate('/DashboardPegawaiGudang');
                 break;
               case 4:
-                navigate('/CRUDPenitip');
+                navigate('/VerifikasiPembayaranCS');
                 break;
               case 5:
                 navigate('/DashboardHunter');
                 break;
               case 6:
-                navigate('/DashboardKurir');
+                navigate('/VerifikasiPembayaranCS');
                 break;
               default:
                 navigate('/dashboard-pegawai');

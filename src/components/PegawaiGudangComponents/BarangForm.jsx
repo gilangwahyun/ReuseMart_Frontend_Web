@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getAllKategori } from "../../api/KategoriBarangApi";
 import { createBarang } from "../../api/BarangApi";
+// import { uploadFotoBarang } from "../../api/FotoBarangApi";
 import { createNotaDetailPenitipanBarang } from "../../api/NotaDetailPenitipanApi";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { deletePenitipanBarang } from "../../api/PenitipanBarangApi";

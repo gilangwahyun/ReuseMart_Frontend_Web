@@ -29,6 +29,15 @@ export const getPembeliByUserId = async (id_user) => {
   }
 };
 
+export const updatePembeli = async (id, pembeliData) => {
+  try {
+    const response = await useAxios.put(`${API_URL}/${id}`, pembeliData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const updatePembeliPoints = async (data) => {
   try {
     console.log("Updating pembeli points with data:", data);
