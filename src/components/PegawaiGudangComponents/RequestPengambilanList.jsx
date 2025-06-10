@@ -111,7 +111,7 @@ const RequestPengambilanList = () => {
           )
         );
         
-        setSuccessMessage(`Request pengambilan berhasil diselesaikan dan status barang diperbarui menjadi "Sudah Diambil".`);
+        setSuccessMessage(`Request pengambilan berhasil diselesaikan.`);
       } catch (statusError) {
         console.error("Error updating barang status:", statusError);
         setError("Request selesai, tetapi gagal mengubah status barang: " + (statusError.response?.data?.message || statusError.message));
@@ -143,7 +143,7 @@ const RequestPengambilanList = () => {
       case "Pending":
         return <Badge bg="warning">Pending</Badge>;
       case "Disetujui":
-        return <Badge bg="info">Disetujui</Badge>;
+        return <Badge bg="info">Menunggu Diambil</Badge>;
       case "Selesai":
         return <Badge bg="success">Selesai</Badge>;
       default:
@@ -244,6 +244,7 @@ const RequestPengambilanList = () => {
                 <th>Tanggal Request</th>
                 <th>Tanggal Pengambilan</th>
                 <th>Status</th>
+                <th>Status Barang</th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -266,6 +267,14 @@ const RequestPengambilanList = () => {
                   <td>{formatDate(request.tanggal_request)}</td>
                   <td>{formatDate(request.tanggal_pengambilan)}</td>
                   <td>{getStatusBadge(request.status)}</td>
+                  <td>
+                    <Badge bg={
+                      request.barang?.status_barang === "Sudah Diambil" ? "success" :
+                      request.barang?.status_barang === "Tersedia" ? "primary" : "secondary"
+                    }>
+                      {request.barang?.status_barang || "-"}
+                    </Badge>
+                  </td>
                   <td>
                     {request.status === "Pending" && (
                       <Button

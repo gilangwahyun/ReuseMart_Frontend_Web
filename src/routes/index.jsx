@@ -21,8 +21,12 @@ import VerifikasiPembayaranCS from '../pages/admin/VerifikasiPembayaranCS';
 import DonasiManagement from "../pages/owner/DonasiManagement";
 import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
+import NotaDonasi from '../pages/owner/NotaDonasi';
+import RequestDonasiPage from '../pages/owner/RequestDonasiPage';
 import PegawaiGudangDashboard from '../pages/pegawaiGudang/PegawaiGudangDashboard';
 import PenitipanManagement from '../pages/pegawaiGudang/PenitipanManagement';
+import NotaDonasiPrint from '../components/Nota/NotaDonasiPrint';
+import NotaDonasiAll from '../components/Nota/NotaDonasiAll';
 import PenitipanBarangForm from '../components/PegawaiGudangComponents/PenitipanForm';
 import BarangForm from '../components/PegawaiGudangComponents/BarangForm';
 import DetailBarangPage from '../pages/pegawaiGudang/DetailBarangPage';
@@ -31,9 +35,15 @@ import NotaPenjualanKurir from '../components/Nota/NotaPenjualanKurir';
 import NotaPenjualanPembeli from '../components/Nota/NotaPenjualanPembeli';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
 import DaftarBarangPenitip from '../pages/client/DaftarBarangPenitip';
+import PengambilanBarang from '../pages/client/PengambilanBarang';
+import LaporanPendapatanPenitip from '../pages/client/LaporanPendapatanPenitip';
+import LaporanPendapatanPenitipPDF from '../components/Nota/LaporanPendapatanPenitipPDF';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
 import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPage';
+import ListRequestDonasi from '../components/OwnerComponents/ListRequestDonasi';
+import RequestDonasiAll from '../components/Nota/RequestDonasiAll';
+import RequestDonasiDetail from '../components/Nota/RequestDonasiDetail';
 import KurirDeliveryTrackingPage from '../pages/pegawaiGudang/KurirDeliveryTrackingPage';
 
 const AppRoutes = () => {
@@ -50,6 +60,9 @@ const AppRoutes = () => {
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/DashboardPenitip" element={<DashboardPenitip/>} />
         <Route path="/DashboardPenitip/daftar-barang" element={<DaftarBarangPenitip/>} />
+        <Route path="/DashboardPenitip/pengambilan-barang" element={<PengambilanBarang/>} />
+        <Route path="/DashboardPenitip/laporan-pendapatan" element={<LaporanPendapatanPenitip/>} />
+        <Route path="/DashboardPenitip/laporan-pendapatan/print" element={<LaporanPendapatanPenitipPDF/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
         <Route path="/transaksi" element={< Transaksi />} />
         <Route path="/pembayaran" element={< Pembayaran />} />
@@ -61,6 +74,12 @@ const AppRoutes = () => {
         <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
+        <Route path='/owner/nota-donasi' element={< NotaDonasi />} />
+        <Route path='/owner/nota-donasi/print/:id_alokasi' element={< NotaDonasiPrint />} />
+        <Route path='/owner/nota-donasi/print-all' element={< NotaDonasiAll />} />
+        <Route path='/owner/request-donasi' element={< RequestDonasiPage />} />
+        <Route path='/owner/request-donasi/print-all' element={< RequestDonasiAll />} />
+        <Route path='/owner/request-donasi/detail/:id_request' element={< RequestDonasiDetail />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />

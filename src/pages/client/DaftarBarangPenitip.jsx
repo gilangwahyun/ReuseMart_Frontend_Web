@@ -645,7 +645,7 @@ const DaftarBarangPenitip = () => {
                     {showFilter && (
                       <div className="mt-3 p-3 border rounded">
                         <Row>
-                          <Col md={6} className="mb-3 mb-md-0">
+                          {/* <Col md={6} className="mb-3 mb-md-0">
                             <Form.Group>
                               <Form.Label>Status Barang</Form.Label>
                               <Form.Select
@@ -658,8 +658,8 @@ const DaftarBarangPenitip = () => {
                                 ))}
                               </Form.Select>
                             </Form.Group>
-                          </Col>
-                          <Col md={6}>
+                          </Col> */}
+                          {/* <Col md={6}>
                             <Form.Group>
                               <Form.Label>Kategori</Form.Label>
                               <Form.Select
@@ -672,7 +672,7 @@ const DaftarBarangPenitip = () => {
                                 ))}
                               </Form.Select>
                             </Form.Group>
-                          </Col>
+                          </Col> */}
                         </Row>
                         <Row className="mt-3">
                           <Col>
@@ -886,7 +886,7 @@ const DaftarBarangPenitip = () => {
               
               <Alert variant="success" className="mt-3">
                 <small>
-                  Request pengambilan akan diproses oleh admin. Anda akan dihubungi 
+                  Request pengambilan akan diproses oleh Pegawai Gudang. Anda akan dihubungi 
                   jika request telah disetujui dan dapat mengambil barang pada tanggal yang ditentukan.
                 </small>
               </Alert>

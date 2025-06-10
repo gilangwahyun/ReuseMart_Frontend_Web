@@ -54,6 +54,12 @@ const DashboardPenitip = () => {
 
   // Function to handle perpanjang (extend) button click
   const handlePerpanjangClick = (item) => {
+    // Check if the transaction is already completed
+    if (isPenitipanSelesai(item)) {
+      setError('Tidak dapat memperpanjang penitipan yang sudah selesai.');
+      return;
+    }
+    
     // Calculate the new end date (30 days after current end date)
     const currentEndDate = new Date(item.tanggal_akhir_penitipan);
     const newEndDate = new Date(currentEndDate);
@@ -411,7 +417,7 @@ const DashboardPenitip = () => {
                 <FaCalendarAlt className="text-success" size={24} />
               </div>
               <div>
-                <h6 className="mb-0 text-muted">Penitipan Aktif</h6>
+                <h6 className="mb-0 text-muted">Jumlah Penitipan</h6>
                 <h3 className="mb-0">{activePenitipan}</h3>
               </div>
             </Card.Body>
@@ -435,6 +441,19 @@ const DashboardPenitip = () => {
           console.log(`Barang ${barang.id_barang} status: '${barang.status_barang}'`);
         });
         
+        // Check if all items are "Habis"
+        const allItemsHabis = penitipanItem.barang.length > 0 && penitipanItem.barang.every(barang => {
+          const status = barang.status_barang || '';
+          const statusLower = status.toLowerCase();
+          return statusLower.includes('habis');
+        });
+        
+        // If all items are "Habis", mark as "Selesai" even though date is still active
+        if (allItemsHabis) {
+          console.log(`Penitipan ${penitipanItem.id_penitipan} marked as Selesai because all items are Habis`);
+          return <Badge bg="secondary">Selesai</Badge>;
+        }
+        
         // Check if all items are not active or have been processed (diambil, terjual, donasi)
         const allItemsProcessed = penitipanItem.barang.every(barang => {
           const status = barang.status_barang || '';
@@ -444,7 +463,8 @@ const DashboardPenitip = () => {
           return isStatusTidakAktif(status) || 
                  statusLower.includes('diambil') ||
                  statusLower.includes('terjual') ||
-                 statusLower.includes('donasi');
+                 statusLower.includes('donasi') ||
+                 statusLower.includes('habis');
         });
         
         // If all items are processed and there are items, mark as "Selesai" even though date is still active
@@ -495,6 +515,8 @@ const DashboardPenitip = () => {
       return <Badge bg="info">Terjual</Badge>;
     } else if (statusLower.includes('donasi')) {
       return <Badge bg="primary">Donasi</Badge>;
+    } else if (statusLower.includes('habis')) {
+      return <Badge bg="danger">Habis</Badge>;
     } else if (isStatusTidakAktif(statusBarang)) {
       return <Badge bg="secondary">Non Aktif</Badge>;
     } else {
@@ -561,6 +583,49 @@ const DashboardPenitip = () => {
     } finally {
       setRequestPengambilanLoading(false);
     }
+  };
+
+  // Helper function to check if a penitipan has "Selesai" status
+  const isPenitipanSelesai = (penitipanItem) => {
+    const now = new Date();
+    const endDate = new Date(penitipanItem.tanggal_akhir_penitipan);
+    
+    // If end date is in the past, it's "Selesai"
+    if (endDate < now) {
+      return true;
+    }
+    
+    // Check if all items are "Habis" or processed
+    if (penitipanItem && penitipanItem.barang && Array.isArray(penitipanItem.barang) && penitipanItem.barang.length > 0) {
+      // Check if all items are "Habis"
+      const allItemsHabis = penitipanItem.barang.every(barang => {
+        const status = barang.status_barang || '';
+        const statusLower = status.toLowerCase();
+        return statusLower.includes('habis');
+      });
+      
+      if (allItemsHabis) {
+        return true;
+      }
+      
+      // Check if all items are processed (diambil, terjual, donasi, tidak aktif)
+      const allItemsProcessed = penitipanItem.barang.every(barang => {
+        const status = barang.status_barang || '';
+        const statusLower = status.toLowerCase();
+        
+        return isStatusTidakAktif(status) || 
+               statusLower.includes('diambil') ||
+               statusLower.includes('terjual') ||
+               statusLower.includes('donasi') ||
+               statusLower.includes('habis');
+      });
+      
+      if (allItemsProcessed) {
+        return true;
+      }
+    }
+    
+    return false;
   };
 
   return (
@@ -648,7 +713,7 @@ const DashboardPenitip = () => {
                                     <FaEye className="me-1" /> Detail
                                   </Button>
                                   
-                                  {isActive && !hasAnyBarangTaken(item) && (
+                                  {isActive && !hasAnyBarangTaken(item) && !isPenitipanSelesai(item) && (
                                     <Button 
                                       variant="success" 
                                       size="sm"
@@ -726,7 +791,7 @@ const DashboardPenitip = () => {
                         <th>Kategori</th>
                         <th>Harga</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        {/* <th>Aksi</th> */}
                       </tr>
                     </thead>
                     <tbody>
@@ -744,8 +809,8 @@ const DashboardPenitip = () => {
                             <td>{barang.kategori?.nama_kategori || 'Tidak ada kategori'}</td>
                             <td>Rp {barang.harga?.toLocaleString() || '0'}</td>
                             <td>{getBarangStatusBadge(barang.status_barang)}</td>
-                            <td>                           
-                            </td>
+                            {/* <td>                           
+                            </td> */}
                           </tr>
                         );
                       })}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col, Card, Button, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAxios from '../../api';
 import { useReactToPrint } from 'react-to-print';
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, BlobProvider, pdf } from '@react-pdf/renderer';
+import { getNotaPenjualanByTransaksiId } from '../../api/NotaPenjualanBarangApi';
 
 // Define PDF styles
 const stylesPdf = StyleSheet.create({
@@ -85,13 +86,28 @@ const stylesPdf = StyleSheet.create({
 
 // PDF Document Component
 const NotaPengirimanDocument = ({ data }) => {
-  const { invoiceNumber, jadwal, transaksi, pegawai, pembeli, buyerEmail, alamat, items, qcOfficer } = data;
+  const { 
+    invoiceNumber, 
+    jadwal, 
+    transaksi, 
+    pegawai, 
+    pembeli, 
+    buyerEmail, 
+    alamat, 
+    items, 
+    qcOfficer, 
+    points,
+    currentPoints,
+    totalPointsAfterTransaction
+  } = data;
   
-  // Format date for PDF
+  // Format date to DD/MM/YYYY with time
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${hours}:${minutes}`;
   };
   
   // Calculate total
@@ -175,6 +191,18 @@ const NotaPengirimanDocument = ({ data }) => {
           <Text style={stylesPdf.itemName}>Total</Text>
           <Text style={stylesPdf.itemPrice}>{new Intl.NumberFormat('id-ID').format(totalAmount)}</Text>
         </View>
+        <View style={stylesPdf.totalRow}>
+          <Text style={stylesPdf.itemName}>Poin dari pesanan ini</Text>
+          <Text style={stylesPdf.itemPrice}>{points}</Text>
+        </View>
+        <View style={stylesPdf.totalRow}>
+          <Text style={stylesPdf.itemName}>Poin Pembeli saat ini</Text>
+          <Text style={stylesPdf.itemPrice}>{currentPoints}</Text>
+        </View>
+        <View style={stylesPdf.totalRow}>
+          <Text style={stylesPdf.itemName}>Total poin pembeli setelah transaksi</Text>
+          <Text style={stylesPdf.itemPrice}>{totalPointsAfterTransaction}</Text>
+        </View>
         
         <View style={stylesPdf.divider} />
         
@@ -203,6 +231,9 @@ const NotaPenjualanKurir = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notaData, setNotaData] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [isPdfReady, setIsPdfReady] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
   const printRef = useRef();
   const navigate = useNavigate();
 
@@ -210,7 +241,9 @@ const NotaPenjualanKurir = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${hours}:${minutes}`;
   };
 
   // Format currency
@@ -221,12 +254,53 @@ const NotaPenjualanKurir = () => {
     }).format(amount);
   };
 
-  // Get invoice number - format: YY.MM.XXX
-  const generateInvoiceNumber = () => {
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    return `${year}.${month}.101`;
+  // Calculate points based on total amount (1 point per 10,000 rupiah)
+  const calculatePoints = (totalAmount) => {
+    // Base points: 1 point per 10,000 rupiah
+    let points = Math.floor(totalAmount / 10000);
+    
+    // Add 20% bonus for purchases over 500,000
+    if (totalAmount > 500000) {
+      points = Math.floor(points * 1.2); // Add 20% bonus
+    }
+    
+    return points;
+  };
+
+  // Generate PDF function
+  const generatePDF = async (data) => {
+    try {
+      if (!data) {
+        setPdfError("Tidak ada data untuk membuat PDF");
+        return;
+      }
+      
+      console.log("Generating PDF with invoice number:", data.invoiceNumber);
+      
+      const blob = await pdf(<NotaPengirimanDocument data={data} />).toBlob();
+      setPdfBlob(blob);
+      setIsPdfReady(true);
+      setPdfError(null);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      setPdfError(`Gagal membuat PDF: ${err.message}`);
+    }
+  };
+
+  // Handle direct download
+  const handleDownloadPDF = () => {
+    if (!pdfBlob) {
+      generatePDF(notaData);
+      return;
+    }
+    
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Nota_Pengiriman_${id_jadwal}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   useEffect(() => {
@@ -241,6 +315,34 @@ const NotaPenjualanKurir = () => {
         const transaksiResponse = await useAxios.get(`/transaksi/${jadwalData.id_transaksi}`);
         const transaksiData = transaksiResponse.data;
 
+        // Step 2.5: Get nota penjualan data if it exists
+        let invoiceNumber = "";
+        try {
+          const notaPenjualan = await getNotaPenjualanByTransaksiId(transaksiData.id_transaksi);
+          if (notaPenjualan) {
+            invoiceNumber = notaPenjualan.nomor_nota;
+            console.log("Found existing nota with number:", invoiceNumber);
+          } else {
+            // If no nota found, use a fallback approach to get the invoice number
+            console.log("No nota found for transaction. Trying to generate a fallback invoice number.");
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
+            invoiceNumber = `${year}.${month}.${transactionId}`;
+            console.log("Generated fallback invoice number:", invoiceNumber);
+          }
+        } catch (error) {
+          console.error("Error fetching nota penjualan:", error);
+          // Generate fallback invoice number
+          const now = new Date();
+          const year = now.getFullYear().toString().slice(-2);
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
+          invoiceNumber = `${year}.${month}.${transactionId}`;
+          console.log("Generated fallback invoice number after error:", invoiceNumber);
+        }
+
         // Step 3: Get pembeli data to get the id_user
         const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
         const pembeliData = pembeliResponse.data;
@@ -251,6 +353,7 @@ const NotaPenjualanKurir = () => {
         
         // Step 4: Get the user email using the pembeli/user endpoint
         let buyerEmail = "Email tidak tersedia";
+        let currentPoints = 0; // Initialize current points
         if (buyerUserId) {
           try {
             // Use the endpoint that returns both pembeli and nested user data
@@ -263,6 +366,13 @@ const NotaPenjualanKurir = () => {
                 pembeliUserResponse.data.user.email) {
               buyerEmail = pembeliUserResponse.data.user.email;
               console.log("Found buyer email:", buyerEmail);
+            }
+            
+            // Get the customer's current points
+            if (pembeliUserResponse.data && 
+                typeof pembeliUserResponse.data.jumlah_poin !== 'undefined') {
+              currentPoints = pembeliUserResponse.data.jumlah_poin || 0;
+              console.log("Found customer's current points:", currentPoints);
             }
           } catch (error) {
             console.error("Error fetching pembeli/user data:", error);
@@ -342,9 +452,14 @@ const NotaPenjualanKurir = () => {
           qcOfficer = itemsWithDetails[0].nama_petugas_qc;
         }
 
+        // Calculate total and points
+        const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
+        const points = calculatePoints(totalAmount);
+        const totalPointsAfterTransaction = currentPoints + points;
+
         // Compile all data
         setNotaData({
-          invoiceNumber: generateInvoiceNumber(),
+          invoiceNumber: invoiceNumber,
           jadwal: jadwalData,
           transaksi: transaksiData,
           pegawai: pegawaiData,
@@ -352,9 +467,13 @@ const NotaPenjualanKurir = () => {
           buyerEmail: buyerEmail,
           alamat: alamatData,
           items: itemsWithDetails,
-          qcOfficer: qcOfficer
+          qcOfficer: qcOfficer,
+          points: points,
+          currentPoints: currentPoints,
+          totalPointsAfterTransaction: totalPointsAfterTransaction
         });
 
+        console.log("Final nota data prepared with invoice number:", invoiceNumber);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching nota data:', error);
@@ -371,11 +490,12 @@ const NotaPenjualanKurir = () => {
     }
   }, [id_jadwal]);
 
-  // Printing functionality
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: `Nota_Pengiriman_${id_jadwal}`,
-  });
+  // After data is loaded, generate the PDF
+  useEffect(() => {
+    if (notaData && !isPdfReady && !pdfBlob) {
+      generatePDF(notaData);
+    }
+  }, [notaData, isPdfReady, pdfBlob]);
 
   if (loading) {
     return (
@@ -400,8 +520,10 @@ const NotaPenjualanKurir = () => {
     );
   }
 
-  const { invoiceNumber, jadwal, transaksi, pegawai, pembeli, buyerEmail, alamat, items, qcOfficer } = notaData;
+  const { invoiceNumber, jadwal, transaksi, pegawai, pembeli, buyerEmail, alamat, items, qcOfficer, points, currentPoints, totalPointsAfterTransaction } = notaData;
   const totalAmount = items.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
+
+  console.log("Rendering receipt with invoice number:", invoiceNumber);
 
   // Format address for display
   const formattedAddress = alamat ? 
@@ -415,18 +537,19 @@ const NotaPenjualanKurir = () => {
       <div className="d-flex justify-content-between mb-4">
         <h2>Nota Pengiriman Kurir</h2>
         <div>
-          <PDFDownloadLink
-            document={<NotaPengirimanDocument data={notaData} />}
-            fileName={`Nota_Pengiriman_${id_jadwal}.pdf`}
-            style={{ textDecoration: 'none' }}
+          {pdfError && (
+            <Alert variant="danger" className="mb-2 p-2 small">
+              {pdfError}
+            </Alert>
+          )}
+          <Button 
+            variant="primary" 
+            onClick={handleDownloadPDF}
+            disabled={loading || !notaData} 
             className="me-2"
           >
-            {({ loading }) => (
-              <Button variant="primary" disabled={loading}>
-                {loading ? 'Menyiapkan PDF...' : 'Download PDF'}
-              </Button>
-            )}
-          </PDFDownloadLink>
+            {loading ? 'Menyiapkan PDF...' : 'Download PDF'}
+          </Button>
           <Button variant="secondary" onClick={() => navigate(-1)}>
             Kembali
           </Button>
@@ -500,6 +623,18 @@ const NotaPenjualanKurir = () => {
           <div className="d-flex justify-content-between mb-1">
             <div>Total</div>
             <div>{formatCurrency(totalAmount)}</div>
+          </div>
+          <div className="d-flex justify-content-between mb-1">
+            <div>Poin dari pesanan ini</div>
+            <div>{points}</div>
+          </div>
+          <div className="d-flex justify-content-between mb-1">
+            <div>Poin Pembeli saat ini</div>
+            <div>{currentPoints}</div>
+          </div>
+          <div className="d-flex justify-content-between mb-1">
+            <div>Total poin pembeli setelah transaksi</div>
+            <div>{totalPointsAfterTransaction}</div>
           </div>
 
           <hr className="border-1 border-dark border-dotted my-2" />

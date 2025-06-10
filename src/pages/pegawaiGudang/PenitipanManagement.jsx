@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllBarang, searchBarangAllField } from "../../api/BarangApi";
 import PenitipanBarangTable from "../../components/PegawaiGudangComponents/PenitipanBarangTable";
-import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
+// import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
 
 const PenitipanManagement = () => {
   const [barangData, setBarangData] = useState([]);
