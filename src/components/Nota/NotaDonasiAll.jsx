@@ -195,29 +195,6 @@ const NotaDonasiAll = () => {
                 </Card.Body>
               </Card>
             ))}
-
-            <div className="mt-5 pt-5">
-              <Row>
-                <Col md={6}>
-                  <div className="text-center">
-                    <p>Mengetahui,</p>
-                    <div className="mt-5">
-                      <p>________________________</p>
-                      <p>Manajer ReuseMart</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col md={6}>
-                  <div className="text-center">
-                    <p>Membuat Laporan,</p>
-                    <div className="mt-5">
-                      <p>________________________</p>
-                      <p>Admin Donasi</p>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-            </div>
           </Card.Body>
         </Card>
       </div>

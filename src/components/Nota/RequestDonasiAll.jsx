@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Button, Table, Container, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
@@ -11,6 +11,7 @@ const RequestDonasiAll = () => {
   const [error, setError] = useState(null);
   const printComponentRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchRequestDonasi();
@@ -58,55 +59,6 @@ const RequestDonasiAll = () => {
     }
   };
 
-  // Group request by organization
-  const getOrganizedRequests = () => {
-    const organizationMap = new Map();
-    
-    requestDonasi.forEach(request => {
-      if (request.organisasi) {
-        const orgId = request.organisasi.id_organisasi;
-        const orgName = request.organisasi.nama_organisasi;
-        
-        if (!organizationMap.has(orgId)) {
-          organizationMap.set(orgId, {
-            id: orgId,
-            name: orgName,
-            items: [],
-          });
-        }
-        
-        organizationMap.get(orgId).items.push(request);
-      } else {
-        // For items without organization data
-        if (!organizationMap.has('unknown')) {
-          organizationMap.set('unknown', {
-            id: 'unknown',
-            name: 'Tidak Tercatat',
-            items: [],
-          });
-        }
-        
-        organizationMap.get('unknown').items.push(request);
-      }
-    });
-    
-    return Array.from(organizationMap.values());
-  };
-
-  // Get status badge color
-  const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'disetujui':
-        return 'success';
-      case 'ditolak':
-        return 'danger';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'secondary';
-    }
-  };
-
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
@@ -130,8 +82,6 @@ const RequestDonasiAll = () => {
       </Container>
     );
   }
-
-  const organizedRequests = getOrganizedRequests();
   
   return (
     <Container fluid className="py-4">
@@ -155,64 +105,32 @@ const RequestDonasiAll = () => {
               <p>Tanggal Cetak: {formatDate(new Date())}</p>
             </div>
 
-            {organizedRequests.map((org) => (
-              <Card className="mb-4" key={org.id}>
-                <Card.Header>
-                  <h5>Organisasi: {org.name}</h5>
-                </Card.Header>
-                <Card.Body>
-                  <Table bordered responsive>
-                    <thead>
-                      <tr>
-                        <th>No</th>
-                        <th>ID Pengajuan</th>
-                        <th>Deskripsi</th>
-                        <th>Tanggal Pengajuan</th>
-                        <th>Status</th>
+            <Card className="mb-4">
+              <Card.Body>
+                <Table bordered responsive>
+                  <thead>
+                    <tr>
+                      <th width="5%">No</th>
+                      <th width="10%">ID Organisasi</th>
+                      <th width="20%">Nama Organisasi</th>
+                      <th width="25%">Alamat Organisasi</th>
+                      <th width="40%">Request</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requestDonasi.map((request, idx) => (
+                      <tr key={request.id_request_donasi}>
+                        <td>{idx + 1}</td>
+                        <td>{request.organisasi?.id_organisasi || "-"}</td>
+                        <td>{request.organisasi?.nama_organisasi || "-"}</td>
+                        <td>{request.organisasi?.alamat || "-"}</td>
+                        <td>{request.deskripsi || "-"}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {org.items.map((request, idx) => (
-                        <tr key={request.id_request_donasi}>
-                          <td>{idx + 1}</td>
-                          <td>{request.id_request_donasi}</td>
-                          <td>{request.deskripsi}</td>
-                          <td>{formatDate(request.tanggal_pengajuan)}</td>
-                          <td>
-                            <span className={`text-${getStatusBadge(request.status_pengajuan)}`}>
-                              {request.status_pengajuan}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </Card.Body>
-              </Card>
-            ))}
-
-            <div className="mt-5 pt-5">
-              <Row>
-                <Col md={6}>
-                  <div className="text-center">
-                    <p>Mengetahui,</p>
-                    <div className="mt-5">
-                      <p>________________________</p>
-                      <p>Manajer ReuseMart</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col md={6}>
-                  <div className="text-center">
-                    <p>Membuat Laporan,</p>
-                    <div className="mt-5">
-                      <p>________________________</p>
-                      <p>Admin Donasi</p>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-            </div>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
           </Card.Body>
         </Card>
       </div>

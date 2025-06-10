@@ -18,7 +18,8 @@ import DashboardKeranjang from '../pages/client/DashboardKeranjang';
 import DonasiManagement from "../pages/owner/DonasiManagement";
 import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
-import NotaDonasi from '../pages/Owner/NotaDonasi';
+import NotaDonasi from '../pages/owner/NotaDonasi';
+import RequestDonasiPage from '../pages/owner/RequestDonasiPage';
 import PegawaiGudangDashboard from '../pages/pegawaiGudang/PegawaiGudangDashboard';
 import PenitipanManagement from '../pages/pegawaiGudang/PenitipanManagement';
 import NotaDonasiPrint from '../components/Nota/NotaDonasiPrint';
@@ -32,6 +33,8 @@ import NotaPenjualanPembeli from '../components/Nota/NotaPenjualanPembeli';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
 import DaftarBarangPenitip from '../pages/client/DaftarBarangPenitip';
 import PengambilanBarang from '../pages/client/PengambilanBarang';
+import LaporanPendapatanPenitip from '../pages/client/LaporanPendapatanPenitip';
+import LaporanPendapatanPenitipPDF from '../components/Nota/LaporanPendapatanPenitipPDF';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
 import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPage';
@@ -54,6 +57,8 @@ const AppRoutes = () => {
         <Route path="/DashboardPenitip" element={<DashboardPenitip/>} />
         <Route path="/DashboardPenitip/daftar-barang" element={<DaftarBarangPenitip/>} />
         <Route path="/DashboardPenitip/pengambilan-barang" element={<PengambilanBarang/>} />
+        <Route path="/DashboardPenitip/laporan-pendapatan" element={<LaporanPendapatanPenitip/>} />
+        <Route path="/DashboardPenitip/laporan-pendapatan/print" element={<LaporanPendapatanPenitipPDF/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
         <Route path="/CRUDPenitip" element={<CRUDPenitip/>} />
         <Route path="/DashboardAdmin" element={<AdminDashboard />} />
@@ -65,7 +70,7 @@ const AppRoutes = () => {
         <Route path='/owner/nota-donasi' element={< NotaDonasi />} />
         <Route path='/owner/nota-donasi/print/:id_alokasi' element={< NotaDonasiPrint />} />
         <Route path='/owner/nota-donasi/print-all' element={< NotaDonasiAll />} />
-        <Route path='/owner/request-donasi' element={< ListRequestDonasi />} />
+        <Route path='/owner/request-donasi' element={< RequestDonasiPage />} />
         <Route path='/owner/request-donasi/print-all' element={< RequestDonasiAll />} />
         <Route path='/owner/request-donasi/detail/:id_request' element={< RequestDonasiDetail />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />

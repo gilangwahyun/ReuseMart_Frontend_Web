@@ -98,3 +98,33 @@ export const publicShow = async (id) => {
     throw error;
   }
 };
+
+// Tambahkan fungsi baru untuk mendapatkan data penitipan berdasarkan ID penitip
+export const getPenitipanByPenitipId = async (id_penitip, include = '') => {
+  try {
+    let url = `${API_URL}/${id_penitip}/penitipan`;
+    
+    // Tambahkan parameter include jika ada
+    if (include) {
+      url += `?include=${include}`;
+    }
+    
+    const response = await useAxios.get(url);
+    return response;  // Return full response object to maintain compatibility
+  } catch (error) {
+    console.error(`Error mengambil data penitipan untuk penitip ID ${id_penitip}:`, error);
+    throw error;
+  }
+};
+
+// Tambahkan fungsi baru untuk mendapatkan data transaksi dan nota penjualan penitip
+export const getPenitipTransaksiNota = async (id_penitip) => {
+  try {
+    // Mendapatkan data penitipan dengan barang dan detail transaksi
+    const response = await useAxios.get(`${API_URL}/${id_penitip}/transaksi-nota`);
+    return response;
+  } catch (error) {
+    console.error(`Error mengambil data transaksi dan nota untuk penitip ID ${id_penitip}:`, error);
+    throw error;
+  }
+};

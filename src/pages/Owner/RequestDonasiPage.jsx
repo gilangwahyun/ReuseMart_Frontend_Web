@@ -1,20 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Table, Container, Row, Col, Spinner, Alert } from 'react-bootstrap';
-import { useReactToPrint } from 'react-to-print';
+import { Card, Button, Table, Container, Row, Col, Spinner, Alert, Badge, Form } from 'react-bootstrap';
 import { format } from 'date-fns';
 import { getAllRequestDonasi } from '../../api/RequestDonasiApi';
+import OwnerSidebar from '../../components/OwnerSideBar';
 
-const RequestDonasiAll = () => {
+const RequestDonasiPageContent = () => {
   const [requestDonasi, setRequestDonasi] = useState([]);
+  const [filteredRequests, setFilteredRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const printComponentRef = useRef(null);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchRequestDonasi();
   }, []);
+
+  useEffect(() => {
+    // Apply filters whenever requestDonasi, filterStatus or searchTerm change
+    applyFilters();
+  }, [requestDonasi, filterStatus, searchTerm]);
 
   const fetchRequestDonasi = async () => {
     try {
@@ -30,23 +37,35 @@ const RequestDonasiAll = () => {
     }
   };
 
-  const handlePrint = useReactToPrint({
-    content: () => printComponentRef.current,
-    contentRef: printComponentRef,
-    documentTitle: 'Laporan Pengajuan Donasi ReuseMart',
-    onBeforeGetContent: () => {
-      return new Promise(resolve => {
-        console.log("Preparing content to print...");
-        console.log("Print ref exists:", !!printComponentRef.current);
-        resolve();
-      });
-    },
-    onAfterPrint: () => console.log('Print completed'),
-    removeAfterPrint: true,
-  });
+  const applyFilters = () => {
+    let results = [...requestDonasi];
+    
+    // Filter by status if selected
+    if (filterStatus) {
+      results = results.filter(request => 
+        request.status_pengajuan?.toLowerCase() === filterStatus.toLowerCase()
+      );
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      results = results.filter(request => 
+        request.deskripsi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.organisasi?.nama_organisasi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.organisasi?.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    setFilteredRequests(results);
+  };
 
-  const handleBack = () => {
-    navigate('/owner/request-donasi');
+  const handlePrintReport = () => {
+    // Navigate to the print-all page for Request Donasi
+    navigate('/owner/request-donasi/print-all');
+  };
+
+  const refreshData = () => {
+    fetchRequestDonasi();
   };
 
   const formatDate = (dateString) => {
@@ -56,41 +75,6 @@ const RequestDonasiAll = () => {
     } catch (e) {
       return dateString;
     }
-  };
-
-  // Group request by organization
-  const getOrganizedRequests = () => {
-    const organizationMap = new Map();
-    
-    requestDonasi.forEach(request => {
-      if (request.organisasi) {
-        const orgId = request.organisasi.id_organisasi;
-        const orgName = request.organisasi.nama_organisasi;
-        
-        if (!organizationMap.has(orgId)) {
-          organizationMap.set(orgId, {
-            id: orgId,
-            name: orgName,
-            items: [],
-          });
-        }
-        
-        organizationMap.get(orgId).items.push(request);
-      } else {
-        // For items without organization data
-        if (!organizationMap.has('unknown')) {
-          organizationMap.set('unknown', {
-            id: 'unknown',
-            name: 'Tidak Tercatat',
-            items: [],
-          });
-        }
-        
-        organizationMap.get('unknown').items.push(request);
-      }
-    });
-    
-    return Array.from(organizationMap.values());
   };
 
   // Get status badge color
@@ -109,7 +93,7 @@ const RequestDonasiAll = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '80vh' }}>
         <Spinner animation="border" variant="primary" />
         <span className="ms-2">Memuat data pengajuan donasi...</span>
       </div>
@@ -122,8 +106,8 @@ const RequestDonasiAll = () => {
         <Alert variant="danger">
           {error}
           <div className="mt-3">
-            <Button variant="secondary" onClick={handleBack}>
-              Kembali
+            <Button variant="secondary" onClick={refreshData}>
+              Coba Lagi
             </Button>
           </div>
         </Alert>
@@ -131,93 +115,107 @@ const RequestDonasiAll = () => {
     );
   }
 
-  const organizedRequests = getOrganizedRequests();
+  const displayRequests = filteredRequests.length > 0 ? filteredRequests : requestDonasi;
+  const totalRequests = displayRequests.length;
   
   return (
     <Container fluid className="py-4">
-      <div className="mb-3 d-print-none">
-        <Button variant="secondary" onClick={handleBack} className="me-2">
-          &laquo; Kembali
-        </Button>
-        <Button variant="primary" onClick={handlePrint}>
-          Cetak Laporan
-        </Button>
-      </div>
+      <Card className="mb-4">
+        <Card.Header className="bg-primary text-white">
+          <h4 className="mb-0">Data Pengajuan Donasi</h4>
+        </Card.Header>
+        <Card.Body>
+          <Row className="mb-3">
+            <Col md={6} lg={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Filter Status</Form.Label>
+                <Form.Select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Semua Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="disetujui">Disetujui</option>
+                  <option value="ditolak">Ditolak</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={6} lg={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Cari Pengajuan</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Cari berdasarkan deskripsi atau nama organisasi..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col lg={4} className="d-flex align-items-end mb-3">
+              <Button variant="success" onClick={refreshData} className="me-2">
+                <i className="fas fa-sync-alt"></i> Refresh
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={handlePrintReport} 
+                disabled={totalRequests === 0}
+              >
+                <i className="fas fa-print"></i> Cetak Laporan
+              </Button>
+            </Col>
+          </Row>
 
-      {/* Direct rendering with ref */}
-      <div ref={printComponentRef} className="p-3" style={{ width: '100%', minHeight: '500px' }}>
-        <Card className="p-4 mb-4">
+          <Alert variant="info" className="mb-3">
+            Total Data: <strong>{totalRequests}</strong> pengajuan donasi
+          </Alert>
+        </Card.Body>
+      </Card>
+
+      {displayRequests.length > 0 ? (
+        <Card className="mb-4">
           <Card.Body>
-            <div className="text-center mb-4">
-              <h2>LAPORAN PENGAJUAN DONASI</h2>
-              <h4>ReuseMart</h4>
-              <p className="text-muted">Pusat Daur Ulang dan Donasi Barang Bekas</p>
-              <p>Tanggal Cetak: {formatDate(new Date())}</p>
-            </div>
-
-            {organizedRequests.map((org) => (
-              <Card className="mb-4" key={org.id}>
-                <Card.Header>
-                  <h5>Organisasi: {org.name}</h5>
-                </Card.Header>
-                <Card.Body>
-                  <Table bordered responsive>
-                    <thead>
-                      <tr>
-                        <th>No</th>
-                        <th>ID Pengajuan</th>
-                        <th>Deskripsi</th>
-                        <th>Tanggal Pengajuan</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {org.items.map((request, idx) => (
-                        <tr key={request.id_request_donasi}>
-                          <td>{idx + 1}</td>
-                          <td>{request.id_request_donasi}</td>
-                          <td>{request.deskripsi}</td>
-                          <td>{formatDate(request.tanggal_pengajuan)}</td>
-                          <td>
-                            <span className={`text-${getStatusBadge(request.status_pengajuan)}`}>
-                              {request.status_pengajuan}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </Card.Body>
-              </Card>
-            ))}
-
-            <div className="mt-5 pt-5">
-              <Row>
-                <Col md={6}>
-                  <div className="text-center">
-                    <p>Mengetahui,</p>
-                    <div className="mt-5">
-                      <p>________________________</p>
-                      <p>Manajer ReuseMart</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col md={6}>
-                  <div className="text-center">
-                    <p>Membuat Laporan,</p>
-                    <div className="mt-5">
-                      <p>________________________</p>
-                      <p>Admin Donasi</p>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-            </div>
+            <Table bordered responsive hover>
+              <thead className="table-light">
+                <tr>
+                  <th width="5%">No</th>
+                  <th width="10%">ID Organisasi</th>
+                  <th width="20%">Nama Organisasi</th>
+                  <th width="25%">Alamat Organisasi</th>
+                  <th width="40%">Request</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayRequests.map((request, idx) => (
+                  <tr key={request.id_request_donasi}>
+                    <td>{idx + 1}</td>
+                    <td>{request.organisasi?.id_organisasi || "-"}</td>
+                    <td>{request.organisasi?.nama_organisasi || "-"}</td>
+                    <td>{request.organisasi?.alamat || "-"}</td>
+                    <td>{request.deskripsi || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           </Card.Body>
         </Card>
-      </div>
+      ) : (
+        <Alert variant="warning">
+          Tidak ada data pengajuan donasi yang ditemukan dengan filter yang dipilih.
+        </Alert>
+      )}
     </Container>
   );
 };
 
-export default RequestDonasiAll;
+const RequestDonasiPage = () => {
+  return (
+    <div className="d-flex">
+      <OwnerSidebar />
+      <div className="w-100">
+        <RequestDonasiPageContent />
+      </div>
+    </div>
+  );
+};
+
+export default RequestDonasiPage;
