@@ -180,7 +180,7 @@ const OwnerDashboard = () => {
                 onClick={handleShowReport}
                 disabled={reportLoading}
               >
-                {reportLoading ? "Memuat..." : "Tampilkan Laporan Penjualan per Kategori"}
+                {reportLoading ? "Memuat..." : "Laporan Penjualan Barang per Kategori"}
               </Button>
               
               <Button 
@@ -188,7 +188,7 @@ const OwnerDashboard = () => {
                 onClick={handleShowExpiredReport}
                 disabled={expiredReportLoading}
               >
-                {expiredReportLoading ? "Memuat..." : "Tampilkan Laporan Penitipan yang Habis Masa"}
+                {expiredReportLoading ? "Memuat..." : "Laporan Penitipan Barang yang Habis Masa Titip"}
               </Button>
             </div>
             
@@ -200,7 +200,7 @@ const OwnerDashboard = () => {
                   onClick={printReport}
                   className="me-2"
                 >
-                  Cetak Laporan Penjualan
+                  Cetak Laporan Penjualan per Kategori
                 </Button>
               )}
               
@@ -209,7 +209,7 @@ const OwnerDashboard = () => {
                   variant="success" 
                   onClick={printExpiredReport}
                 >
-                  Cetak Laporan Penitipan Habis Masa
+                  Cetak Laporan Penitipan Barang yang Habis Masa Titip
                 </Button>
               )}
             </div>
