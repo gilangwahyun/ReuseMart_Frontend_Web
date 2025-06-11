@@ -125,3 +125,13 @@ export const updateBarangStatus = async (id, status) => {
     throw error;
   }
 };
+
+export const getSalesReportByCategory = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}/reports/sales-by-category`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching sales report by category:", error);
+    throw error;
+  }
+};
