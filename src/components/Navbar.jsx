@@ -155,7 +155,114 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {}, activeKatego
     
     return '';
   };
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav ms-auto align-items-center w-100">
+            <li className="nav-item me-3">
+              <button
+                className="btn nav-link text-dark"
+                id="kategoriToggle"
+                onClick={togglePanel}
+                style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
+              >
+                Kategori
+              </button>
+            </li>
 
+            <form className="d-flex me-auto w-50" style={{ maxWidth: "400px" }} onSubmit={handleSearchClick}>
+              <input
+                className="form-control me-2"
+                type="search"
+                placeholder="Cari produk..."
+                aria-label="Search"
+                value={searchKeyword}
+                onChange={handleSearchChange}
+              />
+              <button className="btn btn-outline-dark" type="submit">
+                Cari
+              </button>
+            </form>
+
+            <li className="nav-item me-3">
+              <button
+                className="btn nav-link text-dark"
+                onClick={handleCartClick}
+                style={{ background: "none", border: "none", padding: 0 }}
+              >
+                <FaShoppingCart size={18} />
+              </button>
+            </li>
+
+            <li className="nav-item position-relative">
+              <button
+                id="profileToggle"
+                className="btn nav-link text-dark"
+                onClick={toggleProfileMenu}
+                style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer" }}
+              >
+                <FaUser size={18} />
+              </button>
+
+              {showProfileMenu && (
+                <div
+                  id="profileMenu"
+                  className="position-absolute end-0 mt-2 bg-white shadow rounded border"
+                  style={{ zIndex: 1000, minWidth: "150px" }}
+                >
+                  {isLoggedIn ? (
+                    <>
+                      <button
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                        onClick={handleProfileClick}
+                      >
+                        {userRole === "penitip" ? "Profil Penitip" : "Profil"}
+                      </button>
+                      {userRole === "penitip" && (
+                        <button
+                          className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                          onClick={() => {
+                            navigate("/DashboardBarangPenitip");
+                            setShowProfileMenu(false);
+                          }}
+                        >
+                          Dashboard Barang
+                        </button>
+                      )}
+                      <button
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none w-100 text-start border-0 bg-transparent"
+                        onClick={() => {
+                          localStorage.removeItem("token");
+                          localStorage.removeItem("user");
+                          setIsLoggedIn(false);
+                          setShowProfileMenu(false);
+                          window.dispatchEvent(new Event("logout"));
+                          navigate("/");
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/LoginPage"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        to="/RegisterPembeli"
+                        className="dropdown-item text-dark py-2 px-3 d-block text-decoration-none"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Register
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </li>
+          </ul>
   const showUserMenu = () => {
     if (!isLoggedIn) {
       return (

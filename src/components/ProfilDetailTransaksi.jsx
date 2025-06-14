@@ -21,6 +21,12 @@ export default function ProfilDetailTransaksi({ transaction, onBack }) {
   const [ratingSuccess, setRatingSuccess] = useState({ show: false, barangName: "" });
   const [penitipanData, setPenitipanData] = useState({});
 
+  // Function to safely format currency
+  const formatCurrency = (amount) => {
+    if (amount == null || isNaN(amount)) return "0";
+    return amount.toLocaleString();
+  };
+
   useEffect(() => {
     setItems([]);
     setError("");
@@ -200,6 +206,42 @@ export default function ProfilDetailTransaksi({ transaction, onBack }) {
 
   return (
     <>
+      <Card className="shadow-sm mb-4">
+        <Card.Header as="h5" className="bg-success text-white">
+          Detail Transaksi
+        </Card.Header>
+        <Card.Body>
+          {transaction ? (
+            <>
+              <Row className="mb-2">
+                <Col sm={4}><strong>Tanggal:</strong></Col>
+                <Col>{transaction.tanggal_transaksi}</Col>
+              </Row>
+              <Row className="mb-3">
+                <Col sm={4}><strong>Total:</strong></Col>
+                <Col>Rp {formatCurrency(transaction.total_harga)}</Col>
+              </Row>
+
+              <h6 className="mt-3 mb-2">Item Transaksi:</h6>
+
+              {loading ? (
+                <div className="text-center my-3">
+                  <Spinner animation="border" variant="success" size="sm" />
+                  <p className="mt-2 small">Memuat item transaksi...</p>
+                </div>
+              ) : error ? (
+                <Alert variant="danger">{error}</Alert>
+              ) : items.length === 0 ? (
+                <Alert variant="light" className="text-center my-3">
+                  Tidak ada item untuk transaksi ini.
+                </Alert>
+              ) : (
+                <ListGroup className="mb-3">
+                  {items.map((item, idx) => (
+                    <ListGroup.Item key={idx} className="d-flex flex-column">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>{item.barang?.nama_barang || "Item tidak diketahui"}</div>
+                        <div className="text-end">Rp {formatCurrency(item.harga_item)}</div>
       {/* Toast notification untuk sukses rating */}
       <ToastContainer 
         className="p-3" 

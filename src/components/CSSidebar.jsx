@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
+  FaTachometerAlt,
+  FaMoneyCheckAlt,
+  FaBars,
+  FaTimes,
+  FaSignOutAlt,
   FaUserTie,
   FaTachometerAlt,
   FaBars,
@@ -29,6 +34,7 @@ const CSSidebar = () => {
   };
 
   const sidebarItems = [
+    { to: "/VerifikasiPembayaranCS", icon: <FaMoneyCheckAlt />, label: "Verifikasi Pembayaran" },
     { to: "/DashboardCS", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/cs/klaim-merchandise", icon: <FaGift />, label: "Klaim Merchandise" },
   ];
@@ -56,6 +62,32 @@ const CSSidebar = () => {
         </button>
       </div>
 
+      {/* Menu Items */}
+      <div className="flex-grow-1 overflow-auto">
+        <ul className="nav flex-column mt-2">
+          {sidebarItems.map((item, index) => (
+            <li key={index} className="nav-item">
+              <Link
+                to={item.to}
+                className={`nav-link d-flex align-items-center py-3 px-3 ${
+                  location.pathname === item.to ? "active text-primary" : "text-secondary"
+                }`}
+              >
+                <span className="fs-5 me-3">{item.icon}</span>
+                {isOpen && <span>{item.label}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Footer - Logout */}
+      <div className="p-3 border-top">
+        <button
+          onClick={handleLogout}
+          className="btn btn-outline-danger d-flex align-items-center"
+          style={{ width: isOpen ? "100%" : "auto" }}
+          
       {/* Navigation */}
       <ul className="nav flex-column p-2 flex-grow-1">
         {sidebarItems.map(({ to, icon, label }) => (

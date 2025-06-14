@@ -6,7 +6,7 @@ import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
 import { getAllPenitip } from '../../api/PenitipApi';
 import { getAllPegawai } from '../../api/PegawaiApi';
 import { getAllKategori } from '../../api/KategoriBarangApi';
-import { getAllJabatan } from '../../api/JabatanApi';
+import { getAllJabatan } from '../../api/JabatanApi'
 
 const PenitipanManagement = () => {
   const [barangData, setBarangData] = useState([]);

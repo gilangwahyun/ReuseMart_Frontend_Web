@@ -46,6 +46,15 @@ export const updateKomisiPerusahaan = async (id, data) => {
   }
 };
 
+export const createBatchKomisiPerusahaan = async (batchKomisi) => {
+  try {
+    const response = await useAxios.post('/komisiPerusahaan/batch', { komisi: batchKomisi });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating batch KomisiPerusahaan:", error);
+  }
+};
+
 // Menghapus komisi perusahaan berdasarkan ID
 export const deleteKomisiPerusahaan = async (id) => {
   try {
@@ -54,6 +63,15 @@ export const deleteKomisiPerusahaan = async (id) => {
   } catch (error) {
     console.error(`Error deleting komisi perusahaan dengan ID ${id}:`, error);
     throw error;
+  }
+};
+
+export const getKomisiPerusahaanByTransaksi = async (idTransaksi) => {
+  try {
+    const response = await useAxios.get(`/komisiPerusahaan/transaksi/${idTransaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching KomisiPerusahaan by transaksi:", error);
   }
 };
 

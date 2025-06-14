@@ -46,6 +46,15 @@ export const updateKomisiPenitip = async (id, data) => {
   }
 };
 
+export const createBatchKomisiPenitip = async (batchKomisi) => {
+  try {
+    const response = await useAxios.post('/komisiPenitip/batch', { komisi: batchKomisi });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating batch KomisiPenitip:", error);
+  }
+};
+
 // Menghapus komisi penitip berdasarkan ID
 export const deleteKomisiPenitip = async (id) => {
   try {
@@ -57,6 +66,15 @@ export const deleteKomisiPenitip = async (id) => {
   }
 };
 
+export const getKomisiPenitipByTransaksi = async (idTransaksi) => {
+  try {
+    const response = await useAxios.get(`/komisiPenitip/transaksi/${idTransaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching KomisiPenitip by transaksi:", error);
+  }
+};
+    
 // Mendapatkan laporan komisi penitip bulanan
 export const getLaporanKomisiPenitipBulanan = async (tahun, bulan = null, idPenitip = null) => {
   try {

@@ -55,6 +55,7 @@ export default function LoginPage() {
 
         setTimeout(async () => {
           const user = JSON.parse(localStorage.getItem('user'));
+          console.log("Login successful - User data:", user);
 
           if (user.role === 'Pegawai') {
             const jabatanResponse = await getJabatanByUser(user.id_user);
@@ -77,23 +78,31 @@ export default function LoginPage() {
                 navigate('/DashboardHunter');
                 break;
               case 6:
-                navigate('/DashboardKurir');
+                navigate('/VerifikasiPembayaranCS');
                 break;
               default:
                 navigate('/dashboard-pegawai');
             }
           } else {
-            switch (user.role) {
-              case 'Pembeli':
-                console.log("ID User:", user.id_user);
+            // Normalize role to lowercase for consistent comparison
+            const normalizedRole = user.role.toLowerCase();
+            console.log("Normalized role:", normalizedRole);
+            
+            // Store normalized role
+            user.normalizedRole = normalizedRole;
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            switch (normalizedRole) {
+              case 'pembeli':
+                console.log("Redirecting as Pembeli - ID User:", user.id_user);
                 navigate('/');
                 break;
-              case 'Penitip':
-                console.log("ID User:", user.id_user);
+              case 'penitip':
+                console.log("Redirecting as Penitip - ID User:", user.id_user);
                 navigate('/DashboardPenitip');
                 break;
-              case 'Organisasi':
-                console.log("ID User:", user.id_user);
+              case 'organisasi':
+                console.log("Redirecting as Organisasi - ID User:", user.id_user);
                 navigate('/DashboardOrganisasi');
                 break;
               default:

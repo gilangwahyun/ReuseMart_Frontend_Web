@@ -148,19 +148,43 @@ export default function PenitipPage() {
   const handleRegister = async (formData) => {
     setRegisterLoading(true);
     setRegisterMessage("");
+    
     try {
-      await registerPenitip(formData);
-      setRegisterMessage("Registrasi berhasil!");
+      // This will call registerPenitip which creates both User and Penitip records
+      const response = await registerPenitip(formData);
+      
+      setRegisterMessage("Registrasi berhasil! User dan Penitip telah dibuat.");
+      console.log("Registration successful:", response);
+      
+      // Refresh the penitip list
       await loadAllPenitip();
+      
+      // Reset the form
       setRegisterFormKey(Date.now());
+      
       // Switch to list view after successful registration
       setActiveTab("list");
     } catch (err) {
-      setRegisterMessage(
-        err.response?.data?.message || "Registrasi gagal. Cek data Anda."
-      );
+      console.error("Registration error details:", err);
+      
+      // More detailed error handling
+      let errorMessage = "Registrasi gagal. ";
+      
+      if (err.response?.data?.message) {
+        errorMessage += err.response.data.message;
+      } else if (err.response?.data?.errors) {
+        // Laravel validation errors
+        const validationErrors = err.response.data.errors;
+        const firstError = Object.values(validationErrors)[0];
+        errorMessage += firstError ? firstError[0] : "Validasi data gagal.";
+      } else {
+        errorMessage += "Periksa data dan coba lagi.";
+      }
+      
+      setRegisterMessage(errorMessage);
+    } finally {
+      setRegisterLoading(false);
     }
-    setRegisterLoading(false);
   };
 
   const handleSearchChange = (e) => {

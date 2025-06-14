@@ -46,6 +46,15 @@ export const updateKomisiPegawai = async (id, data) => {
   }
 };
 
+export const createBatchKomisiPegawai = async (batchKomisi) => {
+  try {
+    const response = await useAxios.post('/komisiPegawai/batch', { komisi: batchKomisi });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating batch KomisiPegawai:", error);
+  }
+};
+
 // Menghapus komisi pegawai berdasarkan ID
 export const deleteKomisiPegawai = async (id) => {
   try {
@@ -56,6 +65,13 @@ export const deleteKomisiPegawai = async (id) => {
     throw error;
   }
 };
+
+export const getKomisiPegawaiByTransaksi = async (idTransaksi) => {
+  try {
+    const response = await useAxios.get(`/komisiPegawai/transaksi/${idTransaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching KomisiPegawai by transaksi:", error);
 
 // Mendapatkan laporan komisi hunter bulanan
 export const getLaporanKomisiHunterBulanan = async (tahun, bulan = null, idPegawai = null) => {

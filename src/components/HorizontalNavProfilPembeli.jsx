@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaUser, FaHistory, FaReceipt, FaArrowLeft, FaBars, FaTimes } from "react-icons/fa";
+import { FaUser, FaHistory, FaReceipt, FaArrowLeft, FaBars, FaTimes, FaHome } from "react-icons/fa";
 
 const HorizontalNavProfilPembeli = ({
   activeKey,
@@ -14,6 +14,7 @@ const HorizontalNavProfilPembeli = ({
   const navItems = [
     { key: "profile", icon: <FaUser />, label: "Data Profil" },
     { key: "history", icon: <FaHistory />, label: "Riwayat Transaksi" },
+    { key: "alamat", icon: <FaHome />, label: "Alamat" },
   ];
 
   if (hasSelectedTransaction) {
