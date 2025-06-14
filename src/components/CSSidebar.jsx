@@ -6,11 +6,17 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaUserTie,
+  FaTachometerAlt,
+  FaBars,
+  FaTimes,
+  FaSignOutAlt,
+  FaGift,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
 const CSSidebar = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(true); // Awalnya terbuka
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,6 +35,8 @@ const CSSidebar = () => {
 
   const sidebarItems = [
     { to: "/VerifikasiPembayaranCS", icon: <FaMoneyCheckAlt />, label: "Verifikasi Pembayaran" },
+    { to: "/DashboardCS", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { to: "/cs/klaim-merchandise", icon: <FaGift />, label: "Klaim Merchandise" },
   ];
 
   return (
@@ -79,6 +87,30 @@ const CSSidebar = () => {
           onClick={handleLogout}
           className="btn btn-outline-danger d-flex align-items-center"
           style={{ width: isOpen ? "100%" : "auto" }}
+          
+      {/* Navigation */}
+      <ul className="nav flex-column p-2 flex-grow-1">
+        {sidebarItems.map(({ to, icon, label }) => (
+          <li className="nav-item" key={to}>
+            <Link
+              to={to}
+              className={`nav-link d-flex align-items-center py-2 px-3 rounded ${
+                location.pathname === to ? "bg-success text-white" : "text-dark"
+              }`}
+              style={{ transition: "0.2s" }}
+            >
+              {icon}
+              {isOpen && <span className="ms-2">{label}</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      {/* Logout */}
+      <div className="p-2 border-top">
+        <button
+          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center"
+          onClick={handleLogout}
         >
           <FaSignOutAlt />
           {isOpen && <span className="ms-2">Logout</span>}
@@ -88,4 +120,4 @@ const CSSidebar = () => {
   );
 };
 
-export default CSSidebar; 
+export default CSSidebar;

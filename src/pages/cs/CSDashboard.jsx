@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
+import CSSidebar from "../../components/CSSidebar";
 import { getPegawaiByUserId } from "../../api/PegawaiApi";
 import { getCurrentTopSeller } from "../../api/BadgeApi";
-import OwnerSidebar from "../../components/OwnerSideBar";
 
-const AdminDashboard = () => {
+const CSDashboard = () => {
   const [namaPegawai, setNamaPegawai] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,7 +42,6 @@ const AdminDashboard = () => {
         try {
           const response = await getPegawaiByUserId(idUser);
           const data = response;
-          console.log(response);
 
           if (data && data.nama_pegawai) {
             setNamaPegawai(data.nama_pegawai);
@@ -67,7 +66,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="d-flex">
-      <OwnerSidebar />
+      <CSSidebar />
       <div className="p-4 w-100">
         {loading ? (
           <p>Memuat data pegawai...</p>
@@ -107,4 +106,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default CSDashboard; 

@@ -22,62 +22,77 @@ const HorizontalNavProfilPembeli = ({
   }
 
   return (
-    <nav
-      className="bg-white shadow-sm border-bottom d-flex align-items-center px-3"
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 999,
-        height: "60px",
-      }}
-      aria-label="Profil navigation"
-    >
-      {/* Toggle button */}
-      <button
-        onClick={toggleNav}
-        className="btn btn-light d-flex align-items-center me-3"
-        aria-label={isOpen ? "Sembunyikan label" : "Tampilkan label"}
+    <div className="nav-profil-container mb-4">
+      <nav
+        className="bg-white shadow-sm rounded-3 d-flex align-items-center px-3 py-2"
+        style={{
+          zIndex: 999,
+        }}
+        aria-label="Profil navigation"
       >
-        {isOpen ? <FaTimes /> : <FaBars />}
-      </button>
+        {/* Toggle button */}
+        <button
+          onClick={toggleNav}
+          className="btn btn-sm btn-light border-0 d-flex align-items-center justify-content-center me-3"
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%"
+          }}
+          aria-label={isOpen ? "Sembunyikan label" : "Tampilkan label"}
+        >
+          {isOpen ? <FaTimes size={14} /> : <FaBars size={14} />}
+        </button>
 
-      {/* Nav items */}
-      <ul className="nav flex-row flex-grow-1 gap-3 mb-0" role="tablist">
-        {navItems.map(({ key, icon, label }) => (
-          <li key={key} className="nav-item" role="presentation">
+        {/* Nav items */}
+        <ul className="nav flex-row flex-grow-1 gap-2 mb-0" role="tablist">
+          {navItems.map(({ key, icon, label }) => (
+            <li key={key} className="nav-item" role="presentation">
+              <button
+                className={`btn nav-link d-flex align-items-center px-3 py-2 rounded-pill transition-all ${
+                  activeKey === key
+                    ? "bg-success text-white shadow-sm"
+                    : "text-dark hover-effect"
+                }`}
+                onClick={() => onSelect && onSelect(key)}
+                role="tab"
+                aria-selected={activeKey === key}
+                aria-controls={`${key}-tabpanel`}
+                id={`${key}-tab`}
+                type="button"
+                style={{ transition: "all 0.2s ease" }}
+              >
+                <span className="icon-wrapper">{icon}</span>
+                {isOpen && <span className="ms-2">{label}</span>}
+              </button>
+            </li>
+          ))}
+
+          {/* Back button */}
+          <li className="nav-item ms-auto" role="presentation">
             <button
-              className={`btn nav-link d-flex align-items-center px-3 py-2 rounded ${
-                activeKey === key
-                  ? "bg-success text-white"
-                  : "text-dark"
-              }`}
-              onClick={() => onSelect && onSelect(key)}
-              role="tab"
-              aria-selected={activeKey === key}
-              aria-controls={`${key}-tabpanel`}
-              id={`${key}-tab`}
+              className="btn nav-link d-flex align-items-center px-3 py-2 rounded-pill text-dark hover-effect"
+              onClick={handleGoBack}
+              aria-label="Kembali"
               type="button"
+              style={{ transition: "all 0.2s ease" }}
             >
-              {icon}
-              {isOpen && <span className="ms-2">{label}</span>}
+              <span className="icon-wrapper"><FaArrowLeft /></span>
+              {isOpen && <span className="ms-2">Kembali</span>}
             </button>
           </li>
-        ))}
+        </ul>
+      </nav>
 
-        {/* Back button */}
-        <li className="nav-item ms-auto" role="presentation">
-          <button
-            className="btn nav-link d-flex align-items-center px-3 py-2 rounded text-dark"
-            onClick={handleGoBack}
-            aria-label="Kembali"
-            type="button"
-          >
-            <FaArrowLeft />
-            {isOpen && <span className="ms-2">Kembali</span>}
-          </button>
-        </li>
-      </ul>
-    </nav>
+      <style jsx>{`
+        .hover-effect:hover {
+          background-color: #f8f9fa;
+        }
+        .transition-all {
+          transition: all 0.2s ease;
+        }
+      `}</style>
+    </div>
   );
 };
 

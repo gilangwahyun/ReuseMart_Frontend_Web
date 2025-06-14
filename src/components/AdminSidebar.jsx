@@ -7,6 +7,7 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaGift,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -32,6 +33,7 @@ const AdminSidebar = () => {
     { to: "/DashboardAdmin", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/admin/pegawai", icon: <FaUserTie />, label: "Manajerial Pegawai" },
     { to: "/admin/organisasi", icon: <FaBuilding />, label: "Manajerial Organisasi" },
+    { to: "/admin/merchandise", icon: <FaGift />, label: "Manajerial Merchandise" },
   ];
 
   return (

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Home from '../pages/client/Home';
 import DetailBarang from "../pages/client/DetailBarang";
+import InformasiUmum from "../pages/client/InformasiUmum";
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPembeli from '../pages/auth/RegisterPembeli';
 import RegisterOrganisasi from '../pages/auth/RegisterOrganisasi';
@@ -14,6 +15,7 @@ import DashboardOrganisasi from '../pages/client/DashboardOrganisasi';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import PegawaiManagement from "../pages/admin/PegawaiManagement";
 import OrganisasiManagement from "../pages/admin/OrganisasiManagement";
+import MerchandiseManagement from '../pages/admin/MerchandiseManagement';
 import AlamatForm from '../components/AlamatForm';
 import DashboardKeranjang from '../pages/client/DashboardKeranjang';
 import Transaksi from '../pages/client/Transaksi';
@@ -24,6 +26,9 @@ import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
 import NotaDonasi from '../pages/owner/NotaDonasi';
 import RequestDonasiPage from '../pages/owner/RequestDonasiPage';
+import LaporanStokGudangPage from '../pages/owner/LaporanStokGudangPage';
+import LaporanPenjualanPage from '../pages/owner/LaporanPenjualanPage';
+import LaporanKomisiPage from '../pages/owner/LaporanKomisiPage';
 import PegawaiGudangDashboard from '../pages/pegawaiGudang/PegawaiGudangDashboard';
 import PenitipanManagement from '../pages/pegawaiGudang/PenitipanManagement';
 import NotaDonasiPrint from '../components/Nota/NotaDonasiPrint';
@@ -46,13 +51,18 @@ import ListRequestDonasi from '../components/OwnerComponents/ListRequestDonasi';
 import RequestDonasiAll from '../components/Nota/RequestDonasiAll';
 import RequestDonasiDetail from '../components/Nota/RequestDonasiDetail';
 import KurirDeliveryTrackingPage from '../pages/pegawaiGudang/KurirDeliveryTrackingPage';
+import CSDashboard from '../pages/cs/CSDashboard';
+import KlaimMerchandiseManagement from '../pages/cs/KlaimMerchandiseManagement';
+import RiwayatTransaksiPenitipan from '../pages/pegawaiGudang/RiwayatTransaksiPenitipan';
 
 const AppRoutes = () => {
   return (  
     <Router>
       <Routes>
+        <Route path="/kategori/:kategori" element={<Home />} />
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<DetailBarang />} />
+        <Route path="/informasi" element={<InformasiUmum />} />
         <Route path="/LoginPage" element={<LoginPage/>} />
         <Route path="/RegisterPembeli" element={<RegisterPembeli/>} />
         <Route path="/RegisterOrganisasi" element={<RegisterOrganisasi/>} />
@@ -73,6 +83,7 @@ const AppRoutes = () => {
         <Route path="/DashboardAdmin" element={<AdminDashboard />} />
         <Route path="/admin/pegawai" element={<PegawaiManagement />} />
         <Route path="/admin/organisasi" element={<OrganisasiManagement />} />
+        <Route path="/admin/merchandise" element={<MerchandiseManagement />} />
         <Route path='/DashboardOwner' element={< OwnerDashboard />} />
         <Route path='/owner/donasi' element={< DonasiManagement />} />
         <Route path='/owner/alokasi' element={< RiwayatAlokasiDonasi />} />
@@ -91,12 +102,21 @@ const AppRoutes = () => {
         <Route path='/pegawaiGudang/penjadwalan' element={< PenjadwalanPage />} />
         <Route path='/pegawaiGudang/kurirDelivery' element={< KurirDeliveryTrackingPage />} />
         <Route path='/pegawaiGudang/requestPengambilan' element={< RequestPengambilanPage />} />
+        <Route path='/owner/laporan-stok' element={< LaporanStokGudangPage />} />
+        <Route path='/owner/laporan-penjualan' element={< LaporanPenjualanPage />} />
+        <Route path='/owner/laporan-komisi' element={< LaporanKomisiPage />} />
+        <Route path='/alamat/pembeli' element={< AlamatForm />} />
+        <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
+        <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
+        <Route path='/pegawaiGudang/riwayat-transaksi' element={< RiwayatTransaksiPenitipan />} />
         <Route path="/barang/:id" element={<DetailBarangPage />} />
         <Route path='/pegawaiGudang/form-penitipan' element={< PenitipanBarangForm />} />
         <Route path='/pegawaiGudang/form-barang' element={< BarangForm />} />
         <Route path='/pegawaiGudang/nota-penitipan/print' element={< NotaPenitipanPrint />} />
         <Route path='/pegawaiGudang/nota-pengiriman/:id_jadwal' element={< NotaPenjualanKurir />} />
         <Route path='/pegawaiGudang/nota-pengambilan/:id_jadwal' element={< NotaPenjualanPembeli />} />
+        <Route path='/DashboardCS' element={<CSDashboard />} />
+        <Route path='/cs/klaim-merchandise' element={<KlaimMerchandiseManagement />} />
       </Routes>
     </Router>
   );

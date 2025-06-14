@@ -1,0 +1,43 @@
+/* Custom Background Colors */
+.bg-light-success {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.bg-light-primary {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.bg-light-warning {
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+.bg-light-info {
+  background-color: rgba(23, 162, 184, 0.1);
+}
+
+/* Gradient Background */
+.bg-gradient-success {
+  background: linear-gradient(to bottom, #4caf50, #2e7d32);
+}
+
+/* Timeline styling */
+.timeline .card {
+  transition: all 0.3s ease;
+}
+
+.timeline .card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Custom accordion styling */
+.accordion-button:not(.collapsed) {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: #198754;
+  box-shadow: none;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: rgba(40, 167, 69, 0.25);
+} 

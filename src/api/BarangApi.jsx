@@ -123,8 +123,12 @@ export const getAllDonateBarang = async () => {
 export const getBarangById = async (id) => {
   try {
     const response = await useAxios.get(`${API_URL}/${id}`);
-    return response.data;
+    if (response.data && response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data?.message || 'Barang tidak ditemukan');
   } catch (error) {
+    console.error('Error fetching barang details:', error);
     throw error;
   }
 };
@@ -167,6 +171,10 @@ export const getBarangByKategori = async (namaKategori) => {
 
 export const searchBarangByName = async (nama_barang) => {
   try {
+    if (!nama_barang || nama_barang.trim() === "") {
+      return await getAllActiveBarang();
+    }
+
     console.log("Mencari barang dengan kata kunci:", nama_barang);
     const response = await useAxios.get(`${API_URL}/cari`, {
       params: { nama_barang },
@@ -212,6 +220,16 @@ export const updateBarangStatus = async (id, status) => {
     return response.data;
   } catch (error) {
     console.error(`Error updating barang ${id} status:`, error);
+    throw error;
+  }
+};
+
+export const getLaporanStokGudang = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}/laporan/stok-gudang`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching laporan stok gudang:", error);
     throw error;
   }
 };

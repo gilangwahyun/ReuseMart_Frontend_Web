@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
@@ -10,6 +10,7 @@ import {
   searchBarangByName,
   getBarangByKategori,
 } from "../../api/BarangApi";
+import { getAllKategori } from "../../api/KategoriBarangApi";
 
 const Home = () => {
   const [barangList, setBarangList] = useState([]);
@@ -20,7 +21,11 @@ const Home = () => {
   const [selectedKategori, setSelectedKategori] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [kategoriList, setKategoriList] = useState([]);
   const navigate = useNavigate();
+  
+  // Cek apakah ada parameter kategori di URL
+  const { kategori } = useParams();
 
   // Cek apakah user sudah login dengan melihat token di localStorage
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
@@ -47,56 +52,62 @@ const Home = () => {
     };
 
     fetchBarang();
-  }, []);
 
-  // const handleKategoriSelect = async (kategori) => {
-  //   setSelectedKategori(kategori);
-  //   setLoading(true);
-  //   setError(null);
-
-  //   try {
-  //     const response = await getBarangByKategori(kategori);
-  //     setFilteredBarang(response.data);
-  //   } catch (err) {
-  //     setError("Gagal memuat barang berdasarkan kategori.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+    // Fetch kategori untuk tombol reset kategori
+    getAllKategori().then((data) => setKategoriList(data || []));
+    
+    // Jika ada parameter kategori di URL, filter barang berdasarkan kategori
+    if (kategori) {
+      handleKategoriSelect(kategori);
+    }
+  }, [kategori]);
 
   useEffect(() => {
-  const token = localStorage.getItem("token");
-  const userData = localStorage.getItem("user");
-  
-  if (token) {
-    setIsLoggedIn(true); // Jika kamu ingin tracking state ini juga
-  }
-
-  if (userData) {
-    try {
-      const user = JSON.parse(userData);
-      if (user.nama) {
-        setUserName(user.nama);
-      }
-    } catch (error) {
-      console.error("Error parsing user data:", error);
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+    
+    if (token) {
+      setIsLoggedIn(true); // Jika kamu ingin tracking state ini juga
     }
-  }
-}, []);
+
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        if (user.nama) {
+          setUserName(user.nama);
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   const handleSearch = async (searchKeyword) => {
     setSearchLoading(true);
     setSearchError("");
+    setSelectedKategori(null); // Reset kategori saat melakukan pencarian
 
     try {
-      const response = await searchBarangByName(searchKeyword);
-      const result = response.data;
+      // Jika keyword kosong, tampilkan semua barang aktif
+      if (!searchKeyword || searchKeyword.trim() === "") {
+        const response = await getAllActiveBarang();
+        const result = response?.data ?? [];
+        setFilteredBarang(Array.isArray(result) ? result : []);
+        setSearchLoading(false);
+        setSelectedKategori(null); // Reset kategori yang dipilih
+        return;
+      }
 
-      if (result.length === 0) {
+      // Jika ada keyword, lakukan pencarian
+      const response = await searchBarangByName(searchKeyword);
+      const result = response?.data ?? [];
+
+      if (!Array.isArray(result) || result.length === 0) {
         setSearchError("Barang tidak ditemukan.");
         setFilteredBarang([]);
       } else {
         setFilteredBarang(result);
+        setSelectedKategori(null); // Reset kategori yang dipilih
       }
     } catch (err) {
       setSearchError("Terjadi kesalahan saat pencarian.");
@@ -116,6 +127,41 @@ const Home = () => {
     }
   };
 
+  const handleKategoriSelect = async (kategori) => {
+    setSelectedKategori(kategori);
+    setLoading(true);
+    setError(null);
+    setSearchError(""); // Reset search error
+    
+    try {
+      if (!kategori || kategori === 'Semua') {
+        // Reset ke semua barang aktif
+        const response = await getAllActiveBarang();
+        const result = response?.data ?? [];
+        setFilteredBarang(Array.isArray(result) ? result : []);
+        setSelectedKategori(null);
+      } else {
+        const response = await getBarangByKategori(kategori);
+        if (response && Array.isArray(response)) {
+          setFilteredBarang(response);
+        } else if (response && response.data && Array.isArray(response.data)) {
+          setFilteredBarang(response.data);
+        } else {
+          setFilteredBarang([]);
+          setError("Tidak ada barang dalam kategori ini.");
+        }
+      }
+      // Scroll ke produk
+      setTimeout(() => scrollToProducts(), 200);
+    } catch (err) {
+      console.error("Error saat filter kategori:", err);
+      setError("Gagal memuat barang berdasarkan kategori.");
+      setFilteredBarang([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const handleLogoutEvent = () => {
       setUserName("");
@@ -131,7 +177,11 @@ const Home = () => {
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar onSearch={handleSearch} />
+      <Navbar 
+        onSearch={handleSearch} 
+        onKategoriSelect={handleKategoriSelect} 
+        activeKategori={selectedKategori}
+      />
 
       {isLoggedIn && userName && (
         <div className="container mt-3">
@@ -176,11 +226,18 @@ const Home = () => {
 
         {error && <p className="text-danger">{error}</p>}
 
-        {selectedKategori && (
-          <h5 className="mb-4">
-            Menampilkan produk untuk kategori:{" "}
-            <strong>{selectedKategori}</strong>
-          </h5>
+        {selectedKategori && !loading && !error && (
+          <div className="d-flex align-items-center mb-3">
+            <h5 className="mb-0 me-3">
+              Menampilkan produk untuk kategori: <strong>{selectedKategori}</strong>
+            </h5>
+            <button 
+              className="btn btn-sm btn-outline-secondary" 
+              onClick={() => handleKategoriSelect('Semua')}
+            >
+              Tampilkan Semua
+            </button>
+          </div>
         )}
 
         {searchError && <p className="text-danger">{searchError}</p>}
@@ -190,7 +247,7 @@ const Home = () => {
             filteredBarang.map((product) => (
               <div
                 className="col-12 col-sm-6 col-md-4 col-lg-3"
-                key={product.id}
+                key={product.id_barang}
               >
                 <ProductCard product={product} />
               </div>
