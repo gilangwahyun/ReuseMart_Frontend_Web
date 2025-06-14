@@ -38,13 +38,25 @@ const PenitipanBarangTable = ({ barangData }) => {
     
     const selisihMasaTitip = endDate - today;
     const selisihHari = Math.ceil(selisihMasaTitip / (1000 * 60 * 60 * 24));
-    
-    if (selisihHari < 0) {
-      return `Sudah lewat ${Math.abs(selisihHari)} hari`;
-    } else if (selisihHari === 0) {
-      return "Masa Titip Berakhir Hari Ini";
-    } else {
+
+    // Jika masih dalam masa penitipan normal
+    if (selisihHari > 0) {
       return `${selisihHari} hari lagi`;
+    } 
+    // Jika hari ini hari terakhir penitipan
+    else if (selisihHari === 0) {
+      return "Hari terakhir penitipan";
+    }
+    // Jika sudah masuk masa tenggang
+    else {
+      const hariTenggang = 7 + selisihHari; // selisihHari negatif
+      if (hariTenggang > 0) {
+        return `Masa tenggang: ${hariTenggang} hari`;
+      } else if (hariTenggang === 0) {
+        return "Hari terakhir masa tenggang";
+      } else {
+        return `Sudah lewat masa tenggang`;
+      }
     }
   };
 

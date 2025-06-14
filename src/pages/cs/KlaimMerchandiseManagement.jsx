@@ -74,34 +74,6 @@ const KlaimMerchandiseManagement = () => {
           {error && <div className="alert alert-danger">{error}</div>}
           {success && <div className="alert alert-success">{success}</div>}
 
-          {/* Dashboard ringkasan status klaim */}
-          <div className="row mb-4">
-            <div className="col-md-4">
-              <div className="card shadow-sm bg-primary text-white">
-                <div className="card-body text-center">
-                  <h5>Diproses</h5>
-                  <h2>{statusCounts["Diproses"] || 0}</h2>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card shadow-sm bg-warning text-dark">
-                <div className="card-body text-center">
-                  <h5>Belum Diambil</h5>
-                  <h2>{statusCounts["Belum Diambil"] || 0}</h2>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card shadow-sm bg-success text-white">
-                <div className="card-body text-center">
-                  <h5>Sudah Diambil</h5>
-                  <h2>{statusCounts["Sudah Diambil"] || 0}</h2>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="card mb-4 shadow-sm">
             <div className="card-body">
               <div className="row g-3">

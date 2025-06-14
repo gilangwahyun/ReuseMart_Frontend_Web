@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getPegawaiByUserId } from "../../api/PegawaiApi";
-import { getTopSeller } from "../../api/BadgeApi";
+import { getCurrentTopSeller } from "../../api/BadgeApi";
 import OwnerSidebar from "../../components/OwnerSideBar";
 
 const AdminDashboard = () => {
@@ -15,7 +15,7 @@ const AdminDashboard = () => {
 
   const loadCurrentTopSeller = async () => {
     try {
-      const response = await getTopSeller();
+      const response = await getCurrentTopSeller();
       if (response.data) {
         setCurrentTopSeller(response.data);
       }

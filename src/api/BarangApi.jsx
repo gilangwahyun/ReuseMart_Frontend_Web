@@ -33,8 +33,12 @@ export const getAllDonateBarang = async () => {
 export const getBarangById = async (id) => {
   try {
     const response = await useAxios.get(`${API_URL}/${id}`);
-    return response.data;
+    if (response.data && response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data?.message || 'Barang tidak ditemukan');
   } catch (error) {
+    console.error('Error fetching barang details:', error);
     throw error;
   }
 };

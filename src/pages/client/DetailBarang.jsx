@@ -10,7 +10,7 @@ import { getKeranjangByPembeli, getKeranjangById, getKeranjangByIdUser } from ".
 import { createDetailKeranjang } from "../../api/DetailKeranjangApi";
 import { getByIdBarang } from "../../api/PenitipanBarangApi";
 import { getRated } from "../../api/PenitipApi";
-import { getTopSeller } from "../../api/BadgeApi";
+import { getCurrentTopSeller } from "../../api/BadgeApi";
 import { toast } from "react-toastify";
 import { FaStar, FaInfoCircle } from "react-icons/fa";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -49,46 +49,57 @@ const DetailBarang = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch barang details
         const result = await getBarangById(id);
         if (result) {
+          console.log('Barang details:', result);
           setBarang(result);
         } else {
           setError("Barang tidak ditemukan");
+          return;
         }
 
+        // Fetch foto barang
         const fotoResult = await getFotoBarangByIdBarang(id);
         if (fotoResult) {
+          console.log('Foto barang:', fotoResult);
           setFotoBarang(fotoResult);
         }
 
-        // Fetch diskusi related to the barang
+        // Fetch diskusi
         const diskusiResult = await getDiskusiByBarang(id);
-        setDiskusi(diskusiResult);
+        if (diskusiResult) {
+          console.log('Diskusi:', diskusiResult);
+          setDiskusi(diskusiResult);
+        }
 
-        // Fetch penitipan by id barang
+        // Fetch penitipan
         const penitipanResult = await getByIdBarang(id);
-        console.log('penitipanResult:', penitipanResult);
+        console.log('Penitipan result:', penitipanResult);
 
         if (penitipanResult && penitipanResult.penitip) {
           setPenitipan(penitipanResult);
 
-          // Ambil langsung dari hasil respons, bukan dari state
+          // Get rating data
           const ratingResult = await getRated(penitipanResult.penitip.id_penitip);
-          console.log('ratingResult:', ratingResult);
-          setRataRataRating(ratingResult.rata_rata_rating);
-          setJumlahRating(ratingResult.jumlah_barang_terjual_dan_terrating);
+          console.log('Rating result:', ratingResult);
+          if (ratingResult) {
+            setRataRataRating(ratingResult.rata_rata_rating);
+            setJumlahRating(ratingResult.jumlah_barang_terjual_dan_terrating);
+          }
 
-          // Cek apakah penitip adalah TOP SELLER
-          const topSellerResult = await getTopSeller();
+          // Check for TOP SELLER badge
+          const topSellerResult = await getCurrentTopSeller();
           if (topSellerResult.data && topSellerResult.data.id_penitip === penitipanResult.penitip.id_penitip) {
             setTopSellerBadge(topSellerResult.data);
           }
-        } else {
-          setPenitipan(null);
         }
       } catch (err) {
-        setError("Gagal memuat detail barang");
-        console.error(err);
+        console.error('Error fetching data:', err);
+        setError(err.message || "Gagal memuat detail barang");
       } finally {
         setLoading(false);
       }
@@ -203,6 +214,16 @@ const DetailBarang = () => {
     }
   };
 
+  // Add currency formatter function
+  const formatRupiah = (amount) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navbar />
@@ -314,7 +335,7 @@ const DetailBarang = () => {
                 <div className="card shadow-sm p-4 h-100 d-flex flex-column justify-content-between border-0">
                   <div>
                     <h2 className="mb-2" style={{ fontWeight: 600 }}>{barang.nama_barang}</h2>
-                    <h4 className="text-success mb-3" style={{ fontWeight: 700 }}>Rp{barang.harga.toLocaleString()}</h4>
+                    <h4 className="text-success mb-3" style={{ fontWeight: 700 }}>{formatRupiah(barang.harga)}</h4>
                     <ul className="list-unstyled mb-3" style={{ fontSize: '1rem' }}>
                       <li><strong>Berat:</strong> {barang.berat} gram</li>
                       <li><strong>Garansi (Sampai):</strong> {barang.masa_garansi ? new Date(barang.masa_garansi).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : "Tidak ada garansi"}</li>

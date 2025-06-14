@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import CSSidebar from "../../components/CSSidebar";
 import { getPegawaiByUserId } from "../../api/PegawaiApi";
-import { getTopSeller } from "../../api/BadgeApi";
+import { getCurrentTopSeller } from "../../api/BadgeApi";
 
 const CSDashboard = () => {
   const [namaPegawai, setNamaPegawai] = useState("");
@@ -15,7 +15,7 @@ const CSDashboard = () => {
 
   const loadCurrentTopSeller = async () => {
     try {
-      const response = await getTopSeller();
+      const response = await getCurrentTopSeller();
       if (response.data) {
         setCurrentTopSeller(response.data);
       }

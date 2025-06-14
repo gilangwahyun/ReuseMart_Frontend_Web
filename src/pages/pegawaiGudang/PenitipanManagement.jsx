@@ -90,31 +90,32 @@ const PenitipanManagement = () => {
     setFilter({ nama_penitip: '', nama_petugas_qc: '', kategori: '', status_garansi: '', tanggalAwal: '', tanggalAkhir: '', status_barang: '' });
   };
 
-  const handleFilterBarangNonAktif = async () => {
+  const handleFilterPenitip1BulanTerakhir = async () => {
     setSearchLoading(true);
     setError(null);
     try {
       const allBarang = await getAllBarang();
       
       const today = new Date();
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(today.getMonth() - 1); //seting 1 bulan terakhir mulai tanggal 12 Mei - 12 Juni
       
       const filtered = allBarang.filter(b => {
-        if (!b.penitipan_barang?.tanggal_akhir_penitipan) {
+        if (!b.penitipan_barang?.tanggal_awal_penitipan || !b.penitipan_barang?.penitip) {
           return false;
         }
         
-        const tanggalAkhir = new Date(b.penitipan_barang.tanggal_akhir_penitipan);
+        const isPenitipGilang = b.penitipan_barang.penitip.nama_penitip === "Gilang Wahyu Nugraha"; //filter nama saya
+        const tanggalAwal = new Date(b.penitipan_barang.tanggal_awal_penitipan);
+        const isOneMonthRange = tanggalAwal >= oneMonthAgo && tanggalAwal <= today; //cek apakah tanggal penitipan ada di kurun waktu 1 bulan
         
-        const selisihHari = Math.round((tanggalAkhir - today) / (1000 * 60 * 60 * 24));
-        console.log(selisihHari);
-        
-        return selisihHari === 0;
+        return isPenitipGilang && isOneMonthRange;
       });
       
       setBarangData(filtered);
       
     } catch (err) {
-      let errorMsg = 'Gagal melakukan filter barang habis masa penitipan.';
+      let errorMsg = 'Gagal melakukan filter barang 1 bulan terakhir.';
       if (err.response) {
         errorMsg += ` [${err.response.status}] ${JSON.stringify(err.response.data)}`;
       } else if (err.message) {
@@ -302,10 +303,10 @@ const PenitipanManagement = () => {
                   <button
                     type="button"
                     className="btn btn-primary w-50"
-                    onClick={handleFilterBarangNonAktif}
+                    onClick={handleFilterPenitip1BulanTerakhir}
                     disabled={searchLoading}
                   >
-                    Barang Habis Masa Penitipan
+                    Barang 1 Bulan Terakhir
                   </button>
                   <button
                     type="button"

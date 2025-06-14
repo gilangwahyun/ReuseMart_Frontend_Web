@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PegawaiGudangSideBar from "../../components/PegawaiGudangSidebar";
 import { getPegawaiByUserId } from "../../api/PegawaiApi";
-import { getTopSeller } from "../../api/BadgeApi";
+import { getCurrentTopSeller } from "../../api/BadgeApi";
 
 const PegawaiGudangDashboard = () => {
   const [namaPegawai, setNamaPegawai] = useState("");
@@ -15,7 +15,7 @@ const PegawaiGudangDashboard = () => {
 
   const loadCurrentTopSeller = async () => {
     try {
-      const response = await getTopSeller();
+      const response = await getCurrentTopSeller();
       if (response.data) {
         setCurrentTopSeller(response.data);
       }

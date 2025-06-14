@@ -64,3 +64,12 @@ export const getTopSeller = async () => {
     throw error;
   }
 };
+
+export const getCurrentTopSeller = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}/current-top-seller`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

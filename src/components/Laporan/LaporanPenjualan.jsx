@@ -284,7 +284,7 @@ const LaporanPenjualan = () => {
                     </div>
                   </div>
                   
-                  <h2 className="text-center fw-bold mt-4 mb-3">Laporan Penjualan Bulanan</h2>
+                  <h2 className="text-center fw-bold mt-4 mb-3">Laporan Penjualan Bulanan Keseluruhan</h2>
                   
                   <div className="row mb-3">
                     <div className="col-md-6">

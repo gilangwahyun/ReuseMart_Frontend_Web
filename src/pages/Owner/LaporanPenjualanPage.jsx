@@ -7,7 +7,7 @@ const LaporanPenjualanPage = () => {
     <div className="d-flex">
       <OwnerSidebar />
       <div className="p-4 w-100">
-        <h2 className="mb-4">Laporan Penjualan Bulanan</h2>
+        <h2 className="mb-4">Laporan Penjualan Bulanan Keseluruhan</h2>
         <LaporanPenjualan />
       </div>
     </div>

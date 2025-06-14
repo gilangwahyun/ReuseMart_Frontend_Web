@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { getPegawaiByUserId } from "../../api/PegawaiApi";
-import { setTopSeller, getTopSeller } from "../../api/BadgeApi";
+import { setTopSeller, getCurrentTopSeller } from "../../api/BadgeApi";
 import { Toast, ToastContainer } from "react-bootstrap";
 
 const AdminDashboard = () => {
@@ -19,7 +19,7 @@ const AdminDashboard = () => {
 
   const loadCurrentTopSeller = async () => {
     try {
-      const response = await getTopSeller();
+      const response = await getCurrentTopSeller();
       if (response.data) {
         setCurrentTopSeller(response.data);
       }

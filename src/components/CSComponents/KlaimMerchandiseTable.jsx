@@ -40,6 +40,7 @@ const KlaimMerchandiseTable = ({ data, onUpdateStatus }) => {
                 <th>Total Poin</th>
                 <th>Status Klaim</th>
                 <th>Tanggal Klaim</th>
+                <th>Tanggal Ambil</th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -61,6 +62,7 @@ const KlaimMerchandiseTable = ({ data, onUpdateStatus }) => {
                       </span>
                     </td>
                     <td>{klaim.tanggal_klaim || "-"}</td>
+                    <td>{klaim.tanggal_ambil || "-"}</td>
                     <td>
                       {klaim.status_klaim !== "Sudah Diambil" && nextStatus.status && (
                         <button
