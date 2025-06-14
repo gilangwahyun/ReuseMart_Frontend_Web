@@ -29,6 +29,34 @@ export const getTransaksiByPembeli = async (id_pembeli) => {
   }
 };
 
+export const getTransaksiByPenitip = async (id_penitip) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/penitip/${id_penitip}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching transactions for penitip ID ${id_penitip}:`, error);
+    return [];
+  }
+};
+
+export const getTransaksiById = async (id_transaksi) => {
+  try {
+    const response = await useAxios.get(`${API_URL}/${id_transaksi}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAllTransaksi = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const updateStatusTransaksi = async (id_transaksi, status) => {
   try {
     const response = await useAxios.put(`${API_URL}/${id_transaksi}/status`, { status_transaksi: status });

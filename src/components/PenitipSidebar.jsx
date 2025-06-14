@@ -9,7 +9,6 @@ import {
   FaSignOutAlt,
   FaExchangeAlt,
   FaHandPaper,
-  FaMoneyBillWave
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -34,8 +33,7 @@ const PenitipSidebar = () => {
   const sidebarItems = [
     { to: "/DashboardPenitip", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/DashboardPenitip/daftar-barang", icon: <FaBoxOpen />, label: "Daftar Barang" },
-    { to: "/DashboardPenitip/pengambilan-barang", icon: <FaHandPaper />, label: "Pengambilan Barang" },
-    { to: "/DashboardPenitip/laporan-pendapatan", icon: <FaMoneyBillWave />, label: "Laporan Transaksi" },
+    { to: "/DashboardPenitip/pengambilan-barang", icon: <FaHandPaper />, label: "Pengambilan Barang" }
   ];
 
   return (

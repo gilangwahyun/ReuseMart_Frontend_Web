@@ -7,16 +7,27 @@ import { createPembayaran } from '../../api/PembayaranApi';
 import { updateBarang } from '../../api/BarangApi';
 import { getDetailTransaksiByTransaksi } from '../../api/DetailTransaksiApi';
 import { deleteDetailKeranjangByUser } from '../../api/DetailKeranjangApi';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 const Pembayaran = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [timeLeft, setTimeLeft] = useState(60); // 60 seconds = 1 minute
+  const [timeLeft, setTimeLeft] = useState(() => {
+    // Get initial time from localStorage or set to 60
+    const savedTime = localStorage.getItem(`countdown_${location.state?.transaksiId}`);
+    const savedStartTime = localStorage.getItem(`startTime_${location.state?.transaksiId}`);
+    
+    if (savedTime && savedStartTime) {
+      const elapsed = Math.floor((new Date().getTime() - new Date(savedStartTime).getTime()) / 1000);
+      return Math.max(60 - elapsed, 0);
+    }
+    return 60;
+  });
   const [virtualAccount, setVirtualAccount] = useState('');
   const [copied, setCopied] = useState(false);
   const [buktiTransfer, setBuktiTransfer] = useState('');
   const [loading, setLoading] = useState(false);
-  const [startTime] = useState(new Date().toISOString());
   const [paymentStatus, setPaymentStatus] = useState('Belum Diverifikasi'); // 'pending', 'expired', 'processing'
   
   // Get transaction data from navigation state
@@ -26,31 +37,51 @@ const Pembayaran = () => {
     // Generate random virtual account number when component mounts
     generateVirtualAccount();
 
+    // Save start time in localStorage if not exists
+    if (!localStorage.getItem(`startTime_${transaksiId}`)) {
+      localStorage.setItem(`startTime_${transaksiId}`, new Date().toISOString());
+    }
+
     // Set up countdown timer
     const timer = setInterval(async () => {
       setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
+        const newTime = prevTime - 1;
+        // Save current time in localStorage
+        localStorage.setItem(`countdown_${transaksiId}`, newTime.toString());
+        
+        if (newTime <= 0) {
           clearInterval(timer);
           // Update transaction status to expired when timer expires
           const updateTransactionStatus = async () => {
             try {
               await updateStatusTransaksi(transaksiId, 'Hangus');
               setPaymentStatus('Belum Diverifikasi');
+              // Clear localStorage when expired
+              localStorage.removeItem(`countdown_${transaksiId}`);
+              localStorage.removeItem(`startTime_${transaksiId}`);
+              
+              // Show alert and navigate to homepage
+              alert('Waktu pembayaran telah habis. Transaksi dibatalkan.');
+              navigate('/');
             } catch (error) {
               console.error('Error updating transaction status:', error);
               setPaymentStatus('Belum Diverifikasi');
+              // Still navigate to homepage even if there's an error
+              navigate('/');
             }
           };
           updateTransactionStatus();
           return 0;
         }
-        return prevTime - 1;
+        return newTime;
       });
     }, 1000);
 
     // Cleanup timer on component unmount
-    return () => clearInterval(timer);
-  }, [transaksiId]);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [transaksiId, navigate]);
 
   const generateVirtualAccount = () => {
     // Generate a random 16-digit number
@@ -85,13 +116,17 @@ const Pembayaran = () => {
     setLoading(true);
     try {
       // Check if transaction is already expired
+      const savedStartTime = localStorage.getItem(`startTime_${transaksiId}`);
       const currentTime = new Date().getTime();
-      const startTime = new Date(location.state?.startTime).getTime();
+      const startTime = new Date(savedStartTime).getTime();
       const timeElapsed = (currentTime - startTime) / 1000;
 
       if (timeElapsed > 60) {
         await updateStatusTransaksi(transaksiId, 'Hangus');
         setPaymentStatus('Belum Diverifikasi');
+        // Clear localStorage
+        localStorage.removeItem(`countdown_${transaksiId}`);
+        localStorage.removeItem(`startTime_${transaksiId}`);
         alert('Waktu pembayaran telah habis. Transaksi dibatalkan.');
         return;
       }
@@ -129,6 +164,10 @@ const Pembayaran = () => {
       // Kembali ke home
       navigate('/');
       
+      // Clear localStorage after successful payment
+      localStorage.removeItem(`countdown_${transaksiId}`);
+      localStorage.removeItem(`startTime_${transaksiId}`);
+
     } catch (error) {
       console.error('Error submitting payment:', error);
       alert('Gagal mengirim pembayaran. Silakan coba lagi.');
@@ -158,160 +197,176 @@ const Pembayaran = () => {
 
   if (!transaksiId || !totalAmount || !barangIds) {
     return (
-      <Container className="py-4">
-        <Alert variant="danger">
-          Data transaksi tidak lengkap. Silakan kembali ke halaman keranjang.
-        </Alert>
-        <Button variant="primary" onClick={handleBack}>
-          <FaArrowLeft className="me-2" />
-          Kembali
-        </Button>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <Alert variant="danger">
+            Data transaksi tidak lengkap. Silakan kembali ke halaman keranjang.
+          </Alert>
+          <Button variant="primary" onClick={handleBack}>
+            <FaArrowLeft className="me-2" />
+            Kembali
+          </Button>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   if (paymentStatus === 'expired') {
     return (
-      <Container className="py-4">
-        <Card className="mb-4">
-          <Card.Header className="bg-danger text-white">
-            <h5 className="mb-0">Pembayaran Kadaluarsa</h5>
-          </Card.Header>
-          <Card.Body>
-            <Alert variant="danger">
-              <h6>Waktu pembayaran telah habis</h6>
-              <p className="mb-0">
-                Transaksi ini telah dibatalkan karena waktu pembayaran telah habis.
-                Silakan buat transaksi baru untuk melanjutkan pembelian.
-              </p>
-            </Alert>
-            <Button variant="primary" onClick={handleBack}>
-              <FaArrowLeft className="me-2" />
-              Kembali ke Keranjang
-            </Button>
-          </Card.Body>
-        </Card>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <Card className="mb-4">
+            <Card.Header className="bg-danger text-white">
+              <h5 className="mb-0">Pembayaran Kadaluarsa</h5>
+            </Card.Header>
+            <Card.Body>
+              <Alert variant="danger">
+                <h6>Waktu pembayaran telah habis</h6>
+                <p className="mb-0">
+                  Transaksi ini telah dibatalkan karena waktu pembayaran telah habis.
+                  Silakan buat transaksi baru untuk melanjutkan pembelian.
+                </p>
+              </Alert>
+              <Button variant="primary" onClick={handleBack}>
+                <FaArrowLeft className="me-2" />
+                Kembali ke Keranjang
+              </Button>
+            </Card.Body>
+          </Card>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   if (paymentStatus === 'processing') {
     return (
-      <Container className="py-4">
-        <Card className="mb-4">
-          <Card.Header className="bg-primary text-white">
-            <h5 className="mb-0">Pembayaran Sedang Diproses</h5>
-          </Card.Header>
-          <Card.Body>
-            <Alert variant="info">
-              <h6>Pembayaran Anda sedang diverifikasi</h6>
-              <p className="mb-0">
-                Terima kasih telah melakukan pembayaran. Bukti pembayaran Anda sedang diverifikasi oleh tim kami.
-                Anda akan menerima notifikasi setelah pembayaran diverifikasi.
-              </p>
-            </Alert>
-            <Button variant="primary" onClick={handleBack}>
-              <FaArrowLeft className="me-2" />
-              Kembali ke Beranda
-            </Button>
-          </Card.Body>
-        </Card>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <Card className="mb-4">
+            <Card.Header className="bg-primary text-white">
+              <h5 className="mb-0">Pembayaran Sedang Diproses</h5>
+            </Card.Header>
+            <Card.Body>
+              <Alert variant="info">
+                <h6>Pembayaran Anda sedang diverifikasi</h6>
+                <p className="mb-0">
+                  Terima kasih telah melakukan pembayaran. Bukti pembayaran Anda sedang diverifikasi oleh tim kami.
+                  Anda akan menerima notifikasi setelah pembayaran diverifikasi.
+                </p>
+              </Alert>
+              <Button variant="primary" onClick={handleBack}>
+                <FaArrowLeft className="me-2" />
+                Kembali ke Beranda
+              </Button>
+            </Card.Body>
+          </Card>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Pembayaran</h2>
-      
-      <Row className="justify-content-center">
-        <Col md={8}>
-          <Card className="mb-4">
-            <Card.Header className="bg-primary text-white">
-              <h5 className="mb-0 d-flex align-items-center">
-                <FaClock className="me-2" />
-                Selesaikan Pembayaran dalam {formatTime(timeLeft)}
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <Alert variant="warning" className="mb-4">
-                <h6 className="mb-2">Penting!</h6>
-                <p className="mb-0">
-                  Silakan selesaikan pembayaran sebelum waktu habis. 
-                  Jika waktu habis, pesanan akan dibatalkan secara otomatis.
-                </p>
-              </Alert>
+    <>
+      <Navbar />
+      <Container className="py-4">
+        <h2 className="mb-4">Pembayaran</h2>
+        
+        <Row className="justify-content-center">
+          <Col md={8}>
+            <Card className="mb-4">
+              <Card.Header className="bg-primary text-white">
+                <h5 className="mb-0 d-flex align-items-center">
+                  <FaClock className="me-2" />
+                  Selesaikan Pembayaran dalam {formatTime(timeLeft)}
+                </h5>
+              </Card.Header>
+              <Card.Body>
+                <Alert variant="warning" className="mb-4">
+                  <h6 className="mb-2">Penting!</h6>
+                  <p className="mb-0">
+                    Silakan selesaikan pembayaran sebelum waktu habis. 
+                    Jika waktu habis, pesanan akan dibatalkan secara otomatis.
+                  </p>
+                </Alert>
 
-              <div className="mb-4">
-                <h6>Detail Pembayaran:</h6>
-                <p className="mb-1">ID Transaksi: {transaksiId}</p>
-                <p className="mb-1">Total Pembayaran: Rp {totalAmount.toLocaleString()}</p>
-              </div>
+                <div className="mb-4">
+                  <h6>Detail Pembayaran:</h6>
+                  <p className="mb-1">ID Transaksi: {transaksiId}</p>
+                  <p className="mb-1">Total Pembayaran: Rp {totalAmount.toLocaleString()}</p>
+                </div>
 
-              <div className="mb-4">
-                <h6>Virtual Account:</h6>
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <code className="fs-4">{virtualAccount}</code>
+                <div className="mb-4">
+                  <h6>Virtual Account:</h6>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <code className="fs-4">{virtualAccount}</code>
+                    <Button 
+                      variant="outline-primary" 
+                      size="sm"
+                      onClick={handleCopyVA}
+                      className="d-flex align-items-center gap-1"
+                    >
+                      <FaCopy />
+                      {copied ? 'Tersalin!' : 'Salin'}
+                    </Button>
+                  </div>
+                  <small className="text-muted">
+                    Gunakan nomor Virtual Account di atas untuk melakukan pembayaran melalui ATM, 
+                    Mobile Banking, atau Internet Banking bank manapun.
+                  </small>
+                </div>
+
+                <div className="mb-4">
+                  <h6>Upload Bukti Transfer:</h6>
+                  <Form.Group controlId="formFile" className="mb-3">
+                    <Form.Control 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                    <Form.Text className="text-muted">
+                      Upload bukti transfer pembayaran Anda (format: JPG, PNG)
+                    </Form.Text>
+                  </Form.Group>
+                </div>
+
+                <div className="d-grid gap-2">
                   <Button 
-                    variant="outline-primary" 
-                    size="sm"
-                    onClick={handleCopyVA}
-                    className="d-flex align-items-center gap-1"
+                    variant="primary" 
+                    onClick={handleSubmitPayment}
+                    disabled={loading || !buktiTransfer}
+                    className="d-flex align-items-center justify-content-center gap-2"
                   >
-                    <FaCopy />
-                    {copied ? 'Tersalin!' : 'Salin'}
+                    {loading ? (
+                      'Memproses...'
+                    ) : (
+                      <>
+                        <FaUpload />
+                        Kirim Bukti Pembayaran
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={handleBack}
+                    className="d-flex align-items-center justify-content-center gap-2"
+                  >
+                    <FaArrowLeft />
+                    Kembali
                   </Button>
                 </div>
-                <small className="text-muted">
-                  Gunakan nomor Virtual Account di atas untuk melakukan pembayaran melalui ATM, 
-                  Mobile Banking, atau Internet Banking bank manapun.
-                </small>
-              </div>
-
-              <div className="mb-4">
-                <h6>Upload Bukti Transfer:</h6>
-                <Form.Group controlId="formFile" className="mb-3">
-                  <Form.Control 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
-                  <Form.Text className="text-muted">
-                    Upload bukti transfer pembayaran Anda (format: JPG, PNG)
-                  </Form.Text>
-                </Form.Group>
-              </div>
-
-              <div className="d-grid gap-2">
-                <Button 
-                  variant="primary" 
-                  onClick={handleSubmitPayment}
-                  disabled={loading || !buktiTransfer}
-                  className="d-flex align-items-center justify-content-center gap-2"
-                >
-                  {loading ? (
-                    'Memproses...'
-                  ) : (
-                    <>
-                      <FaUpload />
-                      Kirim Bukti Pembayaran
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline-secondary" 
-                  onClick={handleBack}
-                  className="d-flex align-items-center justify-content-center gap-2"
-                >
-                  <FaArrowLeft />
-                  Kembali
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+      <Footer />
+    </>
   );
 };
 

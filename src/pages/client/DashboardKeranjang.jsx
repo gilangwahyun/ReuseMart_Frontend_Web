@@ -4,6 +4,8 @@ import { Container, Card, Button, Table, Row, Col } from 'react-bootstrap';
 import { FaTrash, FaShoppingBag } from 'react-icons/fa';
 import { getKeranjangByIdUser } from '../../api/KeranjangApi';
 import { deleteDetailKeranjang } from '../../api/DetailKeranjangApi';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 const DashboardKeranjang = () => {
   const navigate = useNavigate();
@@ -65,88 +67,104 @@ const DashboardKeranjang = () => {
 
   if (loading) {
     return (
-      <Container className="py-4">
-        <h5 className="text-center">Memuat keranjang...</h5>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <h5 className="text-center">Memuat keranjang...</h5>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   if (error) {
     return (
-      <Container className="py-4">
-        <h5 className="text-center text-danger">{error}</h5>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <h5 className="text-center text-danger">{error}</h5>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   if (cartItems.length === 0) {
     return (
-      <Container className="py-4">
-        <h5 className="text-center">Keranjang belanja kosong</h5>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <h5 className="text-center">Keranjang belanja kosong</h5>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Keranjang Belanja</h2>
-      
-      <Card>
-        <Card.Body>
-          <Table responsive hover>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Nama Barang</th>
-                <th>Deskripsi</th>
-                <th>Harga</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cartItems.map((item, index) => (
-                <tr key={item.id_detail_keranjang}>
-                  <td>{index + 1}</td>
-                  <td>{item.barang.nama_barang}</td>
-                  <td>{item.barang.deskripsi}</td>
-                  <td>Rp {item.barang.harga.toLocaleString()}</td>
-                  <td>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleRemoveItem(item.id_detail_keranjang)}
-                    >
-                      <FaTrash />
-                    </Button>
-                  </td>
+    <>
+      <Navbar />
+      <Container className="py-4">
+        <h2 className="mb-4">Keranjang Belanja</h2>
+        
+        <Card>
+          <Card.Body>
+            <Table responsive hover>
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Barang</th>
+                  <th>Deskripsi</th>
+                  <th>Harga</th>
+                  <th>Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan="3" className="text-end fw-bold">Total:</td>
-                <td colSpan="2" className="fw-bold">Rp {subtotal.toLocaleString()}</td>
-              </tr>
-            </tfoot>
-          </Table>
+              </thead>
+              <tbody>
+                {cartItems.map((item, index) => (
+                  <tr key={item.id_detail_keranjang}>
+                    <td>{index + 1}</td>
+                    <td>{item.barang.nama_barang}</td>
+                    <td>{item.barang.deskripsi}</td>
+                    <td>Rp {item.barang.harga.toLocaleString()}</td>
+                    <td>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleRemoveItem(item.id_detail_keranjang)}
+                      >
+                        <FaTrash />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan="3" className="text-end fw-bold">Total:</td>
+                  <td colSpan="2" className="fw-bold">Rp {subtotal.toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </Table>
 
-          <Row className="mt-4">
-            <Col className="d-flex justify-content-end">
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleCheckout}
-                className="d-flex align-items-center gap-2"
-                disabled={cartItems.length === 0}
-              >
-                <FaShoppingBag />
-                Lanjut ke Pembayaran (Rp {subtotal.toLocaleString()})
-              </Button>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-    </Container>
+            <Row className="mt-4">
+              <Col className="d-flex justify-content-end">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleCheckout}
+                  className="d-flex align-items-center gap-2"
+                  disabled={cartItems.length === 0}
+                >
+                  <FaShoppingBag />
+                  Lanjut ke Pembayaran (Rp {subtotal.toLocaleString()})
+                </Button>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Container>
+      <Footer />
+    </>
   );
 };
 

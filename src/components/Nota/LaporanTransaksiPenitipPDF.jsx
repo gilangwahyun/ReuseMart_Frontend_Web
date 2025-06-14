@@ -5,12 +5,15 @@ import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
 import axios from 'axios';
 import { BASE_URL } from '../../api';
+import { getAllTransaksi } from '../../api/TransaksiApi';
+import { getPenitipanBarangById } from '../../api/PenitipanBarangApi';
 
-const LaporanPendapatanPenitipPDF = () => {
+const LaporanTransaksiPenitipPDF = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
   const printComponentRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,15 +42,137 @@ const LaporanPendapatanPenitipPDF = () => {
     const userInfo = getUserData();
     setUser(userInfo);
     
-    if (userInfo && userInfo.id_penitip) {
-      fetchData(userInfo.id_penitip);
+    // Check if user is owner based on the route
+    const isOwnerRoute = location.pathname.startsWith('/owner');
+    setIsOwner(isOwnerRoute);
+    
+    if (isOwnerRoute) {
+      fetchAllData();
+    } else if (userInfo && userInfo.id_penitip) {
+      fetchPenitipData(userInfo.id_penitip);
     } else {
-      setError('Data penitip tidak ditemukan');
+      setError('Data pengguna tidak ditemukan');
       setLoading(false);
     }
-  }, []);
+  }, [location.pathname]);
 
-  const fetchData = async (id_penitip) => {
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      // Get all transactions
+      const transaksiResponse = await getAllTransaksi();
+      
+      if (!transaksiResponse || !transaksiResponse.data) {
+        throw new Error('Format data transaksi dari server tidak sesuai');
+      }
+      
+      console.log('All Transaction Data:', transaksiResponse.data);
+      
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token autentikasi tidak ditemukan');
+      }
+      
+      // Process and transform data
+      let allBarangWithIncome = [];
+      
+      // Process each transaction
+      for (const transaksi of transaksiResponse.data) {
+        // Get transaction details with penitip info
+        try {
+          const penitipDetails = await axios.get(`${BASE_URL}/api/transaksi/${transaksi.id_transaksi}/penitipan-penitip`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const detailsData = penitipDetails.data || [];
+          
+          // Process each item in the transaction
+          for (const item of detailsData) {
+            try {
+              // Calculate bonus (10% of price)
+              const bonus = item.harga_item * 0.1;
+              // Calculate total income
+              const pendapatan = item.harga_item - bonus;
+              
+              // Log data untuk debugging
+              console.log('Item data detail (PDF):', item);
+              
+              // Jika tidak ada tanggal_awal_penitipan dan ada id_penitipan, coba ambil data penitipan
+              let tanggalPenitipan = item.tanggal_awal_penitipan || '-';
+              
+              if (tanggalPenitipan === '-' && item.id_penitipan) {
+                try {
+                  // Ambil data penitipan langsung dari API
+                  console.log(`Fetching penitipan data for id_penitipan: ${item.id_penitipan}`);
+                  const penitipanData = await getPenitipanBarangById(item.id_penitipan);
+                  if (penitipanData && penitipanData.tanggal_awal_penitipan) {
+                    tanggalPenitipan = penitipanData.tanggal_awal_penitipan;
+                    console.log(`Found tanggal_awal_penitipan: ${tanggalPenitipan}`);
+                  }
+                } catch (penitipanErr) {
+                  console.error(`Error fetching penitipan data for id ${item.id_penitipan}:`, penitipanErr);
+                }
+              }
+              
+              allBarangWithIncome.push({
+                id_barang: item.id_barang,
+                nama_barang: item.nama_barang,
+                harga: item.harga_item,
+                id_penitip: item.id_penitip,
+                nama_penitip: item.nama_penitip || 'Tidak diketahui',
+                tanggal_penitipan: tanggalPenitipan,
+                tanggal_transaksi: transaksi.tanggal_transaksi || '-',
+                id_transaksi: transaksi.id_transaksi,
+                bonus: bonus,
+                pendapatan: pendapatan
+              });
+            } catch (itemErr) {
+              console.error(`Error processing item ${item.id_barang}:`, itemErr);
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching details for transaction ${transaksi.id_transaksi}:`, err);
+        }
+      }
+      
+      // Apply filters if any were passed in location state
+      let filteredData = allBarangWithIncome;
+      
+      if (filterParams.startDate) {
+        filteredData = filteredData.filter(item => {
+          if (!item.tanggal_penitipan) return false;
+          return new Date(item.tanggal_penitipan) >= new Date(filterParams.startDate);
+        });
+      }
+      
+      if (filterParams.endDate) {
+        filteredData = filteredData.filter(item => {
+          if (!item.tanggal_penitipan) return false;
+          return new Date(item.tanggal_penitipan) <= new Date(filterParams.endDate);
+        });
+      }
+      
+      if (filterParams.searchTerm) {
+        const searchLower = filterParams.searchTerm.toLowerCase();
+        filteredData = filteredData.filter(item => 
+          (item.nama_barang && item.nama_barang.toLowerCase().includes(searchLower)) ||
+          (item.id_barang && item.id_barang.toString().includes(searchLower)) ||
+          (item.nama_penitip && item.nama_penitip.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      setData(filteredData);
+    } catch (err) {
+      console.error("Error fetching all data:", err);
+      setError(`Gagal memuat data: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPenitipData = async (id_penitip) => {
     setLoading(true);
     try {
       // Get all penitipan for this penitip
@@ -77,8 +202,8 @@ const LaporanPendapatanPenitipPDF = () => {
                 ...item,
                 id_penitip,
                 nama_penitip: user?.nama || user?.nama_penitip || 'Pengguna',
-                tanggal_masuk: penitipan.tanggal_awal_penitipan,
-                tanggal_laku: item.updated_at || '-',
+                tanggal_penitipan: penitipan.tanggal_awal_penitipan,
+                tanggal_transaksi: item.updated_at || '-',
                 bonus: bonus,
                 pendapatan: pendapatan
               };
@@ -93,15 +218,15 @@ const LaporanPendapatanPenitipPDF = () => {
       
       if (filterParams.startDate) {
         filteredData = filteredData.filter(item => {
-          if (!item.tanggal_masuk) return false;
-          return new Date(item.tanggal_masuk) >= new Date(filterParams.startDate);
+          if (!item.tanggal_penitipan) return false;
+          return new Date(item.tanggal_penitipan) >= new Date(filterParams.startDate);
         });
       }
       
       if (filterParams.endDate) {
         filteredData = filteredData.filter(item => {
-          if (!item.tanggal_masuk) return false;
-          return new Date(item.tanggal_masuk) <= new Date(filterParams.endDate);
+          if (!item.tanggal_penitipan) return false;
+          return new Date(item.tanggal_penitipan) <= new Date(filterParams.endDate);
         });
       }
       
@@ -125,7 +250,7 @@ const LaporanPendapatanPenitipPDF = () => {
   const handlePrint = useReactToPrint({
     content: () => printComponentRef.current,
     contentRef: printComponentRef,
-    documentTitle: 'Laporan Pendapatan Penitip',
+    documentTitle: isOwner ? 'Laporan Transaksi' : 'Laporan Transaksi Penitip',
     onBeforeGetContent: () => {
       return new Promise(resolve => {
         console.log("Preparing content to print...");
@@ -138,7 +263,11 @@ const LaporanPendapatanPenitipPDF = () => {
   });
 
   const handleBack = () => {
-    navigate('/DashboardPenitip/laporan-pendapatan');
+    if (isOwner) {
+      navigate('/owner/laporan-transaksi');
+    } else {
+      navigate('/DashboardPenitip/laporan-pendapatan');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -217,27 +346,29 @@ const LaporanPendapatanPenitipPDF = () => {
         <Card className="p-4 mb-4">
           <Card.Body>
             <div className="text-center mb-4">
-              <h2>LAPORAN TRANSAKSI PENITIP</h2>
+              <h2>LAPORAN TRANSAKSI {isOwner ? '' : 'PENITIP'}</h2>
               <h4>ReuseMart</h4>
               <p className="text-muted">Pusat Daur Ulang dan Donasi Barang Bekas</p>
               <p>Tanggal Cetak: {formatDate(new Date())}</p>
             </div>
 
-            <div className="mb-3">
-              <h5>Data Penitip:</h5>
-              <table className="table table-bordered">
-                <tbody>
-                  <tr>
-                    <td width="30%" className="fw-bold">ID Penitip</td>
-                    <td>{user?.id_penitip || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="fw-bold">Nama Penitip</td>
-                    <td>{user?.nama || user?.nama_penitip || '-'}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            {!isOwner && (
+              <div className="mb-3">
+                <h5>Data Penitip:</h5>
+                <table className="table table-bordered">
+                  <tbody>
+                    <tr>
+                      <td width="30%" className="fw-bold">ID Penitip</td>
+                      <td>{user?.id_penitip || '-'}</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-bold">Nama Penitip</td>
+                      <td>{user?.nama || user?.nama_penitip || '-'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {data.length > 0 ? (
               <div className="mb-4">
@@ -248,6 +379,7 @@ const LaporanPendapatanPenitipPDF = () => {
                       <th>No</th>
                       <th>ID Barang</th>
                       <th>Nama Barang</th>
+                      {isOwner && <th>Nama Penitip</th>}
                       <th>Tanggal Masuk</th>
                       <th>Tanggal Laku</th>
                       <th>Harga</th>
@@ -261,15 +393,16 @@ const LaporanPendapatanPenitipPDF = () => {
                         <td>{idx + 1}</td>
                         <td>{item.id_barang}</td>
                         <td>{item.nama_barang}</td>
+                        {isOwner && <td>{item.nama_penitip}</td>}
                         <td>{formatDate(item.tanggal_penitipan)}</td>
-                        <td>{formatDate(item.tanggal_laku)}</td>
+                        <td>{formatDate(item.tanggal_transaksi)}</td>
                         <td>{formatCurrency(item.harga || 0)}</td>
                         <td>{formatCurrency(item.bonus || 0)}</td>
                         <td>{formatCurrency(item.pendapatan || 0)}</td>
                       </tr>
                     ))}
                     <tr className="table-success fw-bold">
-                      <td colSpan="5" className="text-end">Total</td>
+                      <td colSpan={isOwner ? "6" : "5"} className="text-end">Total</td>
                       <td>{formatCurrency(totals.totalHarga)}</td>
                       <td>{formatCurrency(totals.totalBonus)}</td>
                       <td>{formatCurrency(totals.totalPendapatan)}</td>
@@ -291,4 +424,4 @@ const LaporanPendapatanPenitipPDF = () => {
   );
 };
 
-export default LaporanPendapatanPenitipPDF; 
+export default LaporanTransaksiPenitipPDF; 

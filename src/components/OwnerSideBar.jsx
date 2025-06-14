@@ -9,6 +9,7 @@ import {
   FaSignOutAlt,
   FaReceipt,
   FaClipboardList,
+  FaMoneyBillWave
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -36,6 +37,7 @@ const OwnerSidebar = () => {
     { to: "/owner/alokasi", icon: <FaBuilding />, label: "Manajerial Alokasi" },
     { to: "/owner/nota-donasi", icon: <FaReceipt />, label: "Nota Donasi" },
     { to: "/owner/request-donasi", icon: <FaClipboardList />, label: "Request Donasi" },
+    { to: "/owner/laporan-transaksi", icon: <FaMoneyBillWave />, label: "Laporan Transaksi" },
   ];
 
   return (

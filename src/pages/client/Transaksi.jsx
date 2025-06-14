@@ -5,6 +5,8 @@ import { FaArrowLeft, FaCreditCard, FaPlus, FaTruck } from 'react-icons/fa';
 import { getAlamatByPembeliId } from '../../api/AlamatApi';
 import { getPembeliByUserId, updatePembeli } from '../../api/PembeliApi';
 import { createTransaksi, createDetailTransaksi } from '../../api/TransaksiApi';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 const Transaksi = () => {
   const location = useLocation();
@@ -242,269 +244,277 @@ const Transaksi = () => {
 
   if (!cartItems.length) {
     return (
-      <Container className="py-4">
-        <h5 className="text-center">Tidak ada item dalam keranjang</h5>
-        <div className="text-center mt-3">
-          <Button variant="primary" onClick={handleBack}>
-            <FaArrowLeft className="me-2" />
-            Kembali ke Keranjang
-          </Button>
-        </div>
-      </Container>
+      <>
+        <Navbar />
+        <Container className="py-4">
+          <h5 className="text-center">Tidak ada item dalam keranjang</h5>
+          <div className="text-center mt-3">
+            <Button variant="primary" onClick={handleBack}>
+              <FaArrowLeft className="me-2" />
+              Kembali ke Keranjang
+            </Button>
+          </div>
+        </Container>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Checkout</h2>
-      
-      <Row>
-        {/* Order Summary */}
-        <Col md={8}>
-          <Card className="mb-4">
-            <Card.Header>
-              <h5 className="mb-0">Ringkasan Pesanan</h5>
-            </Card.Header>
-            <Card.Body>
-              <Table responsive>
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Barang</th>
-                    <th>Harga</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cartItems.map((item, index) => (
-                    <tr key={item.id_detail_keranjang}>
-                      <td>{index + 1}</td>
-                      <td>{item.barang.nama_barang}</td>
-                      <td>Rp {roundPrice(item.barang.harga).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan="3" className="text-end">Subtotal:</td>
-                    <td>Rp {subtotal.toLocaleString()}</td>
-                  </tr>
-                  {pointsDiscount > 0 && (
+    <>
+      <Navbar />
+      <Container className="py-4">
+        <h2 className="mb-4">Checkout</h2>
+        
+        <Row>
+          {/* Order Summary */}
+          <Col md={8}>
+            <Card className="mb-4">
+              <Card.Header>
+                <h5 className="mb-0">Ringkasan Pesanan</h5>
+              </Card.Header>
+              <Card.Body>
+                <Table responsive>
+                  <thead>
                     <tr>
-                      <td colSpan="3" className="text-end text-success">
-                        Diskon Poin ({pembeli?.jumlah_poin || 0} poin):
-                      </td>
-                      <td className="text-success">
-                        - Rp {pointsDiscount.toLocaleString()}
-                      </td>
+                      <th>No</th>
+                      <th>Nama Barang</th>
+                      <th>Harga</th>
                     </tr>
-                  )}
-                  {paymentMethod === 'Dikirim oleh Kurir' && (
-                    <>
+                  </thead>
+                  <tbody>
+                    {cartItems.map((item, index) => (
+                      <tr key={item.id_detail_keranjang}>
+                        <td>{index + 1}</td>
+                        <td>{item.barang.nama_barang}</td>
+                        <td>Rp {roundPrice(item.barang.harga).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan="3" className="text-end">Subtotal:</td>
+                      <td>Rp {subtotal.toLocaleString()}</td>
+                    </tr>
+                    {pointsDiscount > 0 && (
                       <tr>
-                        <td colSpan="3" className="text-end">
-                          Biaya Pengiriman:
-                          {subtotal >= FREE_SHIPPING_THRESHOLD && (
-                            <span className="text-success ms-2">
-                              <small>(Gratis untuk pembelian di atas Rp 1.500.000)</small>
-                            </span>
-                          )}
+                        <td colSpan="3" className="text-end text-success">
+                          Diskon Poin ({pembeli?.jumlah_poin || 0} poin):
                         </td>
-                        <td>
-                          {shippingCost === 0 ? (
-                            <span className="text-success">Gratis</span>
-                          ) : (
-                            `Rp ${shippingCost.toLocaleString()}`
-                          )}
+                        <td className="text-success">
+                          - Rp {pointsDiscount.toLocaleString()}
                         </td>
                       </tr>
-                    </>
-                  )}
-                  <tr>
-                    <td colSpan="3" className="text-end fw-bold">Total Keseluruhan:</td>
-                    <td className="fw-bold">Rp {finalTotal.toLocaleString()}</td>
-                  </tr>
-                </tfoot>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* Payment Details */}
-        <Col md={4}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">Detail Pembayaran</h5>
-            </Card.Header>
-            <Card.Body>
-              <Form onSubmit={handleSubmitOrder}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Metode Pengambilan</Form.Label>
-                  <Form.Select 
-                    value={paymentMethod}
-                    onChange={handlePaymentMethodChange}
-                  >
-                    <option value="Dikirim oleh Kurir">Dikirim oleh Kurir</option>
-                    <option value="Diambil Mandiri">Diambil Mandiri</option>
-                  </Form.Select>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    {paymentMethod === 'Diambil Mandiri' ? 'Alamat Pengambilan' : 'Pilih Alamat Pengiriman'}
-                  </Form.Label>
-                  {paymentMethod === 'Diambil Mandiri' ? (
-                    <div className="p-3 bg-light rounded">
-                      <p className="mb-0">
-                        <strong>Alamat Toko:</strong><br />
-                        Jl. ReuseMart No. 123<br />
-                        Buka: Senin - Minggu, 09:00 - 21:00 WIB
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <Form.Select 
-                        value={selectedAlamatId}
-                        onChange={handleAddressChange}
-                        className="mb-2"
-                        required
-                      >
-                        <option value="">Pilih alamat...</option>
-                        {alamatList.map((alamat) => (
-                          <option key={alamat.id_alamat} value={alamat.id_alamat}>
-                            {alamat.label_alamat}
-                          </option>
-                        ))}
-                      </Form.Select>
-
-                      {selectedAlamatId && (
-                        <div className="mt-2">
-                          <small className="text-muted">
-                            Alamat yang dipilih: {alamatList.find(addr => addr.id_alamat === parseInt(selectedAlamatId))?.alamat_lengkap}
-                          </small>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </Form.Group>
-
-                {paymentMethod === 'Dikirim oleh Kurir' && (
-                  <div className="alert alert-info mb-3">
-                    <FaTruck className="me-2" />
-                    {subtotal >= FREE_SHIPPING_THRESHOLD ? (
-                      <span>Selamat! Anda mendapatkan pengiriman gratis untuk pembelian di atas Rp 1.500.000</span>
-                    ) : (
-                      <span>
-                        Tambahkan belanja Rp {(FREE_SHIPPING_THRESHOLD - subtotal).toLocaleString()} lagi untuk mendapatkan pengiriman gratis!
-                      </span>
                     )}
-                  </div>
-                )}
-
-                {/* Add Points Usage Section */}
-                {pembeli && pembeli.jumlah_poin > 0 && (
-                  <Form.Group className="mb-3">
-                    <Form.Check 
-                      type="checkbox"
-                      label="Gunakan poin untuk diskon"
-                      checked={usePoints}
-                      onChange={(e) => {
-                        setUsePoints(e.target.checked);
-                        if (!e.target.checked) setPointsToUse(0);
-                      }}
-                    />
-                    {usePoints && (
+                    {paymentMethod === 'Dikirim oleh Kurir' && (
                       <>
-                        <Form.Label className="mt-2">Jumlah Poin yang Digunakan</Form.Label>
-                        <Form.Control
-                          type="number"
-                          min="0"
-                          max={pembeli.jumlah_poin}
-                          value={pointsToUse}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || 0;
-                            setPointsToUse(Math.min(value, pembeli.jumlah_poin));
-                          }}
-                          placeholder={`Maksimal ${pembeli.jumlah_poin} poin`}
-                        />
-                        <Form.Text className="text-muted">
-                          <div>Poin tersedia: {pembeli.jumlah_poin} poin</div>
-                          <div>100 poin = Rp {POINTS_DISCOUNT_VALUE.toLocaleString()} diskon</div>
-                          <div>Maksimal diskon 20% dari total belanja</div>
-                          {pointsToUse > 0 && (
-                            <div className="text-success">
-                              Diskon yang didapat: Rp {calculatePointsDiscount().toLocaleString()}
-                            </div>
-                          )}
-                        </Form.Text>
+                        <tr>
+                          <td colSpan="3" className="text-end">
+                            Biaya Pengiriman:
+                            {subtotal >= FREE_SHIPPING_THRESHOLD && (
+                              <span className="text-success ms-2">
+                                <small>(Gratis untuk pembelian di atas Rp 1.500.000)</small>
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {shippingCost === 0 ? (
+                              <span className="text-success">Gratis</span>
+                            ) : (
+                              `Rp ${shippingCost.toLocaleString()}`
+                            )}
+                          </td>
+                        </tr>
+                      </>
+                    )}
+                    <tr>
+                      <td colSpan="3" className="text-end fw-bold">Total Keseluruhan:</td>
+                      <td className="fw-bold">Rp {finalTotal.toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          {/* Payment Details */}
+          <Col md={4}>
+            <Card>
+              <Card.Header>
+                <h5 className="mb-0">Detail Pembayaran</h5>
+              </Card.Header>
+              <Card.Body>
+                <Form onSubmit={handleSubmitOrder}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Metode Pengambilan</Form.Label>
+                    <Form.Select 
+                      value={paymentMethod}
+                      onChange={handlePaymentMethodChange}
+                    >
+                      <option value="Dikirim oleh Kurir">Dikirim oleh Kurir</option>
+                      <option value="Diambil Mandiri">Diambil Mandiri</option>
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      {paymentMethod === 'Diambil Mandiri' ? 'Alamat Pengambilan' : 'Pilih Alamat Pengiriman'}
+                    </Form.Label>
+                    {paymentMethod === 'Diambil Mandiri' ? (
+                      <div className="p-3 bg-light rounded">
+                        <p className="mb-0">
+                          <strong>Alamat Toko:</strong><br />
+                          Jl. ReuseMart No. 123<br />
+                          Buka: Senin - Minggu, 09:00 - 21:00 WIB
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <Form.Select 
+                          value={selectedAlamatId}
+                          onChange={handleAddressChange}
+                          className="mb-2"
+                          required
+                        >
+                          <option value="">Pilih alamat...</option>
+                          {alamatList.map((alamat) => (
+                            <option key={alamat.id_alamat} value={alamat.id_alamat}>
+                              {alamat.label_alamat}
+                            </option>
+                          ))}
+                        </Form.Select>
+
+                        {selectedAlamatId && (
+                          <div className="mt-2">
+                            <small className="text-muted">
+                              Alamat yang dipilih: {alamatList.find(addr => addr.id_alamat === parseInt(selectedAlamatId))?.alamat_lengkap}
+                            </small>
+                          </div>
+                        )}
                       </>
                     )}
                   </Form.Group>
-                )}
 
-                {/* Add Points Info */}
-                <div className="my-3">
-                  <Button 
-                    variant="outline-success" 
-                    size="sm" 
-                    className="mb-2 w-100"
-                    onClick={() => setShowPointsInfo(!showPointsInfo)}
-                  >
-                    {showPointsInfo ? "Sembunyikan Info Poin" : "Lihat Info Poin"}
-                  </Button>
-                  
-                  {showPointsInfo && (
-                    <Alert variant="success" className="mb-3">
-                      <h6>Estimasi Poin yang Akan Didapat:</h6>
-                      <p className="mb-1">Poin dasar: {Math.floor(subtotal / POINTS_RUPIAH_RATIO)} poin</p>
-                      
-                      {subtotal > BONUS_THRESHOLD && (
-                        <p className="mb-1">Bonus poin (+20%): {Math.floor((Math.floor(subtotal / POINTS_RUPIAH_RATIO)) * BONUS_PERCENTAGE)} poin</p>
-                      )}
-                      
-                      <p className="fw-bold mb-0">Total: {estimatedPoints} poin</p>
-                      <small className="text-muted">
-                        *1 poin untuk setiap pembelanjaan Rp10.000<br />
-                        *Bonus 20% untuk pembelian di atas Rp500.000
-                      </small>
-                    </Alert>
-                  )}
-                </div>
-
-                <div className="d-grid gap-2">
-                  <Button 
-                    variant="primary" 
-                    type="submit"
-                    disabled={loading || (paymentMethod === 'Dikirim oleh Kurir' && !selectedAlamatId)}
-                    className="d-flex align-items-center justify-content-center gap-2"
-                  >
-                    <FaCreditCard />
-                    {loading ? 'Memproses...' : `Buat Pesanan (Rp ${finalTotal.toLocaleString()})`}
-                  </Button>
-                  <Button 
-                    variant="outline-secondary" 
-                    onClick={handleBack}
-                    className="d-flex align-items-center justify-content-center gap-2"
-                  >
-                    <FaArrowLeft />
-                    Kembali ke Keranjang
-                  </Button>
                   {paymentMethod === 'Dikirim oleh Kurir' && (
+                    <div className="alert alert-info mb-3">
+                      <FaTruck className="me-2" />
+                      {subtotal >= FREE_SHIPPING_THRESHOLD ? (
+                        <span>Selamat! Anda mendapatkan pengiriman gratis untuk pembelian di atas Rp 1.500.000</span>
+                      ) : (
+                        <span>
+                          Tambahkan belanja Rp {(FREE_SHIPPING_THRESHOLD - subtotal).toLocaleString()} lagi untuk mendapatkan pengiriman gratis!
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add Points Usage Section */}
+                  {pembeli && pembeli.jumlah_poin > 0 && (
+                    <Form.Group className="mb-3">
+                      <Form.Check 
+                        type="checkbox"
+                        label="Gunakan poin untuk diskon"
+                        checked={usePoints}
+                        onChange={(e) => {
+                          setUsePoints(e.target.checked);
+                          if (!e.target.checked) setPointsToUse(0);
+                        }}
+                      />
+                      {usePoints && (
+                        <>
+                          <Form.Label className="mt-2">Jumlah Poin yang Digunakan</Form.Label>
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            max={pembeli.jumlah_poin}
+                            value={pointsToUse}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              setPointsToUse(Math.min(value, pembeli.jumlah_poin));
+                            }}
+                            placeholder={`Maksimal ${pembeli.jumlah_poin} poin`}
+                          />
+                          <Form.Text className="text-muted">
+                            <div>Poin tersedia: {pembeli.jumlah_poin} poin</div>
+                            <div>100 poin = Rp {POINTS_DISCOUNT_VALUE.toLocaleString()} diskon</div>
+                            <div>Maksimal diskon 20% dari total belanja</div>
+                            {pointsToUse > 0 && (
+                              <div className="text-success">
+                                Diskon yang didapat: Rp {calculatePointsDiscount().toLocaleString()}
+                              </div>
+                            )}
+                          </Form.Text>
+                        </>
+                      )}
+                    </Form.Group>
+                  )}
+
+                  {/* Add Points Info */}
+                  <div className="my-3">
                     <Button 
-                      variant="outline-primary" 
-                      onClick={() => navigate(`/DashboardProfilPembeli/${userId}`, { state: { activeTab: 'alamat' }})}
+                      variant="outline-success" 
+                      size="sm" 
+                      className="mb-2 w-100"
+                      onClick={() => setShowPointsInfo(!showPointsInfo)}
+                    >
+                      {showPointsInfo ? "Sembunyikan Info Poin" : "Lihat Info Poin"}
+                    </Button>
+                    
+                    {showPointsInfo && (
+                      <Alert variant="success" className="mb-3">
+                        <h6>Estimasi Poin yang Akan Didapat:</h6>
+                        <p className="mb-1">Poin dasar: {Math.floor(subtotal / POINTS_RUPIAH_RATIO)} poin</p>
+                        
+                        {subtotal > BONUS_THRESHOLD && (
+                          <p className="mb-1">Bonus poin (+20%): {Math.floor((Math.floor(subtotal / POINTS_RUPIAH_RATIO)) * BONUS_PERCENTAGE)} poin</p>
+                        )}
+                        
+                        <p className="fw-bold mb-0">Total: {estimatedPoints} poin</p>
+                        <small className="text-muted">
+                          *1 poin untuk setiap pembelanjaan Rp10.000<br />
+                          *Bonus 20% untuk pembelian di atas Rp500.000
+                        </small>
+                      </Alert>
+                    )}
+                  </div>
+
+                  <div className="d-grid gap-2">
+                    <Button 
+                      variant="primary" 
+                      type="submit"
+                      disabled={loading || (paymentMethod === 'Dikirim oleh Kurir' && !selectedAlamatId)}
                       className="d-flex align-items-center justify-content-center gap-2"
                     >
-                      <FaPlus />
-                      Kelola Alamat
+                      <FaCreditCard />
+                      {loading ? 'Memproses...' : `Buat Pesanan (Rp ${finalTotal.toLocaleString()})`}
                     </Button>
-                  )}
-                </div>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+                    <Button 
+                      variant="outline-secondary" 
+                      onClick={handleBack}
+                      className="d-flex align-items-center justify-content-center gap-2"
+                    >
+                      <FaArrowLeft />
+                      Kembali ke Keranjang
+                    </Button>
+                    {paymentMethod === 'Dikirim oleh Kurir' && (
+                      <Button 
+                        variant="outline-primary" 
+                        onClick={() => navigate(`/DashboardProfilPembeli/${userId}`, { state: { activeTab: 'alamat' }})}
+                        className="d-flex align-items-center justify-content-center gap-2"
+                      >
+                        <FaPlus />
+                        Kelola Alamat
+                      </Button>
+                    )}
+                  </div>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+      <Footer />
+    </>
   );
 };
 

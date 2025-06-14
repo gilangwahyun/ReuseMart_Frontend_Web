@@ -8,6 +8,7 @@ import RegisterPembeli from '../pages/auth/RegisterPembeli';
 import RegisterOrganisasi from '../pages/auth/RegisterOrganisasi';
 import RegisterPenitip from '../pages/auth/RegisterPenitip';
 import DashboardProfilPembeli from '../pages/client/DashboardProfilPembeli';
+import DashboardProfilPenitip from '../pages/client/DashboardProfilPenitip';
 import CRUDPenitip from '../pages/auth/CRUDPenitip';
 import DashboardOrganisasi from '../pages/client/DashboardOrganisasi';
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -36,8 +37,8 @@ import NotaPenjualanPembeli from '../components/Nota/NotaPenjualanPembeli';
 import DashboardPenitip from '../pages/client/DashboardPenitip';
 import DaftarBarangPenitip from '../pages/client/DaftarBarangPenitip';
 import PengambilanBarang from '../pages/client/PengambilanBarang';
-import LaporanPendapatanPenitip from '../pages/client/LaporanPendapatanPenitip';
-import LaporanPendapatanPenitipPDF from '../components/Nota/LaporanPendapatanPenitipPDF';
+import LaporanTransaksiPenitip from '../pages/client/LaporanTransaksiPenitip';
+import LaporanTransaksiPenitipPDF from '../components/Nota/LaporanTransaksiPenitipPDF';
 import TransaksiPage from '../pages/pegawaiGudang/TransaksiPage';
 import PenjadwalanPage from '../pages/pegawaiGudang/PenjadwalanPage';
 import RequestPengambilanPage from '../pages/pegawaiGudang/RequestPengambilanPage';
@@ -57,12 +58,13 @@ const AppRoutes = () => {
         <Route path="/RegisterOrganisasi" element={<RegisterOrganisasi/>} />
         <Route path="/RegisterPenitip" element={<RegisterPenitip/>} />
         <Route path="/DashboardProfilPembeli/:id_user" element={<DashboardProfilPembeli />} />
+        <Route path="/DashboardProfilPenitip/:id_user" element={<DashboardProfilPenitip />} />
         <Route path="/DashboardOrganisasi" element={<DashboardOrganisasi/>} />
         <Route path="/DashboardPenitip" element={<DashboardPenitip/>} />
-        <Route path="/DashboardPenitip/daftar-barang" element={<DaftarBarangPenitip/>} />
+        <Route path="/DashboardBarangPenitip" element={<DaftarBarangPenitip/>} />
         <Route path="/DashboardPenitip/pengambilan-barang" element={<PengambilanBarang/>} />
-        <Route path="/DashboardPenitip/laporan-pendapatan" element={<LaporanPendapatanPenitip/>} />
-        <Route path="/DashboardPenitip/laporan-pendapatan/print" element={<LaporanPendapatanPenitipPDF/>} />
+        <Route path="/DashboardPenitip/laporan-pendapatan" element={<LaporanTransaksiPenitip/>} />
+        <Route path="/DashboardPenitip/laporan-pendapatan/print" element={<LaporanTransaksiPenitipPDF/>} />
         <Route path="/keranjang/:userId?" element={<DashboardKeranjang/>} />
         <Route path="/transaksi" element={< Transaksi />} />
         <Route path="/pembayaran" element={< Pembayaran />} />
@@ -80,6 +82,8 @@ const AppRoutes = () => {
         <Route path='/owner/request-donasi' element={< RequestDonasiPage />} />
         <Route path='/owner/request-donasi/print-all' element={< RequestDonasiAll />} />
         <Route path='/owner/request-donasi/detail/:id_request' element={< RequestDonasiDetail />} />
+        <Route path='/owner/laporan-transaksi' element={< LaporanTransaksiPenitip />} />
+        <Route path='/owner/laporan-transaksi/print' element={< LaporanTransaksiPenitipPDF />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />
