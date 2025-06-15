@@ -41,9 +41,19 @@ export const getKeranjangByPembeli = async (id_pembeli) => {
 
 export const createKeranjang = async (data) => {
   try {
+    console.log("Mengirim request createKeranjang dengan data:", data);
     const response = await useAxios.post(API_URL, data);
+    console.log("Response createKeranjang berhasil:", response.data);
     return response.data;
   } catch (error) {
+    console.error("Error pada createKeranjang:", error);
+    if (error.response) {
+      console.error("Response error:", error.response.status, error.response.data);
+    } else if (error.request) {
+      console.error("Request error, tidak ada response:", error.request);
+    } else {
+      console.error("Error message:", error.message);
+    }
     throw error;
   }
 };

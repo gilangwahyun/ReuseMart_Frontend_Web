@@ -11,7 +11,7 @@ export default function ProfilCard({ profile }) {
                 <FaUser className="text-success" size={40} />
               </div>
               <div>
-                <h4 className="mb-0 fw-bold">{profile.nama_pembeli}</h4>
+                <h4 className="mb-0 fw-bold">{profile?.data?.nama_pembeli || "Pengguna"}</h4>
                 <p className="mb-0 opacity-75">Member ReuseMart</p>
               </div>
             </div>
@@ -27,7 +27,7 @@ export default function ProfilCard({ profile }) {
                 </div>
                 <div>
                   <p className="text-muted mb-0 small">Email</p>
-                  <p className="mb-0 fw-medium">{profile.user.email}</p>
+                  <p className="mb-0 fw-medium">{profile?.data?.user?.email || "-"}</p>
                 </div>
               </div>
               
@@ -37,7 +37,7 @@ export default function ProfilCard({ profile }) {
                 </div>
                 <div>
                   <p className="text-muted mb-0 small">Nomor HP</p>
-                  <p className="mb-0 fw-medium">{profile.no_hp_default || "-"}</p>
+                  <p className="mb-0 fw-medium">{profile?.data?.no_hp_default || "-"}</p>
                 </div>
               </div>
             </div>
@@ -51,7 +51,7 @@ export default function ProfilCard({ profile }) {
                   <h5 className="mb-0">Poin Reward</h5>
                   <div className="d-flex align-items-center mt-2">
                     <Badge bg="success" className="fs-5 py-2 px-3 rounded-pill">
-                      {profile.jumlah_poin} Poin
+                      {profile?.data?.jumlah_poin || 0} Poin
                     </Badge>
                   </div>
                   <p className="text-muted small mt-2 mb-0">

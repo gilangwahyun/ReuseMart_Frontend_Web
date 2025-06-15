@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 import { Login } from '../../api/AuthApi';
 import { getJabatanByUser } from '../../api/PegawaiApi';
 import 'react-toastify/dist/ReactToastify.css'; // penting!
@@ -123,12 +124,23 @@ export default function LoginPage() {
 
   return (
     <div 
-      className="login-container vh-100 d-flex flex-column justify-content-center align-items-center" 
+      className="login-container vh-100 d-flex flex-column justify-content-center align-items-center position-relative" 
       style={{
         ...selectedBackground,
         minHeight: '100vh'
       }}
     >
+      {/* Tombol Kembali */}
+      <div className="position-absolute top-0 start-0 m-3">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="btn btn-success rounded-circle shadow-sm"
+          style={{ width: '40px', height: '40px' }}
+        >
+          <FaArrowLeft />
+        </button>
+      </div>
+      
       <div className="text-center mb-5" style={{ marginTop: '-60px' }}>
         <img 
           src="/assets/logoReuseMart.png" 
@@ -181,6 +193,12 @@ export default function LoginPage() {
             >
               {loading ? 'Memproses...' : 'Login'}
             </button>
+            
+            <div className="mt-3 text-center">
+              <p className="mb-0">
+                Belum punya akun? <Link to="/RegisterPembeli" className="text-success fw-medium">Daftar sekarang</Link>
+              </p>
+            </div>
           </form>
         </div>
       </div>

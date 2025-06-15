@@ -9,10 +9,9 @@ import {
   FaSignOutAlt,
   FaReceipt,
   FaClipboardList,
-  FaMoneyBillWave
+  FaMoneyBillWave,
   FaBoxes,
   FaChartBar,
-  FaMoneyBillWave,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 

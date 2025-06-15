@@ -16,22 +16,25 @@ export default function ProfilCardPenitip({ penitip }) {
     );
   }
   
+  // Use data property if available, otherwise use direct properties
+  const penitipData = penitip.data || penitip;
+  
   // Safely access properties with optional chaining
-  const name = penitip?.nama_penitip || "Penitip";
+  const name = penitipData?.nama_penitip || "Penitip";
   
   // Handle email from nested user object or from direct user property
   let email = "-";
-  if (penitip.user && penitip.user.email) {
-    email = penitip.user.email;
-  } else if (penitip.email) {
-    email = penitip.email;
+  if (penitipData.user && penitipData.user.email) {
+    email = penitipData.user.email;
+  } else if (penitipData.email) {
+    email = penitipData.email;
   }
   
-  const phone = penitip?.no_telepon || "-";
-  const alamat = penitip?.alamat || "-";
-  const nik = penitip?.nik || "-";
-  const saldo = penitip?.saldo || 0;
-  const points = penitip?.jumlah_poin || 0;
+  const phone = penitipData?.no_telepon || "-";
+  const alamat = penitipData?.alamat || "-";
+  const nik = penitipData?.nik || "-";
+  const saldo = penitipData?.saldo || 0;
+  const points = penitipData?.jumlah_poin || 0;
   
   return (
     <Card className="shadow-sm mb-4 border-success">

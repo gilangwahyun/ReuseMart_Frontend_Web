@@ -112,17 +112,55 @@ const Transaksi = () => {
         const pembeliData = await getPembeliByUserId(userId);
         setPembeli(pembeliData);
         
-        if (pembeliData) {
-          const alamatData = await getAlamatByPembeliId(pembeliData.id_pembeli);
-          setAlamatList(alamatData || []);
+        if (pembeliData && pembeliData.data) {
+          // Log the pembeli data to debug
+          console.log("Pembeli data:", pembeliData);
+          
+          // Make sure we're using the nested data object if present
+          const pembeliId = pembeliData.data.id_pembeli || pembeliData.id_pembeli;
+          console.log("Using pembeli ID:", pembeliId);
+          
+          try {
+            const alamatData = await getAlamatByPembeliId(pembeliId);
+            console.log("Alamat data response:", alamatData);
+            
+            // Handle possible API response formats
+            let alamatList = [];
+            if (Array.isArray(alamatData)) {
+              alamatList = alamatData;
+            } else if (alamatData && Array.isArray(alamatData.data)) {
+              alamatList = alamatData.data;
+            }
+            
+            console.log("Processed alamat list:", alamatList);
+            setAlamatList(alamatList);
+            
+            // If addresses exist and payment method is delivery, select the default address
+            if (alamatList.length > 0 && paymentMethod === 'Dikirim oleh Kurir') {
+              // Find default address
+              const defaultAddress = alamatList.find(addr => addr.is_default === true);
+              if (defaultAddress) {
+                setSelectedAlamatId(defaultAddress.id_alamat.toString());
+              } else {
+                // If no default address, select the first one
+                setSelectedAlamatId(alamatList[0].id_alamat.toString());
+              }
+            }
+          } catch (alamatError) {
+            console.error('Error fetching alamat:', alamatError);
+            // If the error is 404 (no addresses), set empty array
+            if (alamatError.response?.status === 404) {
+              setAlamatList([]);
+            }
+          }
         }
       } catch (error) {
-        console.error('Error fetching pembeli and alamat:', error);
+        console.error('Error fetching pembeli:', error);
       }
     };
 
     fetchPembeliAndAlamat();
-  }, [location.state, navigate, userId]);
+  }, [location.state, navigate, userId, paymentMethod]);
 
   useEffect(() => {
     // Calculate estimated points when subtotal changes
@@ -140,11 +178,28 @@ const Transaksi = () => {
   const handlePaymentMethodChange = (e) => {
     const method = e.target.value;
     setPaymentMethod(method);
-    // Reset alamat selection and set id_alamat to null when Diambil Mandiri is selected
+    
+    // Reset alamat selection when Diambil Mandiri is selected
     if (method === 'Diambil Mandiri') {
       setSelectedAlamatId(null);
     } else {
-      setSelectedAlamatId('');
+      // For Dikirim oleh Kurir, try to select the default address
+      if (alamatList && alamatList.length > 0) {
+        console.log("Setting address for Kurir delivery from", alamatList.length, "addresses");
+        // Find default address
+        const defaultAddress = alamatList.find(addr => addr.is_default === true);
+        if (defaultAddress) {
+          console.log("Selected default address:", defaultAddress.id_alamat);
+          setSelectedAlamatId(defaultAddress.id_alamat.toString());
+        } else {
+          // If no default address, select the first one
+          console.log("No default address, selecting first address:", alamatList[0].id_alamat);
+          setSelectedAlamatId(alamatList[0].id_alamat.toString());
+        }
+      } else {
+        console.log("No addresses available");
+        setSelectedAlamatId('');
+      }
     }
   };
 
@@ -174,6 +229,7 @@ const Transaksi = () => {
     try {
       // Get pembeli data
       const pembeliData = await getPembeliByUserId(userId);
+      console.log("Pembeli data:", pembeliData);
       if (!pembeliData) {
         throw new Error('Data pembeli tidak ditemukan');
       }
@@ -183,7 +239,7 @@ const Transaksi = () => {
 
       // Create transaction
       const transaksiData = {
-        id_pembeli: pembeliData.id_pembeli,
+        id_pembeli: pembeliData.data.id_pembeli,
         id_alamat: paymentMethod === 'Dikirim oleh Kurir' ? parseInt(selectedAlamatId) : null,
         total_harga: finalTotal,
         diskon: pointsDiscount,
@@ -364,31 +420,84 @@ const Transaksi = () => {
                       <div className="p-3 bg-light rounded">
                         <p className="mb-0">
                           <strong>Alamat Toko:</strong><br />
-                          Jl. ReuseMart No. 123<br />
+                          Jl. Green Eco Park No. 456 Yogyakarta<br />
                           Buka: Senin - Minggu, 09:00 - 21:00 WIB
                         </p>
                       </div>
                     ) : (
                       <>
-                        <Form.Select 
-                          value={selectedAlamatId}
-                          onChange={handleAddressChange}
-                          className="mb-2"
-                          required
-                        >
-                          <option value="">Pilih alamat...</option>
-                          {alamatList.map((alamat) => (
-                            <option key={alamat.id_alamat} value={alamat.id_alamat}>
-                              {alamat.label_alamat}
-                            </option>
-                          ))}
-                        </Form.Select>
-
-                        {selectedAlamatId && (
-                          <div className="mt-2">
-                            <small className="text-muted">
-                              Alamat yang dipilih: {alamatList.find(addr => addr.id_alamat === parseInt(selectedAlamatId))?.alamat_lengkap}
-                            </small>
+                        {alamatList && alamatList.length > 0 ? (
+                          <>
+                            <div className="mb-3">
+                              {selectedAlamatId && (
+                                <Card className="bg-light border-success mb-3">
+                                  <Card.Body className="py-2">
+                                    {(() => {
+                                      const selectedAddress = alamatList.find(addr => 
+                                        addr.id_alamat === parseInt(selectedAlamatId)
+                                      );
+                                      return selectedAddress ? (
+                                        <>
+                                          <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 className="mb-0 fw-bold">
+                                              {selectedAddress.label_alamat}
+                                              {selectedAddress.is_default && (
+                                                <span className="badge bg-success ms-2">Default</span>
+                                              )}
+                                            </h6>
+                                          </div>
+                                          <p className="small mb-0">
+                                            {selectedAddress.nama_penerima} - {selectedAddress.no_hp}
+                                          </p>
+                                          <p className="small mb-0">
+                                            {selectedAddress.alamat_lengkap}
+                                          </p>
+                                        </>
+                                      ) : <p className="mb-0">Memuat alamat...</p>
+                                    })()}
+                                  </Card.Body>
+                                </Card>
+                              )}
+                              <p className="small mb-2">Ganti Alamat Pengiriman:</p>
+                            </div>
+                            <Form.Select 
+                              value={selectedAlamatId}
+                              onChange={handleAddressChange}
+                              required
+                            >
+                              <option value="">Pilih alamat lain...</option>
+                              {alamatList.map((alamat) => (
+                                <option 
+                                  key={alamat.id_alamat} 
+                                  value={alamat.id_alamat}
+                                >
+                                  {alamat.label_alamat} {alamat.is_default ? '(Default)' : ''}
+                                </option>
+                              ))}
+                            </Form.Select>
+                            <div className="mt-2 text-end">
+                              <Button 
+                                variant="link" 
+                                size="sm" 
+                                className="p-0"
+                                onClick={() => navigate(`/DashboardProfilPembeli/${userId}`, { state: { activeTab: 'alamat' }})}
+                              >
+                                Tambah Alamat Baru
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="alert alert-warning">
+                            <p className="mb-0">Anda belum memiliki alamat tersimpan.</p>
+                            <div className="mt-2">
+                              <Button 
+                                variant="success" 
+                                size="sm"
+                                onClick={() => navigate(`/DashboardProfilPembeli/${userId}`, { state: { activeTab: 'alamat' }})}
+                              >
+                                Tambah Alamat Sekarang
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </>
