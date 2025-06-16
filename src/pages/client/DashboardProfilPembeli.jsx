@@ -8,9 +8,11 @@ import ProfilHistoriTransaksi from "../../components/ProfilHistoriTransaksi";
 import HorizontalNavProfilPembeli from "../../components/HorizontalNavProfilPembeli";
 import { getPembeliByUserId } from "../../api/PembeliApi";
 import { getTransaksiByPembeli } from "../../api/TransaksiApi";
-import { createAlamat, updateAlamat, getAlamatByPembeliId, deleteAlamat } from "../../api/AlamatApi";
+import { createAlamat, updateAlamat, getAlamatByPembeliId, deleteAlamat, setDefaultAlamat } from "../../api/AlamatApi";
 import AlamatForm from "../../components/AlamatForm";
-import { FaUser, FaUserCircle } from "react-icons/fa";
+import { FaUser, FaUserCircle, FaMapMarkerAlt, FaPlus } from "react-icons/fa";
+import { BiHomeAlt } from "react-icons/bi";
+import { MdEdit, MdDelete, MdLocationOn, MdPhone, MdAddLocation } from "react-icons/md";
 
 export default function DashboardProfilePembeli() {
   const { id_user } = useParams();
@@ -28,6 +30,7 @@ export default function DashboardProfilePembeli() {
   const [selectedAlamat, setSelectedAlamat] = useState(null);
   const [alamatLoading, setAlamatLoading] = useState(false);
   const [alamatError, setAlamatError] = useState("");
+  const [showAlamatForm, setShowAlamatForm] = useState(false);
 
   useEffect(() => {
     if (!id_user) {
@@ -41,24 +44,38 @@ export default function DashboardProfilePembeli() {
         setLoading(true);
 
         const pembeli = await getPembeliByUserId(id_user);
+        console.log("Pembeli data from API:", pembeli);
+        console.log("Pembeli data from API:", pembeli.data.id_pembeli);
         setProfile(pembeli);
 
-        const transaksiList = await getTransaksiByPembeli(pembeli.id_pembeli);
-        setTransactions(transaksiList);
+        const transaksiResponse = await getTransaksiByPembeli(pembeli.data.id_pembeli);
+        console.log("Transaction response:", transaksiResponse);
+        
+        // Check the structure of the response and extract the data array
+        if (transaksiResponse && transaksiResponse.data) {
+          setTransactions(transaksiResponse.data);
+        } else {
+          setTransactions([]);
+        }
         
         // Fetch alamat data
         try {
           setAlamatLoading(true);
-          const alamatData = await getAlamatByPembeliId(pembeli.id_pembeli);
+          const alamatData = await getAlamatByPembeliId(pembeli.data.id_pembeli);
           setAlamatList(alamatData || []);
-          setAlamatLoading(false);
+          setAlamatError(""); // Clear any previous errors
         } catch (alamatError) {
+          console.error("Error fetching alamat:", alamatError);
+          
+          // Jika error 404, berarti belum ada alamat yang tersimpan (bukan error sebenarnya)
           if (alamatError.response?.status === 404) {
             setAlamatList([]);
+            setAlamatError(""); // Tidak perlu menampilkan error
           } else {
-            console.error("Error fetching alamat:", alamatError);
-            setAlamatError("Gagal memuat data alamat");
+            // Untuk error lainnya, tampilkan pesan yang lebih informatif
+            setAlamatError("Terjadi kesalahan saat memuat data alamat. Silakan coba lagi nanti.");
           }
+        } finally {
           setAlamatLoading(false);
         }
       } catch (err) {
@@ -87,13 +104,62 @@ export default function DashboardProfilePembeli() {
   const handleCreateAlamat = async (alamatData) => {
     try {
       setAlamatLoading(true);
-      const newAlamat = await createAlamat({ ...alamatData, id_pembeli: profile.id_pembeli });
-      setAlamatList(prev => [...prev, newAlamat]);
+      setAlamatError(""); // Clear any previous errors
+      const newAlamat = await createAlamat({ ...alamatData, id_pembeli: profile.data.id_pembeli });
+      setAlamatList(prev => [...prev, newAlamat.data]);
       setSelectedAlamat(null);
-      setAlamatLoading(false);
+      setShowAlamatForm(false); // Hide form after successful creation
     } catch (err) {
       console.error("Error creating alamat:", err);
-      setAlamatError(err.message || "Gagal membuat alamat baru");
+      setAlamatError("Gagal menambahkan alamat baru. Silakan periksa data Anda dan coba lagi.");
+    } finally {
+      setAlamatLoading(false);
+    }
+  };
+
+  const handleSetDefaultAlamat = async (id_alamat) => {
+    try {
+      setAlamatLoading(true);
+      setAlamatError(""); // Clear any previous errors
+      
+      // Pastikan profile.data.id_pembeli tersedia
+      if (!profile || !profile.data || !profile.data.id_pembeli) {
+        throw new Error("Data pembeli tidak tersedia");
+      }
+      
+      // Panggil setDefaultAlamat dengan id_alamat dan id_pembeli
+      await setDefaultAlamat(id_alamat, profile.data.id_pembeli);
+      
+      // Update UI dengan menyetel alamat yang dipilih sebagai default
+      setAlamatList(prev => prev.map(alamat => ({
+        ...alamat,
+        is_default: alamat.id_alamat === id_alamat
+      })));
+      
+      // Tampilkan notifikasi
+      const toast = document.createElement('div');
+      toast.className = 'alert alert-success alert-dismissible fade show';
+      toast.setAttribute('role', 'alert');
+      toast.innerHTML = `
+        <strong>Berhasil!</strong> Alamat telah diatur sebagai alamat default.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      
+      // Tambahkan notifikasi ke halaman
+      const container = document.querySelector('.address-management-container');
+      if (container) {
+        container.insertBefore(toast, container.firstChild);
+        
+        // Hapus notifikasi setelah 3 detik
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 150);
+        }, 3000);
+      }
+    } catch (err) {
+      console.error("Error setting default alamat:", err);
+      setAlamatError("Gagal mengatur alamat default. Silakan coba lagi nanti.");
+    } finally {
       setAlamatLoading(false);
     }
   };
@@ -101,15 +167,17 @@ export default function DashboardProfilePembeli() {
   const handleEditAlamat = async (alamatData) => {
     try {
       setAlamatLoading(true);
+      setAlamatError(""); // Clear any previous errors
       const updatedAlamat = await updateAlamat(selectedAlamat.id_alamat, alamatData);
       setAlamatList(prev => prev.map(alamat => 
-        alamat.id_alamat === updatedAlamat.id_alamat ? updatedAlamat : alamat
+        alamat.id_alamat === updatedAlamat.data.id_alamat ? updatedAlamat.data : alamat
       ));
       setSelectedAlamat(null);
-      setAlamatLoading(false);
+      setShowAlamatForm(false); // Hide form after successful update
     } catch (err) {
       console.error("Error updating alamat:", err);
-      setAlamatError(err.message || "Gagal mengupdate alamat");
+      setAlamatError("Gagal mengupdate alamat. Silakan periksa data Anda dan coba lagi.");
+    } finally {
       setAlamatLoading(false);
     }
   };
@@ -118,82 +186,168 @@ export default function DashboardProfilePembeli() {
     if (!window.confirm("Apakah kamu yakin ingin menghapus alamat ini?")) return;
     try {
       setAlamatLoading(true);
+      setAlamatError(""); // Clear any previous errors
       await deleteAlamat(id_alamat);
       setAlamatList(prev => prev.filter(alamat => alamat.id_alamat !== id_alamat));
-      setAlamatLoading(false);
     } catch (err) {
       console.error("Error deleting alamat:", err);
-      setAlamatError(err.message || "Gagal menghapus alamat");
+      setAlamatError("Gagal menghapus alamat. Silakan coba lagi nanti.");
+    } finally {
       setAlamatLoading(false);
     }
   };
 
   const renderAlamatContent = () => {
     return (
-      <Card>
-        <Card.Header as="h5" className="bg-success text-white">
-          Manajemen Alamat
-        </Card.Header>
-        <Card.Body>
-          <h6 className="mb-3">Tambah/Edit Alamat</h6>
-          <AlamatForm
-            onSubmit={selectedAlamat ? handleEditAlamat : handleCreateAlamat}
-            existingAlamat={selectedAlamat}
-            onCancel={() => setSelectedAlamat(null)}
-          />
+      <div className="address-management-container">
+        <Card className="border-0 shadow-sm mb-4">
+          <Card.Header as="h5" className="bg-success text-white py-3 d-flex align-items-center">
+            <BiHomeAlt className="me-2" /> Manajemen Alamat
+          </Card.Header>
           
-          <h6 className="mt-4 mb-3">Daftar Alamat</h6>
-          {alamatLoading ? (
-            <div className="text-center my-3">
-              <Spinner animation="border" variant="success" size="sm" />
-              <p className="mt-2 small">Memuat data alamat...</p>
-            </div>
-          ) : alamatError ? (
-            <Alert variant="danger">{alamatError}</Alert>
-          ) : (
-            <table className="table table-bordered mt-3">
-              <thead className="thead-light">
-                <tr>
-                  <th>Label</th>
-                  <th>Alamat Lengkap</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {alamatList.length > 0 ? (
-                  alamatList.map((alamat, index) => {
-                    const key = alamat.id_alamat ?? index;
-                    return (
-                      <tr key={key}>
-                        <td>{alamat.label_alamat}</td>
-                        <td>{alamat.alamat_lengkap}</td>
-                        <td>
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => setSelectedAlamat(alamat)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-danger btn-sm m-2"
-                            onClick={() => handleDeleteAlamat(alamat.id_alamat)}
-                          >
-                            Hapus
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="text-center">Belum ada alamat</td>
-                  </tr>
+          <Card.Body className="p-4">
+            {/* Alert untuk error */}
+            {alamatError && (
+              <Alert variant="danger" className="mb-4" dismissible onClose={() => setAlamatError("")}>
+                <Alert.Heading>Terjadi Kesalahan</Alert.Heading>
+                <p className="mb-0">{alamatError}</p>
+              </Alert>
+            )}
+            
+            {/* Address Form Section - conditionally shown */}
+            {showAlamatForm && (
+              <div id="add-address-section" className={`address-form-section p-3 mb-4 rounded bg-light border`}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="fw-bold mb-0">
+                    {selectedAlamat ? "Edit Alamat" : "Tambah Alamat Baru"}
+                  </h5>
+                  <button 
+                    className="btn btn-close" 
+                    onClick={() => {
+                      setShowAlamatForm(false);
+                      setSelectedAlamat(null);
+                    }}
+                  ></button>
+                </div>
+                <AlamatForm
+                  onSubmit={selectedAlamat ? handleEditAlamat : handleCreateAlamat}
+                  existingAlamat={selectedAlamat}
+                  onCancel={() => {
+                    setSelectedAlamat(null);
+                    setShowAlamatForm(false);
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Address List Section */}
+            <div className="address-list-section">
+              <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                <h5 className="fw-bold mb-0">Daftar Alamat Tersimpan</h5>
+                {!showAlamatForm && (
+                  <button 
+                    className="btn btn-success"
+                    onClick={() => {
+                      setShowAlamatForm(true);
+                      setSelectedAlamat(null);
+                    }}
+                  >
+                    <FaPlus className="me-1" size={12} /> Tambah Alamat Baru
+                  </button>
                 )}
-              </tbody>
-            </table>
-          )}
-        </Card.Body>
-      </Card>
+              </div>
+              
+              {alamatLoading ? (
+                <div className="text-center my-4 py-3">
+                  <Spinner animation="border" variant="success" />
+                  <p className="mt-3 text-muted">Memuat data alamat...</p>
+                </div>
+              ) : alamatList.length > 0 ? (
+                <div className="address-cards">
+                  <Row xs={1} md={2} className="g-4">
+                    {alamatList.map((alamat, index) => {
+                      const key = alamat.id_alamat ?? index;
+                      return (
+                        <Col key={key}>
+                          <Card className="h-100 border-0 shadow-sm hover-effect">
+                            <Card.Body>
+                              <div className="d-flex justify-content-between align-items-start mb-2">
+                                <div className="d-flex align-items-center">
+                                  <span className="badge bg-success me-2">{alamat.label_alamat}</span>
+                                  {alamat.is_default && <span className="badge bg-primary">Default</span>}
+                                </div>
+                                <div className="dropdown">
+                                  <button className="btn btn-outline-secondary btn-sm" type="button" disabled>
+                                    <MdLocationOn className="me-1" size={12} /> {alamat.is_default ? "Default" : ""}
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="address-details mt-2">
+                                <p className="fw-bold mb-1">{alamat.nama_penerima || "Penerima"}</p>
+                                <div className="d-flex align-items-center mb-1">
+                                  <MdPhone size={14} className="text-muted me-2" />
+                                  <p className="small mb-0">{alamat.no_hp || "-"}</p>
+                                </div>
+                                <div className="d-flex align-items-start">
+                                  <MdLocationOn size={14} className="text-muted me-2 mt-1" />
+                                  <p className="mb-0 text-muted">{alamat.alamat_lengkap}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="address-actions d-flex mt-3 pt-2 border-top">
+                                <button 
+                                  className="btn btn-outline-primary btn-sm me-2"
+                                  onClick={() => {
+                                    setSelectedAlamat(alamat);
+                                    setShowAlamatForm(true);
+                                  }}
+                                >
+                                  <MdEdit className="me-1" size={12} /> Edit
+                                </button>
+                                <button
+                                  className="btn btn-outline-danger btn-sm"
+                                  onClick={() => handleDeleteAlamat(alamat.id_alamat)}
+                                >
+                                  <MdDelete className="me-1" size={12} /> Hapus
+                                </button>
+                                {!alamat.is_default && (
+                                  <button 
+                                    className="btn btn-success btn-sm ms-auto"
+                                    onClick={() => handleSetDefaultAlamat(alamat.id_alamat)}
+                                  >
+                                    Set Default
+                                  </button>
+                                )}
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                </div>
+              ) : (
+                <div className="text-center py-5 my-3 bg-light rounded border">
+                  <div className="empty-address-illustration mb-3">
+                    <FaMapMarkerAlt size={60} className="text-success opacity-50" />
+                  </div>
+                  <h5 className="fw-bold text-dark mb-2">Belum Ada Alamat Tersimpan</h5>
+                  <p className="text-muted mb-4 px-4">
+                    Anda belum menambahkan alamat pengiriman. Tambahkan alamat untuk memudahkan proses checkout saat berbelanja.
+                  </p>
+                  <button 
+                    className="btn btn-success"
+                    onClick={() => setShowAlamatForm(true)}
+                  >
+                    <MdAddLocation className="me-2" /> Tambah Alamat Sekarang
+                  </button>
+                </div>
+              )}
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
     );
   };
 
@@ -259,7 +413,7 @@ export default function DashboardProfilePembeli() {
             </Col>
             <Col>
               <h3 className="fw-bold mb-1">
-                Halo, {profile?.nama_pembeli || "Pengguna"}!
+                Halo, {profile?.data?.nama_pembeli || "Pengguna"}!
               </h3>
               <p className="mb-0 opacity-75">
                 Selamat datang di Dashboard Profil ReuseMart

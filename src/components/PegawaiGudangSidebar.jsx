@@ -40,7 +40,6 @@ const PegawaiGudangSidebar = () => {
     { to: "/pegawaiGudang/requestPengambilan", icon: <FaHandPaper />, label: "Request Pengambilan" },
     { to: "/pegawaiGudang/transaksi", icon: <FaExchangeAlt />, label: "Daftar Transaksi" },
     { to: "/pegawaiGudang/penjadwalan", icon: <FaCalendarAlt />, label: "Penjadwalan Pengiriman" },
-    { to: "/pegawaiGudang/penitipan", icon: <FaBox />, label: "Manajerial Penitipan Barang" },
     { to: "/pegawaiGudang/riwayat-transaksi", icon: <FaHistory />, label: "Riwayat Transaksi" },
   ];
 

@@ -33,32 +33,24 @@ export default function DashboardProfilPenitip() {
         const response = await getPenitipByUserId(id_user);
         console.log("Raw API response:", response);
         
-        // Handle different response structures
-        let penitipData = null;
-        
-        if (response.success && response.data) {
-          // Format: { success: true, message: "...", data: { ... } }
-          console.log("Using response.data format");
-          penitipData = response.data;
-        } else if (response.id_penitip) {
-          // Format: { id_penitip: ..., ... }
-          console.log("Using direct object format");
-          penitipData = response;
-        } else {
-          console.error("Unexpected API response format:", response);
-          throw new Error("Format data tidak valid");
-        }
-        
-        console.log("Extracted penitip data:", penitipData);
-        setProfile(penitipData);
+        // For consistency with DashboardProfilPembeli, use the entire response object
+        // (which might have a nested 'data' property) as the profile
+        console.log("Setting profile with response object:", response);
+        setProfile(response);
         
         // Fetch transactions if penitip data is available
-        if (penitipData && penitipData.id_penitip) {
+        // Check if we need to use .data property to access the ID
+        const penitipId = profile.data?.id_penitip;
+        
+        if (penitipId) {
           try {
-            console.log(`Fetching transactions for penitip ID: ${penitipData.id_penitip}`);
-            const transaksiData = await getTransaksiByPenitipId(penitipData.id_penitip);
+            console.log(`Fetching transactions for penitip ID: ${penitipId}`);
+            const transaksiData = await getTransaksiByPenitipId(penitipId);
             console.log("Transaction data:", transaksiData);
-            setTransactions(transaksiData || []);
+            
+            // Handle possible nested response structure
+            const transactionList = transaksiData?.data || transaksiData || [];
+            setTransactions(transactionList);
           } catch (txError) {
             console.error("Error fetching transactions:", txError);
             setTransactions([]);
@@ -159,7 +151,7 @@ export default function DashboardProfilPenitip() {
           <Card className="border-0 shadow-sm border-success">
             <Card.Body className="py-3">
               <h3 className="mb-0 text-success">
-                Selamat datang, {profile?.nama_penitip || "Penitip"}
+                Selamat datang, {profile?.data?.nama_penitip || "Penitip"}
               </h3>
               <p className="text-muted mb-0">
                 Berikut adalah informasi akun penitip Anda.

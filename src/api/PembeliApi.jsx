@@ -4,9 +4,19 @@ const API_URL = "/pembeli"
 
 export const createPembeli = async (userData) => {
     try {
+      console.log("Mengirim request createPembeli dengan data:", userData);
       const response = await useAxios.post(API_URL, userData);
+      console.log("Response createPembeli berhasil:", response.data);
       return response.data;
     } catch (error) {
+      console.error("Error pada createPembeli:", error);
+      if (error.response) {
+        console.error("Response error:", error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error("Request error, tidak ada response:", error.request);
+      } else {
+        console.error("Error message:", error.message);
+      }
       throw error;
     }
 };
