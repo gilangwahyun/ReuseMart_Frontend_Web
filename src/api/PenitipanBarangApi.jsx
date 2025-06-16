@@ -60,3 +60,23 @@ export const getByIdBarang = async (id) => {
     throw error;
   }
 };
+
+// Memperpanjang masa penitipan barang
+export const extendPenitipanBarang = async (id, extendData) => {
+  try {
+    const response = await useAxios.put(`${API_URL}/${id}/extend`, extendData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Mendapatkan semua penitipan barang berdasarkan ID penitip
+export const getPenitipanByPenitipId = async (idPenitip) => {
+  try {
+    const response = await useAxios.get(`/penitip/${idPenitip}/penitipan`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

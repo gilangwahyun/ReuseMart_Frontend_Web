@@ -7,6 +7,7 @@ import {
   FaTimes,
   FaSignOutAlt,
   FaGift,
+  FaComments,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -29,9 +30,10 @@ const CSSidebar = () => {
   };
 
   const sidebarItems = [
-    { to: "/VerifikasiPembayaranCS", icon: <FaMoneyCheckAlt />, label: "Verifikasi Pembayaran" },
     { to: "/DashboardCS", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { to: "/VerifikasiPembayaranCS", icon: <FaMoneyCheckAlt />, label: "Verifikasi Pembayaran" },
     { to: "/cs/klaim-merchandise", icon: <FaGift />, label: "Klaim Merchandise" },
+    { to: "/cs/diskusi-barang", icon: <FaComments />, label: "Diskusi Barang" },
   ];
 
   return (
@@ -65,8 +67,9 @@ const CSSidebar = () => {
               <Link
                 to={item.to}
                 className={`nav-link d-flex align-items-center py-3 px-3 ${
-                  location.pathname === item.to ? "active text-primary" : "text-secondary"
+                  location.pathname === item.to ? "bg-success text-white" : "text-dark"
                 }`}
+                style={{ transition: "0.2s" }}
               >
                 <span className="fs-5 me-3">{item.icon}</span>
                 {isOpen && <span>{item.label}</span>}

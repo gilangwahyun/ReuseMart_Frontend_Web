@@ -38,7 +38,18 @@ export default function ProfilDetailTransaksiPenitip({ transaction, onBack }) {
     getDetailTransaksiByTransaksi(transaction.id_transaksi)
       .then(data => {
         console.log("Detail transaksi:", data);
-        setItems(data);
+        // Pastikan data adalah array
+        if (data && Array.isArray(data)) {
+          setItems(data);
+        } else if (data && data.data && Array.isArray(data.data)) {
+          // Jika data berbentuk { data: [...] }
+          setItems(data.data);
+        } else {
+          // Jika data bukan array, set items sebagai array kosong dan tampilkan error
+          setItems([]);
+          setError("Format data tidak valid");
+          console.error("Data is not an array:", data);
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -60,6 +71,9 @@ export default function ProfilDetailTransaksiPenitip({ transaction, onBack }) {
         return <Badge bg="secondary">{status || 'Unknown'}</Badge>;
     }
   };
+
+  // Pastikan items adalah array sebelum menggunakan map
+  const itemsArray = Array.isArray(items) ? items : [];
 
   return (
     <Card className="shadow-sm mb-4 border-success">
@@ -103,14 +117,14 @@ export default function ProfilDetailTransaksiPenitip({ transaction, onBack }) {
               </div>
             ) : error ? (
               <Alert variant="danger">{error}</Alert>
-            ) : items.length === 0 ? (
+            ) : itemsArray.length === 0 ? (
               <Alert variant="light" className="text-center my-3">
                 <FaBoxOpen className="mb-2" size={24} />
                 <p className="mb-0">Tidak ada item untuk transaksi ini.</p>
               </Alert>
             ) : (
               <ListGroup className="mb-4">
-                {items.map((item, idx) => (
+                {itemsArray.map((item, idx) => (
                   <ListGroup.Item key={idx} className="d-flex justify-content-between align-items-center">
                     <div>
                       <div className="fw-bold">{item.barang?.nama_barang || "Item tidak diketahui"}</div>

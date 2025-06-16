@@ -22,8 +22,9 @@ export const getDiskusiById = async (id) => {
 
 export const createDiskusi = async (diskusiData) => {
   try {
+    // Pastikan token sudah disertakan di axios interceptor
     const response = await useAxios.post(API_URL, diskusiData);
-    return response.data;
+    return response.data.data || response.data; // Mengambil data dari respons
   } catch (error) {
     throw error;
   }
@@ -54,5 +55,18 @@ export const canDeleteDiskusi = async (id_diskusi) => {
     return response.data;
   } catch (error) {
     throw error;
+  }
+};
+
+// Helper untuk mendapatkan data user dari localStorage
+export const getCurrentUser = () => {
+  const userString = localStorage.getItem('user');
+  if (!userString) return null;
+  
+  try {
+    return JSON.parse(userString);
+  } catch (e) {
+    console.error('Error parsing user data:', e);
+    return null;
   }
 };
