@@ -5,6 +5,9 @@ import axios from 'axios';
 import { BASE_URL } from '../../api';
 import { Link } from 'react-router-dom';
 import PenitipSidebar from '../../components/PenitipSidebar';
+import { getRequestPengambilanByPenitip, createRequestPengambilan } from '../../api/RequestPengambilanApi';
+import { getPenitipanByPenitipId, extendPenitipanBarang } from '../../api/PenitipanBarangApi';
+import { getPenitipByUserId } from '../../api/PenitipApi';
 
 // Log API URL for debugging
 console.log('API BASE_URL:', BASE_URL);
@@ -94,13 +97,10 @@ const DashboardPenitip = () => {
       
       console.log('Sending extension request with data:', updateData);
       
-      // Send the update to the API
-      const response = await axios.put(
-        `${BASE_URL}/api/penitipanBarang/${selectedPenitipan.id_penitipan}`,
-        updateData
-      );
+      // Menggunakan API extendPenitipanBarang
+      const response = await extendPenitipanBarang(selectedPenitipan.id_penitipan, updateData);
       
-      console.log('Extension response:', response.data);
+      console.log('Extension response:', response);
       
       // Update the local data
       const updatedPenitipan = penitipan.map(item => {
@@ -171,15 +171,15 @@ const DashboardPenitip = () => {
     if (user && user.role === 'Penitip' && user.id_user && !user.id_penitip) {
       try {
         console.log('Fetching penitip data for user_id:', user.id_user);
-        const response = await axios.get(`${BASE_URL}/api/user/${user.id_user}/penitip-data`);
-        console.log('Fetched penitip data:', response.data);
+        const penitipResponse = await getPenitipByUserId(user.id_user);
+        console.log('Fetched penitip data:', penitipResponse);
         
-        if (response.data && response.data.id_penitip) {
+        if (penitipResponse && penitipResponse.id_penitip) {
           // Update local storage with the new data
-          const updatedUser = { ...user, id_penitip: response.data.id_penitip };
+          const updatedUser = { ...user, id_penitip: penitipResponse.id_penitip };
           localStorage.setItem('user', JSON.stringify(updatedUser));
-          console.log('Updated user data in localStorage with id_penitip:', response.data.id_penitip);
-          return response.data.id_penitip;
+          console.log('Updated user data in localStorage with id_penitip:', penitipResponse.id_penitip);
+          return penitipResponse.id_penitip;
         }
       } catch (error) {
         console.error('Failed to fetch penitip data:', error);
@@ -211,142 +211,129 @@ const DashboardPenitip = () => {
       setLoading(true);
       console.log(`Attempting to fetch data for penitip with ID: ${currentIdPenitip}`);
       
-      // Try to access the API
-      try {
-        // Check if API is reachable first
-        const testResponse = await axios.get(`${BASE_URL}/api/test-database`);
-        console.log('Test API response:', testResponse.data);
-        
-        // Get all penitipan for this penitip
-        console.log(`Making API call to: ${BASE_URL}/api/penitip/${currentIdPenitip}/penitipan`);
-        const response = await axios.get(`${BASE_URL}/api/penitip/${currentIdPenitip}/penitipan`);
-        console.log('API Response:', response);
-        console.log('API Response data:', response.data);
-        
-        if (!response.data) {
-          throw new Error('Tidak ada data yang diterima dari server');
-        }
-        
-        // Check for success flag in new response format
-        if (response.data.success === false) {
-          throw new Error(response.data.message || 'Terjadi kesalahan pada server');
-        }
-        
-        // Handle new response format
-        const penitipanData = response.data.data || response.data;
-        
-        if (!Array.isArray(penitipanData)) {
-          throw new Error('Format data dari server tidak sesuai');
-        }
+      // Menggunakan API getPenitipanByPenitipId
+      const response = await getPenitipanByPenitipId(currentIdPenitip);
+      console.log('API Response:', response);
+      
+      if (!response) {
+        throw new Error('Tidak ada data yang diterima dari server');
+      }
+      
+      // Check for success flag in new response format
+      if (response.success === false) {
+        throw new Error(response.message || 'Terjadi kesalahan pada server');
+      }
+      
+      // Handle new response format
+      const penitipanData = response.data || response;
+      
+      if (!Array.isArray(penitipanData)) {
+        throw new Error('Format data dari server tidak sesuai');
+      }
 
-        console.log(`Received ${penitipanData.length} penitipan records`);
-        setPenitipan(penitipanData);
+      console.log(`Received ${penitipanData.length} penitipan records`);
+      setPenitipan(penitipanData);
+      
+      // Debug: Log the first penitipan item with its fields
+      if (penitipanData.length > 0) {
+        console.log('First penitipan record structure:');
         
-        // Debug: Log the first penitipan item with its fields
-        if (penitipanData.length > 0) {
-          console.log('First penitipan record structure:');
-          
-          const firstItem = penitipanData[0];
-          console.log('Object keys:', Object.keys(firstItem));
-          
-          console.log('Fields:');
-          for (const key in firstItem) {
-            console.log(`  - ${key}: ${typeof firstItem[key]} = ${
-              typeof firstItem[key] === 'object' 
-                ? (Array.isArray(firstItem[key]) 
-                    ? `Array(${firstItem[key]?.length || 0})` 
-                    : (firstItem[key] === null ? 'null' : 'Object'))
-                : firstItem[key]
-            }`);
-          }
-          
-          if ('barang' in firstItem) {
-            console.log('Barang property details:');
-            console.log('  Type:', typeof firstItem.barang);
-            console.log('  Is Array:', Array.isArray(firstItem.barang));
-            console.log('  Length:', Array.isArray(firstItem.barang) ? firstItem.barang.length : 'N/A');
-            
-            if (Array.isArray(firstItem.barang) && firstItem.barang.length > 0) {
-              console.log('  First barang item keys:', Object.keys(firstItem.barang[0]));
-            }
-          } else {
-            console.log('Barang property missing!');
-          }
+        const firstItem = penitipanData[0];
+        console.log('Object keys:', Object.keys(firstItem));
+        
+        console.log('Fields:');
+        for (const key in firstItem) {
+          console.log(`  - ${key}: ${typeof firstItem[key]} = ${
+            typeof firstItem[key] === 'object' 
+              ? (Array.isArray(firstItem[key]) 
+                  ? `Array(${firstItem[key]?.length || 0})` 
+                  : (firstItem[key] === null ? 'null' : 'Object'))
+              : firstItem[key]
+          }`);
         }
         
-        // Debug: Log the full penitipan data structure
-        console.log('Full penitipan data structure:', JSON.stringify(penitipanData, null, 2));
+        if ('barang' in firstItem) {
+          console.log('Barang property details:');
+          console.log('  Type:', typeof firstItem.barang);
+          console.log('  Is Array:', Array.isArray(firstItem.barang));
+          console.log('  Length:', Array.isArray(firstItem.barang) ? firstItem.barang.length : 'N/A');
+          
+          if (Array.isArray(firstItem.barang) && firstItem.barang.length > 0) {
+            console.log('  First barang item keys:', Object.keys(firstItem.barang[0]));
+          }
+        } else {
+          console.log('Barang property missing!');
+        }
+      }
+      
+      // Debug: Log the full penitipan data structure
+      console.log('Full penitipan data structure:', JSON.stringify(penitipanData, null, 2));
+      
+      // Collect all barang from each penitipan
+      let allBarang = [];
+      for (const penitipanItem of penitipanData) {
+        console.log('Processing penitipan ID:', penitipanItem.id_penitipan);
+        console.log('Penitipan details:', {
+          id_penitip: penitipanItem.id_penitip,
+          tanggal_awal: penitipanItem.tanggal_awal_penitipan,
+          tanggal_akhir: penitipanItem.tanggal_akhir_penitipan
+        });
         
-        // Collect all barang from each penitipan
-        let allBarang = [];
-        for (const penitipanItem of penitipanData) {
-          console.log('Processing penitipan ID:', penitipanItem.id_penitipan);
-          console.log('Penitipan details:', {
-            id_penitip: penitipanItem.id_penitip,
-            tanggal_awal: penitipanItem.tanggal_awal_penitipan,
-            tanggal_akhir: penitipanItem.tanggal_akhir_penitipan
+        if (penitipanItem.barang && Array.isArray(penitipanItem.barang)) {
+          console.log('Found barang array with length:', penitipanItem.barang.length);
+          console.log('First few barang items:', penitipanItem.barang.slice(0, 3));
+          
+          // Add penitipan data to each barang for reference
+          const barangWithPenitipan = penitipanItem.barang.map(barangItem => {
+            console.log('Processing barang item ID:', barangItem.id_barang);
+            
+            const result = {
+              ...barangItem,
+              kategori_nama: barangItem.kategori?.nama_kategori || 'Tidak ada kategori',
+              penitipan_info: {
+                id_penitipan: penitipanItem.id_penitipan,
+                tanggal_awal: penitipanItem.tanggal_awal_penitipan,
+                tanggal_akhir: penitipanItem.tanggal_akhir_penitipan,
+                nama_petugas_qc: penitipanItem.nama_petugas_qc
+              }
+            };
+            
+            return result;
           });
           
-          if (penitipanItem.barang && Array.isArray(penitipanItem.barang)) {
-            console.log('Found barang array with length:', penitipanItem.barang.length);
-            console.log('First few barang items:', penitipanItem.barang.slice(0, 3));
-            
-            // Add penitipan data to each barang for reference
-            const barangWithPenitipan = penitipanItem.barang.map(barangItem => {
-              console.log('Processing barang item ID:', barangItem.id_barang);
-              
-              const result = {
-                ...barangItem,
-                kategori_nama: barangItem.kategori?.nama_kategori || 'Tidak ada kategori',
-                penitipan_info: {
-                  id_penitipan: penitipanItem.id_penitipan,
-                  tanggal_awal: penitipanItem.tanggal_awal_penitipan,
-                  tanggal_akhir: penitipanItem.tanggal_akhir_penitipan,
-                  nama_petugas_qc: penitipanItem.nama_petugas_qc
-                }
-              };
-              
-              return result;
-            });
-            
-            console.log('Processed barang for this penitipan:', barangWithPenitipan.length);
-            allBarang = [...allBarang, ...barangWithPenitipan];
-          } else {
-            console.log('No barang array found for penitipan:', penitipanItem.id_penitipan, 'or barang is not an array');
-            console.log('Barang value:', penitipanItem.barang);
-          }
+          console.log('Processed barang for this penitipan:', barangWithPenitipan.length);
+          allBarang = [...allBarang, ...barangWithPenitipan];
+        } else {
+          console.log('No barang array found for penitipan:', penitipanItem.id_penitipan, 'or barang is not an array');
+          console.log('Barang value:', penitipanItem.barang);
         }
-        
-        console.log('Processed barang array:', allBarang);
-        
-        // Store the barang data
-        console.log(`Setting ${allBarang.length} barang items in state`);
-        setBarang(allBarang);
-        
-        // Log common issues
-        if (allBarang.length === 0) {
-          console.warn('No barang items found. Check the following:');
-          console.warn('1. Are there any penitipan records?', penitipanData.length > 0);
-          console.warn('2. Do any penitipan records have barang arrays?', 
-            penitipanData.some(item => Array.isArray(item.barang) && item.barang.length > 0));
-          console.warn('3. Check if the penitipan records contain the expected fields:',
-            penitipanData.map(item => ({
-              id: item.id_penitipan,
-              hasBarangField: 'barang' in item,
-              barangValue: item.barang
-            }))
-          );
-        }
-        
-        // If we got penitipan data but no barang, something is wrong with the relationship
-        if (penitipanData.length > 0 && allBarang.length === 0) {
-          console.warn(`Found ${penitipanData.length} penitipan, but no barang items. There may be an issue with the data relationships.`);
-          setDebug(`Found ${penitipanData.length} penitipan, but no barang items. There may be an issue with the data relationships.`);
-        }
-      } catch (apiError) {
-        console.error("API Error:", apiError);
-        setError(`Error API: ${apiError.message}`);
-        setDebug(`API Error: ${apiError.message}`);
+      }
+      
+      console.log('Processed barang array:', allBarang);
+      
+      // Store the barang data
+      console.log(`Setting ${allBarang.length} barang items in state`);
+      setBarang(allBarang);
+      
+      // Log common issues
+      if (allBarang.length === 0) {
+        console.warn('No barang items found. Check the following:');
+        console.warn('1. Are there any penitipan records?', penitipanData.length > 0);
+        console.warn('2. Do any penitipan records have barang arrays?', 
+          penitipanData.some(item => Array.isArray(item.barang) && item.barang.length > 0));
+        console.warn('3. Check if the penitipan records contain the expected fields:',
+          penitipanData.map(item => ({
+            id: item.id_penitipan,
+            hasBarangField: 'barang' in item,
+            barangValue: item.barang
+          }))
+        );
+      }
+      
+      // If we got penitipan data but no barang, something is wrong with the relationship
+      if (penitipanData.length > 0 && allBarang.length === 0) {
+        console.warn(`Found ${penitipanData.length} penitipan, but no barang items. There may be an issue with the data relationships.`);
+        setDebug(`Found ${penitipanData.length} penitipan, but no barang items. There may be an issue with the data relationships.`);
       }
       
     } catch (error) {
@@ -363,11 +350,12 @@ const DashboardPenitip = () => {
     if (!penitipId) return;
     
     try {
-      const response = await axios.get(`${BASE_URL}/api/request-pengambilan/penitip/${penitipId}`);
-      console.log('Request pengambilan data:', response.data);
+      // Menggunakan API getRequestPengambilanByPenitip
+      const response = await getRequestPengambilanByPenitip(penitipId);
+      console.log('Request pengambilan data:', response);
       
       // Extract the IDs of requested barang
-      const requestedIds = response.data.map(req => req.id_barang);
+      const requestedIds = response.map(req => req.id_barang);
       console.log('Requested barang IDs:', requestedIds);
       
       setRequestedBarangIds(requestedIds);
@@ -561,13 +549,10 @@ const DashboardPenitip = () => {
       
       console.log('Sending request pengambilan data:', requestData);
       
-      // Send request to API with the correct endpoint
-      const response = await axios.post(
-        `${BASE_URL}/api/request-pengambilan`,
-        requestData
-      );
+      // Menggunakan API createRequestPengambilan
+      const response = await createRequestPengambilan(requestData);
       
-      console.log('Request pengambilan response:', response.data);
+      console.log('Request pengambilan response:', response);
       
       // Add the barang ID to the list of requested items
       setRequestedBarangIds(prev => [...prev, selectedBarang.id_barang]);

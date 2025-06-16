@@ -4,15 +4,14 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { getBarangById } from "../../api/BarangApi";
 import { getFotoBarangByIdBarang } from "../../api/fotoBarangApi";
-import { getDiskusiByBarang } from "../../api/DiskusiApi"; // Import the new API function
-import { createDiskusi } from "../../api/DiskusiApi"; // Import the new API function
+import { getDiskusiByBarang, createDiskusi, getCurrentUser } from "../../api/DiskusiApi"; // Import the updated API functions
 import { getKeranjangByPembeli, getKeranjangById, getKeranjangByIdUser } from "../../api/KeranjangApi";
 import { createDetailKeranjang } from "../../api/DetailKeranjangApi";
 import { getByIdBarang } from "../../api/PenitipanBarangApi";
 import { getRated } from "../../api/PenitipApi";
 import { getCurrentTopSeller } from "../../api/BadgeApi";
 import { toast } from "react-toastify";
-import { FaStar, FaInfoCircle } from "react-icons/fa";
+import { FaStar, FaInfoCircle, FaUser, FaClock } from "react-icons/fa";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const DetailBarang = () => {
@@ -33,11 +32,16 @@ const DetailBarang = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const carouselRef = useRef(null);
   const [topSellerBadge, setTopSellerBadge] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     // Check if user is logged in
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
+    
+    // Get current user data
+    const userData = getCurrentUser();
+    setCurrentUser(userData);
   }, []);
 
   const handleLogout = () => {
@@ -143,20 +147,38 @@ const DetailBarang = () => {
   const handleSubmitDiskusi = async (e) => {
     e.preventDefault();
     if (!newDiskusi.trim()) return;
+    if (!isLoggedIn) {
+      toast.error("Silakan login terlebih dahulu untuk menambahkan diskusi");
+      navigate("/LoginPage");
+      return;
+    }
 
     setSubmitting(true);
     try {
+      // Pastikan kita memiliki id_user dari user yang login
+      if (!currentUser || !currentUser.id_user) {
+        toast.error("Data pengguna tidak ditemukan, silakan login kembali");
+        navigate("/LoginPage");
+        return;
+      }
+
       const diskusiData = {
         id_barang: id,
+        id_user: currentUser.id_user,
         komen: newDiskusi.trim(),
       };
       
       const result = await createDiskusi(diskusiData);
-      setDiskusi([...diskusi, result]); // Add new comment to existing list
+      console.log("Diskusi created:", result);
+      
+      // Refresh diskusi list after adding new comment
+      const updatedDiskusi = await getDiskusiByBarang(id);
+      setDiskusi(updatedDiskusi);
       setNewDiskusi(""); // Clear the input
+      toast.success("Diskusi berhasil ditambahkan");
     } catch (err) {
-      setError("Gagal menambahkan diskusi");
-      console.error(err);
+      console.error("Error adding diskusi:", err);
+      toast.error("Gagal menambahkan diskusi: " + (err.response?.data?.message || err.message));
     } finally {
       setSubmitting(false);
     }
@@ -222,6 +244,20 @@ const DetailBarang = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+  
+  // Format date for diskusi
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    return date.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -390,17 +426,6 @@ const DetailBarang = () => {
                 </div>
               </div>
 
-                {diskusi.length > 0 ? (
-                  <ul className="list-group">
-                    {diskusi.map((item) => (
-                      <li key={item.id_diskusi} className="list-group-item">
-                        <p className="mb-0">{item.komen}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>Belum ada diskusi untuk barang ini.</p>
-                )}
               {/* DISKUSI */}
               <div className="col-12">
                 <div className="card shadow-sm p-4 mt-4 border-0" style={{ borderTop: '1px solid #eee' }}>
@@ -411,16 +436,16 @@ const DetailBarang = () => {
                       <textarea
                         className="form-control"
                         rows="3"
-                        placeholder="Tulis diskusi Anda di sini..."
+                        placeholder={isLoggedIn ? "Tulis diskusi Anda di sini..." : "Silakan login untuk menambahkan diskusi"}
                         value={newDiskusi}
                         onChange={(e) => setNewDiskusi(e.target.value)}
-                        disabled={submitting}
+                        disabled={submitting || !isLoggedIn}
                       ></textarea>
                     </div>
                     <button 
                       type="submit" 
                       className="btn btn-success"
-                      disabled={submitting || !newDiskusi.trim()}
+                      disabled={submitting || !newDiskusi.trim() || !isLoggedIn}
                     >
                       {submitting ? (
                         <>
@@ -431,21 +456,47 @@ const DetailBarang = () => {
                         'Kirim Diskusi'
                       )}
                     </button>
+                    {!isLoggedIn && (
+                      <span className="ms-2 text-muted">
+                        <a href="/LoginPage" className="text-decoration-none">Login</a> untuk menambahkan diskusi
+                      </span>
+                    )}
                   </form>
 
                   {diskusi.length > 0 ? (
-                    <ul className="list-group list-group-flush" style={{ maxHeight: '300px', overflowY: 'auto', fontSize: '0.97rem' }}>
+                    <ul className="list-group list-group-flush" style={{ maxHeight: '400px', overflowY: 'auto', fontSize: '0.97rem' }}>
                       {diskusi.map((item) => (
-                        <li key={item.id_diskusi} className="list-group-item py-2 px-1">
-                          <p className="mb-1">{item.komen}</p>
-                          <small className="text-muted">
-                            {new Date(item.created_at).toLocaleString('id-ID')}
-                          </small>
+                        <li key={item.id_diskusi} className="list-group-item py-3 px-1 border-bottom">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <div className="d-flex align-items-center">
+                              <div className="d-flex align-items-center">
+                                <FaUser className="text-secondary me-2" />
+                                <strong>
+                                  {item.komen.startsWith('[CS]') || item.komen.startsWith('[Balasan') ? (
+                                    <>
+                                      {item.user?.pegawai?.nama_pegawai || "CS ReuseMart"}
+                                      <span className="badge bg-success ms-2">CS</span>
+                                    </>
+                                  ) : (
+                                    item.user?.pembeli?.nama_pembeli || "Pengguna"
+                                  )}
+                                </strong>
+                              </div>
+                            </div>
+                            <div className="d-flex align-items-center text-muted" style={{ fontSize: '0.85rem' }}>
+                              <FaClock className="me-1" />
+                              {item.formatted_created_at || formatDate(item.created_at)}
+                            </div>
+                          </div>
+                          <p className="mb-0">{item.komen}</p>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p>Belum ada diskusi untuk barang ini.</p>
+                    <div className="text-center py-4">
+                      <p className="text-muted mb-0">Belum ada diskusi untuk barang ini.</p>
+                      <p className="text-muted">Jadilah yang pertama menambahkan diskusi!</p>
+                    </div>
                   )}
                 </div>
               </div>

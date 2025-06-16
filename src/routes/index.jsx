@@ -20,7 +20,7 @@ import AlamatForm from '../components/AlamatForm';
 import DashboardKeranjang from '../pages/client/DashboardKeranjang';
 import Transaksi from '../pages/client/Transaksi';
 import Pembayaran from '../pages/client/Pembayaran';
-import VerifikasiPembayaranCS from '../pages/admin/VerifikasiPembayaranCS';
+import VerifikasiPembayaranCS from '../pages/cs/VerifikasiPembayaranCS';
 import DonasiManagement from "../pages/owner/DonasiManagement";
 import OwnerDashboard from "../pages/owner/OwnerDashboard";
 import RiwayatAlokasiDonasi from '../pages/owner/RiwayatAlokasiDonasi';
@@ -53,6 +53,7 @@ import RequestDonasiDetail from '../components/Nota/RequestDonasiDetail';
 import KurirDeliveryTrackingPage from '../pages/pegawaiGudang/KurirDeliveryTrackingPage';
 import CSDashboard from '../pages/cs/CSDashboard';
 import KlaimMerchandiseManagement from '../pages/cs/KlaimMerchandiseManagement';
+import DiskusiBarangCS from '../pages/cs/DiskusiBarangCS';
 import RiwayatTransaksiPenitipan from '../pages/pegawaiGudang/RiwayatTransaksiPenitipan';
 
 const AppRoutes = () => {
@@ -117,6 +118,7 @@ const AppRoutes = () => {
         <Route path='/pegawaiGudang/nota-pengambilan/:id_jadwal' element={< NotaPenjualanPembeli />} />
         <Route path='/DashboardCS' element={<CSDashboard />} />
         <Route path='/cs/klaim-merchandise' element={<KlaimMerchandiseManagement />} />
+        <Route path='/cs/diskusi-barang' element={<DiskusiBarangCS />} />
       </Routes>
     </Router>
   );

@@ -75,12 +75,6 @@ export default function LoginPage() {
               case 4:
                 navigate('/DashboardCS');
                 break;
-              case 5:
-                navigate('/DashboardHunter');
-                break;
-              case 6:
-                navigate('/VerifikasiPembayaranCS');
-                break;
               default:
                 navigate('/dashboard-pegawai');
             }
@@ -100,7 +94,7 @@ export default function LoginPage() {
                 break;
               case 'penitip':
                 console.log("Redirecting as Penitip - ID User:", user.id_user);
-                navigate('/DashboardPenitip');
+                navigate(`/DashboardProfilPenitip/${user.id_user}`);
                 break;
               case 'organisasi':
                 console.log("Redirecting as Organisasi - ID User:", user.id_user);

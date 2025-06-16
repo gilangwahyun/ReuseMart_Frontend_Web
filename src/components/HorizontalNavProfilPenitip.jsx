@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { FaUser, FaHistory, FaReceipt, FaArrowLeft, FaBars, FaTimes, FaBoxOpen } from "react-icons/fa";
+import { FaUser, FaHistory, FaReceipt, FaBars, FaTimes, FaBoxOpen, FaHandPaper, FaCalendarPlus, FaSignOutAlt } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { Logout } from "../api/AuthApi";
 
 const HorizontalNavProfilPenitip = ({
   activeKey,
@@ -7,12 +9,28 @@ const HorizontalNavProfilPenitip = ({
   hasSelectedTransaction = false,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
+  const navigate = useNavigate();
 
   const toggleNav = () => setIsOpen(!isOpen);
-  const handleGoBack = () => window.history.back();
+  
+  const handleLogout = async () => {
+    try {
+      await Logout();
+      navigate('/LoginPage');
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Fallback: Clear localStorage and redirect even if API call fails
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      navigate('/LoginPage');
+    }
+  };
 
   const navItems = [
     { key: "profile", icon: <FaUser />, label: "Data Profil" },
+    { key: "penitipan", icon: <FaBoxOpen />, label: "Penitipan Barang" },
+    { key: "request-pengambilan", icon: <FaHandPaper />, label: "Request Pengambilan" },
+    { key: "request-perpanjangan", icon: <FaCalendarPlus />, label: "Request Perpanjangan" },
     { key: "history", icon: <FaHistory />, label: "Riwayat Transaksi" },
   ];
 
@@ -63,16 +81,16 @@ const HorizontalNavProfilPenitip = ({
           </li>
         ))}
 
-        {/* Back button */}
+        {/* Logout button */}
         <li className="nav-item ms-auto" role="presentation">
           <button
-            className="btn nav-link d-flex align-items-center px-3 py-2 rounded text-dark"
-            onClick={handleGoBack}
-            aria-label="Kembali"
+            className="btn nav-link d-flex align-items-center px-3 py-2 rounded text-danger"
+            onClick={handleLogout}
+            aria-label="Logout"
             type="button"
           >
-            <FaArrowLeft />
-            {isOpen && <span className="ms-2">Kembali</span>}
+            <FaSignOutAlt />
+            {isOpen && <span className="ms-2">Logout</span>}
           </button>
         </li>
       </ul>

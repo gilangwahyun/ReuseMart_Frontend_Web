@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Badge, Alert, Modal, Form, Spinner, Card, Row, Col } from "react-bootstrap";
+import { Button, Badge, Alert, Modal, Form, Spinner, Card, Row, Col } from "react-bootstrap";
 import useAxios, { BASE_URL } from "../../api"; // Import the configured axios instance with BASE_URL
 import { useNavigate } from "react-router-dom";
 import { getAllPegawai } from "../../api/PegawaiApi";
 import { createJadwal } from "../../api/JadwalApi";
+import TransaksiTable from "./TransaksiTable"; // Import komponen baru
 
 const ListTransaksi = () => {
   const [transaksi, setTransaksi] = useState([]);
@@ -560,111 +561,17 @@ const ListTransaksi = () => {
         </Button>
       </div>
       
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <Table striped bordered hover responsive>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>Nama Barang</th>
-              <th>Total Harga</th>
-              <th>Status</th>
-              <th>Tanggal</th>
-              <th>Metode Pengiriman</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTransaksi().length > 0 ? (
-              filteredTransaksi().map((item, index) => {
-                // Using the correct field names based on the Transaksi model
-                const id = item.id_transaksi;
-                const totalHarga = item.total_harga;
-                const status = item.status_transaksi;
-                const tanggal = item.tanggal_transaksi;
-                const metodePengiriman = item.metode_pengiriman || "-";
-                
-                return (
-                  <tr key={id}>
-                    <td>{index + 1}</td>
-                    <td>{item.nama_barang}</td>
-                    <td>Rp {totalHarga ? totalHarga.toLocaleString() : '0'}</td>
-                    <td>{getStatusBadge(status)}</td>
-                    <td>{formatDate(tanggal)}</td>
-                    <td>{metodePengiriman}</td>
-                    <td>
-                      {/* Detail Transaction Button */}
-                      <Button
-                        variant="info"
-                        size="sm"
-                        className="me-2 mb-2"
-                        onClick={() => openDetailModal(item)}
-                      >
-                        Detail Transaksi
-                      </Button>
-                      <br />
-                      
-                      {(!status || status.toLowerCase() === "pending") && (
-                        <Button
-                          key={`process-${id}`}
-                          variant="primary"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => updateStatus(id, "proses")}
-                        >
-                          Proses
-                        </Button>
-                      )}
-                      {status && status.toLowerCase() === "proses" && (
-                        <Button
-                          key={`complete-${id}`}
-                          variant="success"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => updateStatus(id, "selesai")}
-                        >
-                          Selesai
-                        </Button>
-                      )}
-                      {(!status || ["pending", "proses"].includes(status.toLowerCase())) && (
-                        <Button
-                          key={`cancel-${id}`}
-                          variant="danger"
-                          size="sm"
-                          onClick={() => updateStatus(id, "dibatalkan")}
-                        >
-                          Batalkan
-                        </Button>
-                      )}
-                      {status && status.toLowerCase() === "lunas" && (
-                        <Button
-                          key={`jadwal-${id}`}
-                          variant="info"
-                          size="sm"
-                          onClick={() => openJadwalModal(item)}
-                          disabled={!canCreateJadwal(item)}
-                          title={getJadwalButtonTooltip(item)}
-                        >
-                          {hasJadwal(id) ? 'Jadwal Sudah Dibuat' : 'Buat Jadwal Pengiriman'}
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr key="no-data">
-                <td colSpan="7" className="text-center">
-                  {showOnlyUnscheduled 
-                    ? "Tidak ada transaksi yang belum memiliki jadwal" 
-                    : "Tidak ada transaksi ditemukan"}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
-      )}
+      {/* Gunakan komponen TransaksiTable dan teruskan props yang diperlukan */}
+      <TransaksiTable
+        transaksi={filteredTransaksi()}
+        openDetailModal={openDetailModal}
+        openJadwalModal={openJadwalModal}
+        updateStatus={updateStatus}
+        hasJadwal={hasJadwal}
+        canCreateJadwal={canCreateJadwal}
+        getJadwalButtonTooltip={getJadwalButtonTooltip}
+        loading={loading}
+      />
       
       {/* Modal for creating jadwal */}
       <Modal show={showJadwalModal} onHide={() => setShowJadwalModal(false)}>
@@ -824,7 +731,7 @@ const ListTransaksi = () => {
           ) : detailTransaksi ? (
             <div>
               <h5>Informasi Transaksi</h5>
-              <Table bordered size="sm" className="mb-4">
+              <table className="table table-bordered table-sm mb-4">
                 <tbody>
                   <tr>
                     <th>Tanggal Transaksi</th>
@@ -843,7 +750,7 @@ const ListTransaksi = () => {
                     <td>{detailTransaksi.metode_pengiriman || "-"}</td>
                   </tr>
                 </tbody>
-              </Table>
+              </table>
               
               <h5>Barang dalam Transaksi</h5>
               {detailItems.length > 0 ? (
@@ -907,4 +814,4 @@ const ListTransaksi = () => {
   );
 };
 
-export default ListTransaksi;
+export default ListTransaksi; 

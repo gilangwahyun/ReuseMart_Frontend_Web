@@ -6,6 +6,9 @@ import ProfilCardPenitip from "../../components/ProfilCardPenitip";
 import ProfilDetailTransaksiPenitip from "../../components/ProfilDetailTransaksiPenitip";
 import ProfilHistoriTransaksiPenitip from "../../components/ProfilHistoriTransaksiPenitip";
 import HorizontalNavProfilPenitip from "../../components/HorizontalNavProfilPenitip";
+import DaftarPenitipanBarang from "../../components/penitip/DaftarPenitipanBarang";
+import RequestPengambilanBarang from "../../components/penitip/RequestPengambilanBarang";
+import RequestPerpanjanganPenitipan from "../../components/penitip/RequestPerpanjanganPenitipan";
 
 export default function DashboardProfilPenitip() {
   const { id_user } = useParams();
@@ -25,7 +28,7 @@ export default function DashboardProfilPenitip() {
       return;
     }
 
-    const fetchData = async () => {
+    const fetchPenitipData = async () => {
       try {
         setLoading(true);
 
@@ -37,28 +40,6 @@ export default function DashboardProfilPenitip() {
         // (which might have a nested 'data' property) as the profile
         console.log("Setting profile with response object:", response);
         setProfile(response);
-        
-        // Fetch transactions if penitip data is available
-        // Check if we need to use .data property to access the ID
-        const penitipId = profile.data?.id_penitip;
-        
-        if (penitipId) {
-          try {
-            console.log(`Fetching transactions for penitip ID: ${penitipId}`);
-            const transaksiData = await getTransaksiByPenitipId(penitipId);
-            console.log("Transaction data:", transaksiData);
-            
-            // Handle possible nested response structure
-            const transactionList = transaksiData?.data || transaksiData || [];
-            setTransactions(transactionList);
-          } catch (txError) {
-            console.error("Error fetching transactions:", txError);
-            setTransactions([]);
-          }
-        } else {
-          console.warn("No penitip ID found, skipping transaction fetch");
-          setTransactions([]);
-        }
       } catch (err) {
         console.error("Error fetching penitip data:", err);
         setError("Gagal memuat data: " + (err.message || "Terjadi kesalahan"));
@@ -67,8 +48,37 @@ export default function DashboardProfilPenitip() {
       }
     };
 
-    fetchData();
+    fetchPenitipData();
   }, [id_user]);
+
+  // Efek terpisah untuk mengambil transaksi setelah profil dimuat
+  useEffect(() => {
+    if (!profile || !profile.data) return;
+    
+    const fetchTransactions = async () => {
+      const penitipId = profile.data.id_penitip;
+      
+      if (penitipId) {
+        try {
+          console.log(`Fetching transactions for penitip ID: ${penitipId}`);
+          const transaksiData = await getTransaksiByPenitipId(penitipId);
+          console.log("Transaction data:", transaksiData);
+          
+          // Handle possible nested response structure
+          const transactionList = transaksiData?.data || transaksiData || [];
+          setTransactions(transactionList);
+        } catch (txError) {
+          console.error("Error fetching transactions:", txError);
+          setTransactions([]);
+        }
+      } else {
+        console.warn("No penitip ID found, skipping transaction fetch");
+        setTransactions([]);
+      }
+    };
+    
+    fetchTransactions();
+  }, [profile]);
 
   const handleSelectTransaction = (tx) => {
     setSelectedTx(tx);
@@ -88,24 +98,35 @@ export default function DashboardProfilPenitip() {
   };
 
   const renderContent = () => {
+    if (!profile || !profile.data) {
+      return <Alert variant="info">Memuat data profil...</Alert>;
+    }
+
+    const penitipId = profile.data.id_penitip;
+
     switch (activeTab) {
       case "profile":
-        return profile && (
-          <>
-            <ProfilCardPenitip penitip={profile} />
-          </>
-        );
+        return <ProfilCardPenitip penitip={profile} />;
+      
+      case "penitipan":
+        return <DaftarPenitipanBarang idPenitip={penitipId} />;
+      
+      case "request-pengambilan":
+        return <RequestPengambilanBarang idPenitip={penitipId} />;
+      
+      case "request-perpanjangan":
+        return <RequestPerpanjanganPenitipan idPenitip={penitipId} />;
+      
       case "history":
         return (
-          <>
-            <ProfilHistoriTransaksiPenitip
-              transactions={transactions}
-              onSelect={handleSelectTransaction}
-              selectedTransaction={selectedTx}
-              loading={loading}
-            />
-          </>
+          <ProfilHistoriTransaksiPenitip
+            transactions={transactions}
+            onSelect={handleSelectTransaction}
+            selectedTransaction={selectedTx}
+            loading={loading}
+          />
         );
+      
       case "detail":
         return (
           <ProfilDetailTransaksiPenitip
@@ -114,8 +135,9 @@ export default function DashboardProfilPenitip() {
             onBack={() => setActiveTab("history")}
           />
         );
+      
       default:
-        return profile && <ProfilCardPenitip penitip={profile} />;
+        return <ProfilCardPenitip penitip={profile} />;
     }
   };
 
