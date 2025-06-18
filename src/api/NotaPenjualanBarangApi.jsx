@@ -230,6 +230,12 @@ export const getDetailsByNotaId = async (notaId) => {
 };
 
 export const getNotaPenjualanByTransaksiId = async (transaksiId) => {
+  // If transaksiId is undefined or null, return null immediately
+  if (transaksiId === undefined || transaksiId === null) {
+    console.warn("getNotaPenjualanByTransaksiId called with undefined or null transaksiId");
+    return null;
+  }
+  
   // Keep a cache of transactions we've already checked
   if (!getNotaPenjualanByTransaksiId.cache) {
     getNotaPenjualanByTransaksiId.cache = {};

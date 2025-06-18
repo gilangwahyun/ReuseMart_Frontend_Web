@@ -380,21 +380,44 @@ const PenjadwalanPage = () => {
             // Get complete item details for accurate pricing
             const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
               try {
+                console.log("Processing item:", item); // Debug the original item
+                
                 const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
-                const barang = barangResponse.data;
+                const barangResponseData = barangResponse.data;
+                console.log(`Full barang response for ID ${item.id_barang}:`, barangResponseData);
+                
+                // Handle potential nested structure
+                const barang = barangResponseData.data || barangResponseData;
+                
+                // Get the price from the correct fields based on your data structure
+                // Try item.harga_item first, then check various nested paths
+                const itemPrice = 
+                  Number(item.harga_item) || // This seems to be where your price is stored
+                  Number(barang?.harga) ||   // Direct harga field
+                  Number(barangResponseData?.data?.harga) || // Nested harga
+                  0;  // Default to 0 if no price found
+                
+                console.log(`Price for item ${item.id_barang}: ${itemPrice}`);
                 
                 return {
                   ...item,
-                  harga: item.harga_beli || barang?.harga || 0
+                  barang: barang,
+                  nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`,
+                  harga: itemPrice,
+                  jumlah: item.jumlah || 1 // Ensure jumlah always has a value
                 };
               } catch (error) {
                 console.error(`Error fetching barang ${item.id_barang} details:`, error);
                 return {
                   ...item,
-                  harga: item.harga_beli || 0
+                  nama_barang: `Barang #${item.id_barang}`,
+                  harga: Number(item.harga_item) || 0, // Use harga_item as backup
+                  jumlah: item.jumlah || 1
                 };
               }
             }));
+            
+            console.log("Final itemsWithDetails with prices:", itemsWithDetails);
             
             // Calculate accurate total amount from items
             const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
@@ -543,19 +566,43 @@ const PenjadwalanPage = () => {
       
       // First get transaction details and other necessary data
       const transaksiResponse = await useAxios.get(`/transaksi/${transaksiId}`);
-      const transaksiData = transaksiResponse.data;
+      console.log("Raw transaksi response:", transaksiResponse);
+
+      // Handle different possible response structures
+      let transaksiData;
+      if (transaksiResponse.data && typeof transaksiResponse.data === 'object') {
+        // Check if the data is nested inside a data property
+        if (transaksiResponse.data.data && typeof transaksiResponse.data.data === 'object') {
+          transaksiData = transaksiResponse.data.data;
+        } else {
+          transaksiData = transaksiResponse.data;
+        }
+      } else {
+        transaksiData = { id_pembeli: null };
+      }
+
+      console.log("Processed transaksi data:", transaksiData);
       
       // Get pembeli data
-      const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
-      const pembeliData = pembeliResponse.data;
+      let pembeliData = { id_user: null, nama_pembeli: 'Tidak tersedia' };
+      if (transaksiData && transaksiData.id_pembeli) {
+        try {
+          console.log("Fetching pembeli with ID:", transaksiData.id_pembeli);
+          const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+          pembeliData = pembeliResponse.data;
+        } catch (error) {
+          console.error("Error fetching pembeli data:", error);
+        }
+      }
       
       // Get pembeli user data to get email
       let buyerEmail = "Email tidak tersedia";
       if (pembeliData.id_user) {
         try {
           const pembeliUserResponse = await useAxios.get(`/pembeli/user/${pembeliData.id_user}`);
-          if (pembeliUserResponse.data?.user?.email) {
-            buyerEmail = pembeliUserResponse.data.user.email;
+          console.log("Pembeli user response full data:", pembeliUserResponse);
+          if (pembeliUserResponse.data?.data?.user?.email) {
+            buyerEmail = pembeliUserResponse.data.data.user.email;
           }
         } catch (error) {
           console.error("Error fetching pembeli user data:", error);
@@ -571,29 +618,68 @@ const PenjadwalanPage = () => {
       
       // Get transaction items
       const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiId}`);
-      const detailTransaksiData = detailTransaksiResponse.data;
+      console.log("Detail transaksi response:", detailTransaksiResponse);
+
+      // Handle different possible response structures and ensure we have an array
+      let detailTransaksiData = [];
+      if (detailTransaksiResponse.data) {
+        // Check if data is directly an array
+        if (Array.isArray(detailTransaksiResponse.data)) {
+          detailTransaksiData = detailTransaksiResponse.data;
+        } 
+        // Check if data is nested inside a data property
+        else if (detailTransaksiResponse.data.data && Array.isArray(detailTransaksiResponse.data.data)) {
+          detailTransaksiData = detailTransaksiResponse.data.data;
+        }
+        // Handle case where data might be a single object
+        else if (typeof detailTransaksiResponse.data === 'object' && !Array.isArray(detailTransaksiResponse.data)) {
+          detailTransaksiData = [detailTransaksiResponse.data];
+        }
+      }
+
+      console.log("Processed detail transaksi data:", detailTransaksiData);
       
       // Get complete item details
       const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
         try {
+          console.log("Processing item:", item); // Debug the original item
+          
           const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
-          const barang = barangResponse.data;
+          const barangResponseData = barangResponse.data;
+          console.log(`Full barang response for ID ${item.id_barang}:`, barangResponseData);
+          
+          // Handle potential nested structure
+          const barang = barangResponseData.data || barangResponseData;
+          
+          // Get the price from the correct fields based on your data structure
+          // Try item.harga_item first, then check various nested paths
+          const itemPrice = 
+            Number(item.harga_item) || // This seems to be where your price is stored
+            Number(barang?.harga) ||   // Direct harga field
+            Number(barangResponseData?.data?.harga) || // Nested harga
+            0;  // Default to 0 if no price found
+          
+          console.log(`Price for item ${item.id_barang}: ${itemPrice}`);
           
           return {
             ...item,
             barang: barang,
             nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`,
-            harga: item.harga_beli || barang?.harga || 0
+            harga: itemPrice,
+            jumlah: item.jumlah || 1 // Ensure jumlah always has a value
           };
         } catch (error) {
           console.error(`Error fetching barang ${item.id_barang} details:`, error);
           return {
             ...item,
             nama_barang: `Barang #${item.id_barang}`,
-            harga: item.harga_beli || 0
+            harga: Number(item.harga_item) || 0, // Use harga_item as backup
+            jumlah: item.jumlah || 1
           };
         }
       }));
+      
+      console.log("Final itemsWithDetails with prices:", itemsWithDetails);
       
       // Calculate total amount
       const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);

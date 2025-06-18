@@ -310,10 +310,11 @@ const NotaPenjualanKurir = () => {
         // Step 1: Get jadwal data
         const jadwalResponse = await useAxios.get(`/jadwal/${id_jadwal}`);
         const jadwalData = jadwalResponse.data;
+        console.log("Jadwal data:", jadwalData);
 
-        // Step 2: Get transaction data
-        const transaksiResponse = await useAxios.get(`/transaksi/${jadwalData.id_transaksi}`);
-        const transaksiData = transaksiResponse.data;
+        // Step 2: Get transaction data from the jadwal response
+        const transaksiData = jadwalData.transaksi;
+        console.log("Transaksi data from jadwal:", transaksiData);
 
         // Step 2.5: Get nota penjualan data if it exists
         let invoiceNumber = "";
@@ -328,7 +329,9 @@ const NotaPenjualanKurir = () => {
             const now = new Date();
             const year = now.getFullYear().toString().slice(-2);
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
+            const transactionId = (transaksiData.id_transaksi !== undefined && transaksiData.id_transaksi !== null) 
+              ? transaksiData.id_transaksi.toString().padStart(3, '0') 
+              : '000';
             invoiceNumber = `${year}.${month}.${transactionId}`;
             console.log("Generated fallback invoice number:", invoiceNumber);
           }
@@ -338,14 +341,25 @@ const NotaPenjualanKurir = () => {
           const now = new Date();
           const year = now.getFullYear().toString().slice(-2);
           const month = (now.getMonth() + 1).toString().padStart(2, '0');
-          const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
+          const transactionId = (transaksiData.id_transaksi !== undefined && transaksiData.id_transaksi !== null) 
+            ? transaksiData.id_transaksi.toString().padStart(3, '0') 
+            : '000';
           invoiceNumber = `${year}.${month}.${transactionId}`;
           console.log("Generated fallback invoice number after error:", invoiceNumber);
         }
 
         // Step 3: Get pembeli data to get the id_user
-        const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
-        const pembeliData = pembeliResponse.data;
+        let pembeliData = { id_user: null, nama_pembeli: 'Tidak tersedia' };
+        if (transaksiData.id_pembeli) {
+          try {
+            const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+            pembeliData = pembeliResponse.data;
+          } catch (error) {
+            console.error("Error fetching pembeli data:", error);
+          }
+        } else {
+          console.warn("Transaction doesn't have a pembeli ID (id_pembeli is undefined)");
+        }
         
         console.log("Pembeli data:", pembeliData);
         const buyerUserId = pembeliData.id_user; // Get the buyer's user ID
@@ -404,18 +418,49 @@ const NotaPenjualanKurir = () => {
         }
 
         // Step 6: Get address data
-        const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
-        const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+        let alamatData = { alamat_lengkap: 'Alamat tidak tersedia' };
+        if (transaksiData.id_pembeli) {
+          try {
+            const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
+            if (alamatResponse.data && alamatResponse.data.length > 0) {
+              alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+            }
+          } catch (error) {
+            console.error("Error fetching alamat data:", error);
+          }
+        }
 
         // Step 7: Get transaction items
-        const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiData.id_transaksi}`);
-        const detailTransaksiData = detailTransaksiResponse.data;
+        let detailTransaksiData = [];
+        try {
+          const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiData.id_transaksi}`);
+          // Ensure what we got back is actually an array
+          detailTransaksiData = Array.isArray(detailTransaksiResponse.data) 
+            ? detailTransaksiResponse.data 
+            : detailTransaksiResponse.data?.data || []; // Check if data is nested inside data property
+          
+          if (!Array.isArray(detailTransaksiData)) {
+            console.error("detailTransaksiData is not an array:", detailTransaksiData);
+            detailTransaksiData = []; // Fall back to empty array if all else fails
+          }
+        } catch (error) {
+          console.error("Error fetching transaction details:", error);
+        }
+
+        console.log("Detail Transaksi data:", detailTransaksiData);
 
         // Step 8: Get complete item details
         const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
+          console.log("Processing detail transaksi item:", item);
           try {
             const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
             const barang = barangResponse.data;
+            console.log(`Barang ${item.id_barang} details:`, barang);
+            
+            // Get price from the correct fields
+            // First try detail_transaksi.harga_item, then barang.data.harga
+            const itemPrice = Number(item.harga_item) || Number(barang?.data?.harga) || 0;
+            console.log(`Final price for ${barang?.data?.nama_barang || `Barang #${item.id_barang}`}: ${itemPrice}`);
             
             // Fetch penitipan data to get nama_petugas_qc
             let namaPetugasQC = "Tidak tersedia";
@@ -430,9 +475,9 @@ const NotaPenjualanKurir = () => {
             
             return {
               ...item,
-              barang: barang,
-              nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`,
-              harga: item.harga_beli || barang?.harga || 0,
+              barang: barang?.data || barang,
+              nama_barang: barang?.data?.nama_barang || `Barang #${item.id_barang}`,
+              harga: itemPrice,
               nama_petugas_qc: namaPetugasQC
             };
           } catch (error) {
@@ -440,11 +485,13 @@ const NotaPenjualanKurir = () => {
             return {
               ...item,
               nama_barang: `Barang #${item.id_barang}`,
-              harga: item.harga_beli || 0,
+              harga: Number(item.harga_item) || 0,
               nama_petugas_qc: "Tidak tersedia"
             };
           }
         }));
+
+        console.log("Final itemsWithDetails:", itemsWithDetails);
 
         // Fetch QC officer name for display at the top level
         let qcOfficer = "Tidak tersedia";
