@@ -1,6 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 body{
     /* background:
     url("http://login.uajy.ac.id/ac_portal/default/res/img/201811081500210.png");
     background-repeat: repeat; */
-    font-family: 'Roboto';
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+}
+
+h1 {
+    font-size: 1.8rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+}
+
+h3 {
+    font-size: 1.3rem;
+}
+
+h4, h5, h6 {
+    font-size: 1.1rem;
+}
+
+.btn, .nav-link {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+}
+
+.card-title {
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.form-label {
+    font-weight: 400;
+}
+
+.table {
+    font-size: 0.9rem;
 }

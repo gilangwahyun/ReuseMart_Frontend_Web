@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+
+import { getPegawaiByUserId } from "../../api/PegawaiApi";
+import { getCurrentTopSeller } from "../../api/BadgeApi";
+
 import OwnerSidebar from "../../components/OwnerSideBar";
 import { getPegawaiByUserId } from "../../api/PegawaiApi";
 import { getSalesReportByCategory } from "../../api/BarangApi";
@@ -9,6 +13,7 @@ const OwnerDashboard = () => {
   const [namaPegawai, setNamaPegawai] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [showReport, setShowReport] = useState(false);
   const [reportData, setReportData] = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
@@ -20,6 +25,24 @@ const OwnerDashboard = () => {
   const [flattenedExpiredData, setFlattenedExpiredData] = useState([]);
   const [expiredReportLoading, setExpiredReportLoading] = useState(false);
   const [expiredReportError, setExpiredReportError] = useState(null);
+
+  const [currentTopSeller, setCurrentTopSeller] = useState(null);
+
+  useEffect(() => {
+    loadCurrentTopSeller();
+  }, []);
+
+  const loadCurrentTopSeller = async () => {
+    try {
+      const response = await getCurrentTopSeller();
+      if (response.data) {
+        setCurrentTopSeller(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading current top seller:", error);
+    }
+  };
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -170,6 +193,7 @@ const OwnerDashboard = () => {
         ) : error ? (
           <p className="text-danger">{error}</p>
         ) : (
+
           <div>
             <h3>Selamat datang, {namaPegawai}!</h3>
             <p>Silakan pilih menu di sidebar untuk melanjutkan.</p>
@@ -309,6 +333,34 @@ const OwnerDashboard = () => {
             
             {/* Empty expired consignments report message - no longer needed since we handle it in the report itself */}
           </div>
+
+          <>
+            <h3>Selamat datang, {namaPegawai}!</h3>
+            <div className="mt-4">
+              <div className="card mb-4">
+                <div className="card-body">
+                  <h5 className="card-title">TOP SELLER Saat Ini</h5>
+                  {currentTopSeller ? (
+                    <div className="mt-3">
+                      <div className="d-flex align-items-center mb-3">
+                        <div className="badge bg-warning me-2">
+                          <i className="fas fa-star me-1"></i>
+                          TOP SELLER
+                        </div>
+                        <h6 className="mb-0">{currentTopSeller.penitip?.nama_penitip}</h6>
+                      </div>
+                      <p className="text-muted mb-0" style={{ fontSize: '0.9rem' }}>
+                        {currentTopSeller.deskripsi}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-muted mb-0">Belum ada TOP SELLER yang aktif</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+
         )}
       </div>
     </div>

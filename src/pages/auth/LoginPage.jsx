@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 import { Login } from '../../api/AuthApi';
 import { getJabatanByUser } from '../../api/PegawaiApi';
 import 'react-toastify/dist/ReactToastify.css'; // penting!
@@ -10,6 +11,38 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // Beberapa opsi background yang bisa dipilih - silakan uncomment yang disukai
+  const backgroundStyles = {
+    // Opsi 1: Gradient yang lebih halus dengan lebih banyak titik transisi
+    option1: {
+      background: 'linear-gradient(to bottom, #f8f9fa 0%, rgba(200, 230, 201, 0.5) 30%, rgba(129, 199, 132, 0.6) 60%, rgba(76, 175, 80, 0.8) 100%)'
+    },
+    
+    // Opsi 2: Warna solid dengan pattern subtle
+    option2: {
+      backgroundColor: '#f8f9fa',
+      backgroundImage: 'radial-gradient(#4CAF50 0.5px, transparent 0.5px), radial-gradient(#4CAF50 0.5px, #f8f9fa 0.5px)',
+      backgroundSize: '20px 20px',
+      backgroundPosition: '0 0, 10px 10px',
+      backgroundAttachment: 'fixed'
+    },
+    
+    // Opsi 3: Gradient radial yang lebih lembut
+    option3: {
+      background: 'radial-gradient(circle at center, #ffffff 0%, #e8f5e9 40%, #c8e6c9 70%, #a5d6a7 100%)'
+    },
+    
+    // Opsi 4: Background putih dengan border hijau
+    option4: {
+      backgroundColor: '#ffffff',
+      borderTop: '8px solid #4CAF50',
+      boxShadow: 'inset 0 8px 12px -8px rgba(76, 175, 80, 0.3)'
+    }
+  };
+  
+  // Pilih opsi background yang diinginkan - ganti angka untuk opsi yang berbeda (1-4)
+  const selectedBackground = backgroundStyles.option2;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +56,7 @@ export default function LoginPage() {
 
         setTimeout(async () => {
           const user = JSON.parse(localStorage.getItem('user'));
+          console.log("Login successful - User data:", user);
 
           if (user.role === 'Pegawai') {
             const jabatanResponse = await getJabatanByUser(user.id_user);
@@ -39,29 +73,31 @@ export default function LoginPage() {
                 navigate('/DashboardPegawaiGudang');
                 break;
               case 4:
-                navigate('/CRUDPenitip');
-                break;
-              case 5:
-                navigate('/DashboardHunter');
-                break;
-              case 6:
-                navigate('/DashboardKurir');
+                navigate('/DashboardCS');
                 break;
               default:
                 navigate('/dashboard-pegawai');
             }
           } else {
-            switch (user.role) {
-              case 'Pembeli':
-                console.log("ID User:", user.id_user);
+            // Normalize role to lowercase for consistent comparison
+            const normalizedRole = user.role.toLowerCase();
+            console.log("Normalized role:", normalizedRole);
+            
+            // Store normalized role
+            user.normalizedRole = normalizedRole;
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            switch (normalizedRole) {
+              case 'pembeli':
+                console.log("Redirecting as Pembeli - ID User:", user.id_user);
                 navigate('/');
                 break;
-              case 'Penitip':
-                console.log("ID User:", user.id_user);
-                navigate('/DashboardPenitip');
+              case 'penitip':
+                console.log("Redirecting as Penitip - ID User:", user.id_user);
+                navigate(`/DashboardProfilPenitip/${user.id_user}`);
                 break;
-              case 'Organisasi':
-                console.log("ID User:", user.id_user);
+              case 'organisasi':
+                console.log("Redirecting as Organisasi - ID User:", user.id_user);
                 navigate('/DashboardOrganisasi');
                 break;
               default:
@@ -81,10 +117,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="col-md-6">
+    <div 
+      className="login-container vh-100 d-flex flex-column justify-content-center align-items-center position-relative" 
+      style={{
+        ...selectedBackground,
+        minHeight: '100vh'
+      }}
+    >
+      {/* Tombol Kembali */}
+      <div className="position-absolute top-0 start-0 m-3">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="btn btn-success rounded-circle shadow-sm"
+          style={{ width: '40px', height: '40px' }}
+        >
+          <FaArrowLeft />
+        </button>
+      </div>
+      
+      <div className="text-center mb-5" style={{ marginTop: '-60px' }}>
+        <img 
+          src="/assets/logoReuseMart.png" 
+          alt="ReuseMart Logo" 
+          className="img-fluid" 
+          style={{ 
+            maxHeight: '150px', 
+            filter: 'drop-shadow(0px 4px 8px rgba(0,0,0,0.15))' 
+          }}
+        />
+      </div>
+      
+      <div className="login-card-container" style={{ width: '100%', maxWidth: '420px' }}>
         <div className="card shadow-lg border-0 rounded-4 p-4">
-          <h3 className="text-center mb-4">Login ReuseMart</h3>
+          <h3 className="text-center mb-4 fw-bold text-success">Login</h3>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
@@ -117,11 +182,17 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="btn btn-success w-100"
+              className="btn btn-success w-100 py-2 fw-bold"
               disabled={loading}
             >
               {loading ? 'Memproses...' : 'Login'}
             </button>
+            
+            <div className="mt-3 text-center">
+              <p className="mb-0">
+                Belum punya akun? <Link to="/RegisterPembeli" className="text-success fw-medium">Daftar sekarang</Link>
+              </p>
+            </div>
           </form>
         </div>
       </div>

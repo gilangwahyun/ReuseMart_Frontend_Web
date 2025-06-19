@@ -6,9 +6,15 @@ const API_URL = "/fotoBarang";
 export const getFotoBarangByIdBarang = async (id_barang) => {
     try {
         const response = await useAxios.get(`${API_URL}/${id_barang}`);
-        return response.data.data;
+        if (response.data && response.data.success) {
+            console.log('Foto barang response:', response.data);
+            return response.data.data;
+        }
+        console.warn('Invalid foto barang response:', response.data);
+        return [];
     } catch (error) {
-        throw error;
+        console.error('Error fetching foto barang:', error);
+        return [];
     }
 };
 

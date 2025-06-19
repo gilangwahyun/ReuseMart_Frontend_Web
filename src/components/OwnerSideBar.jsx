@@ -7,6 +7,11 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaReceipt,
+  FaClipboardList,
+  FaMoneyBillWave,
+  FaBoxes,
+  FaChartBar,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -32,6 +37,12 @@ const OwnerSidebar = () => {
     { to: "/DashboardOwner", icon: <FaTachometerAlt />, label: "Dashboard" },
     { to: "/owner/donasi", icon: <FaUserTie />, label: "Manajerial Donasi" },
     { to: "/owner/alokasi", icon: <FaBuilding />, label: "Manajerial Alokasi" },
+    { to: "/owner/nota-donasi", icon: <FaReceipt />, label: "Nota Donasi" },
+    { to: "/owner/request-donasi", icon: <FaClipboardList />, label: "Request Donasi" },
+    { to: "/owner/laporan-transaksi", icon: <FaMoneyBillWave />, label: "Laporan Transaksi" },
+    { to: "/owner/laporan-penjualan", icon: <FaChartBar />, label: "Laporan Penjualan" },
+    { to: "/owner/laporan-stok", icon: <FaBoxes />, label: "Laporan Stok Gudang" },
+    { to: "/owner/laporan-komisi", icon: <FaMoneyBillWave />, label: "Laporan Komisi" },
   ];
 
   return (
@@ -48,7 +59,7 @@ const OwnerSidebar = () => {
     >
       {/* Header */}
       <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
-        {isOpen && <h5 className="mb-0 text">Admin Panel</h5>}
+        {isOpen && <h5 className="mb-0 text">Owner Panel</h5>}
         <button
           className="btn btn-sm btn-light border"
           onClick={toggleSidebar}

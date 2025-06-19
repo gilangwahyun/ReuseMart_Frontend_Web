@@ -6,7 +6,7 @@ const useAxios = axios.create({
   headers: {
     'Accept': 'application/json',
   },
-  timeout: 10000, // Adding a timeout of 10 seconds
+  timeout: 15000, // Meningkatkan timeout menjadi 15 detik
 });
 
 // Helper function for better error logging
@@ -22,6 +22,7 @@ const logError = (prefix, error) => {
       console.error('Request timed out. Server might be down or unreachable.');
     } else if (error.message && error.message.includes('Network Error')) {
       console.error('Network error. API server might be down or CORS issues.');
+      console.error('Pastikan backend server berjalan di http://127.0.0.1:8000');
     }
   } else {
     console.error('Error in setup:', error.message);
@@ -29,6 +30,7 @@ const logError = (prefix, error) => {
   if (error.config) {
     console.error('Request URL:', error.config.url);
     console.error('Request Method:', error.config.method);
+    console.error('Request Data:', error.config.data);
   }
 };
 
@@ -40,7 +42,10 @@ useAxios.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
         console.log("Token ditambahkan:", token.substring(0, 10) + "...");
+      } else {
+        console.log("Token tidak ditemukan di localStorage");
       }
+      console.log(`Sending ${config.method?.toUpperCase() || 'GET'} request to: ${config.url}`, config.data || {});
       return config;
     } catch (error) {
       console.error("Error mengambil token:", error);

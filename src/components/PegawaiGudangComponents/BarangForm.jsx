@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { getAllKategori } from "../../api/KategoriBarangApi";
 import { createBarang } from "../../api/BarangApi";
-import { uploadFotoBarang } from "../../api/FotoBarangApi";
+// import { uploadFotoBarang } from "../../api/FotoBarangApi";
 import { createNotaDetailPenitipanBarang } from "../../api/NotaDetailPenitipanApi";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { deletePenitipanBarang } from "../../api/PenitipanBarangApi";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const BarangForm = ({ initialData = null }) => {
   const emptyBarang = {
@@ -31,6 +33,21 @@ const BarangForm = ({ initialData = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [tanpaGaransi, setTanpaGaransi] = useState(false);
+  const [fotoError, setFotoError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [garansiDisplay, setGaransiDisplay] = useState('');
+
+  // Format tanggal untuk tampilan
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   useEffect(() => {
     const fetchKategori = async () => {
@@ -39,6 +56,7 @@ const BarangForm = ({ initialData = null }) => {
         setKategoriList(res || []);
       } catch (error) {
         console.error("Gagal fetch kategori:", error);
+        toast.error("Gagal memuat data kategori");
       }
     };
     fetchKategori();
@@ -51,19 +69,7 @@ const BarangForm = ({ initialData = null }) => {
     };
     const handlePopState = async (e) => {
       if (!barang.id_barang && idPenitipan) {
-        const confirmDelete = window.confirm("Apakah Anda ingin membatalkan dan menghapus data penitipan yang sudah dibuat?");
-        if (confirmDelete) {
-          try {
-            await deletePenitipanBarang(idPenitipan);
-          } catch (err) {
-            // Tidak perlu alert, cukup log
-            console.error("Gagal menghapus penitipan:", err);
-          }
-          navigate(-1);
-        } else {
-          // Jika batal, dorong lagi ke halaman ini
-          window.history.pushState(null, '', window.location.href);
-        }
+        setShowConfirmDeleteModal(true);
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -74,32 +80,68 @@ const BarangForm = ({ initialData = null }) => {
     };
   }, [idPenitipan, barang.id_barang, navigate]);
 
+  const handleDeletePenitipan = async () => {
+    try {
+      await deletePenitipanBarang(idPenitipan);
+      toast.info("Data penitipan telah dibatalkan");
+      navigate(-1);
+    } catch (err) {
+      console.error("Gagal menghapus penitipan:", err);
+      toast.error("Gagal menghapus data penitipan");
+    }
+    setShowConfirmDeleteModal(false);
+  };
+
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setBarang((prev) => ({
       ...prev,
       [name]: type === "number" ? Number(value) : value,
     }));
+
+    // Update tampilan tanggal garansi
+    if (name === 'masa_garansi' && value) {
+      setGaransiDisplay(formatDate(value));
+    }
   };
 
   const handleTanpaGaransi = (e) => {
     setTanpaGaransi(e.target.checked);
     if (e.target.checked) {
       setBarang((prev) => ({ ...prev, masa_garansi: "" }));
+      setGaransiDisplay('');
     }
   };
 
   const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
     setBarang((prev) => ({
       ...prev,
-      files: Array.from(e.target.files),
+      files,
     }));
+    if (files.length < 2) {
+      setFotoError('Minimal upload 2 foto barang!');
+    } else {
+      setFotoError(null);
+    }
+  };
+
+  const handleRemoveFile = (index) => {
+    setBarang((prev) => {
+      const newFiles = prev.files.filter((_, i) => i !== index);
+      if (newFiles.length < 2) {
+        setFotoError('Minimal upload 2 foto barang!');
+      }
+      return { ...prev, files: newFiles };
+    });
   };
 
   const resetForm = () => {
     setBarang({ ...emptyBarang });
     setSubmitted(false);
     setError(null);
+    setGaransiDisplay('');
+    toast.success("Form telah direset, silakan tambah barang baru");
   };
 
   if (!idPenitipan || !idNotaPenitipan) {
@@ -110,8 +152,20 @@ const BarangForm = ({ initialData = null }) => {
     );
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmitClick = (e) => {
     e.preventDefault();
+    
+    if (barang.files.length < 2) {
+      setFotoError('Minimal upload 2 foto barang!');
+      toast.warning('Minimal upload 2 foto barang!');
+      return;
+    }
+    setFotoError(null);
+    setShowConfirmModal(true);
+  };
+
+  const handleSubmit = async () => {
+    setShowConfirmModal(false);
     setLoading(true);
     setError(null);
 
@@ -149,11 +203,21 @@ const BarangForm = ({ initialData = null }) => {
         await createNotaDetailPenitipanBarang(detailData);
       }
 
+      toast.success("Data barang berhasil disimpan!");
       setSubmitted(true);
     } catch (err) {
       setError(err.message || "Gagal menyimpan data barang dan foto.");
+      toast.error("Gagal menyimpan data barang");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBackClick = () => {
+    if (!barang.id_barang && idPenitipan) {
+      setShowConfirmDeleteModal(true);
+    } else {
+      navigate(-1);
     }
   };
 
@@ -163,21 +227,7 @@ const BarangForm = ({ initialData = null }) => {
         <button
           type="button"
           className="btn btn-outline-success me-3"
-          onClick={async () => {
-            if (!barang.id_barang && idPenitipan) {
-              const confirmDelete = window.confirm("Apakah Anda ingin membatalkan dan menghapus data penitipan yang sudah dibuat?");
-              if (confirmDelete) {
-                try {
-                  await deletePenitipanBarang(idPenitipan);
-                } catch (err) {
-                  console.error("Gagal menghapus penitipan:", err);
-                }
-                navigate(-1);
-              }
-            } else {
-              navigate(-1);
-            }
-          }}
+          onClick={handleBackClick}
           style={{ fontWeight: "600" }}
         >
           ← Kembali
@@ -191,7 +241,7 @@ const BarangForm = ({ initialData = null }) => {
       )}
       <div className="card shadow-sm p-4">
         {!submitted ? (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmitClick}>
             <fieldset
               style={{
                 marginBottom: "2rem",
@@ -279,6 +329,11 @@ const BarangForm = ({ initialData = null }) => {
                     onChange={handleChange}
                     disabled={tanpaGaransi}
                   />
+                  {garansiDisplay && (
+                    <div className="form-text text-dark fw-medium mt-1">
+                      {garansiDisplay}
+                    </div>
+                  )}
                   <div className="form-check mt-2">
                     <input
                       className="form-check-input"
@@ -318,14 +373,30 @@ const BarangForm = ({ initialData = null }) => {
                     accept="image/*"
                     onChange={handleFileChange}
                   />
+                  {fotoError && (
+                    <div className="text-danger mt-1" style={{ fontSize: 14 }}>{fotoError}</div>
+                  )}
                   {barang.files.length > 0 && (
-                    <ul className="mt-2" style={{ maxHeight: 100, overflowY: "auto" }}>
+                    <div className="row mt-2 g-2">
                       {barang.files.map((file, i) => (
-                        <li key={i} style={{ fontSize: 14 }}>
-                          {file.name}
-                        </li>
+                        <div className="col-auto position-relative" key={i} style={{ width: 100 }}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                            style={{ zIndex: 2, padding: '2px 6px', fontSize: 12 }}
+                            onClick={() => handleRemoveFile(i)}
+                            title="Hapus foto"
+                          >
+                            &times;
+                          </button>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
                 <div className="col-md-12">
@@ -361,6 +432,7 @@ const BarangForm = ({ initialData = null }) => {
             <button
               className="btn btn-outline-secondary"
               onClick={() => {
+                toast.info("Mengarahkan ke halaman nota penitipan...");
                 navigate(`/pegawaiGudang/nota-penitipan/print?id_nota_penitipan=${idNotaPenitipan}`);
               }}
             >
@@ -369,6 +441,51 @@ const BarangForm = ({ initialData = null }) => {
           </div>
         )}
       </div>
+      
+      {/* Modal Konfirmasi Simpan */}
+      {showConfirmModal && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Konfirmasi Simpan Barang</h5>
+                <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>Apakah Anda yakin ingin menyimpan data barang ini?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmModal(false)}>Tidak</button>
+                <button type="button" className="btn btn-success" onClick={handleSubmit}>Ya, Simpan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Penitipan */}
+      {showConfirmDeleteModal && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Konfirmasi Batalkan Penitipan</h5>
+                <button type="button" className="btn-close" onClick={() => setShowConfirmDeleteModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>Apakah Anda yakin ingin membatalkan dan menghapus data penitipan yang sudah dibuat?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmDeleteModal(false)}>Tidak</button>
+                <button type="button" className="btn btn-danger" onClick={handleDeletePenitipan}>Ya, Batalkan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Toast Container */}
+      <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
 };

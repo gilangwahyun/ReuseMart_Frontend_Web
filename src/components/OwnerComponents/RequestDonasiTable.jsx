@@ -3,11 +3,12 @@ import ModalAlokasiDonasi from "../../components/OwnerComponents/ModalAlokasiDon
 import { getAllDonateBarang } from "../../api/BarangApi";
 import { createAlokasiDonasi } from "../../api/AlokasiDonasiApi";
 
-const RequestDonasiTable = ({ data }) => {
+const RequestDonasiTable = ({ data, onDataUpdated }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [barangList, setBarangList] = useState([]);
   const [selectedBarang, setSelectedBarang] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const openModal = (request) => {
     setSelectedRequest(request);
@@ -32,6 +33,7 @@ const RequestDonasiTable = ({ data }) => {
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
     try {
       await createAlokasiDonasi({
         id_request_donasi: selectedRequest.id_request_donasi,
@@ -40,22 +42,28 @@ const RequestDonasiTable = ({ data }) => {
 
       alert("Donasi berhasil dialokasikan");
       closeModal();
+      
+      // Memicu refresh data melalui callback
+      if (onDataUpdated) {
+        onDataUpdated();
+      }
     } catch (error) {
       console.error("Gagal menyetujui donasi:", error);
       alert("Terjadi kesalahan saat menyetujui donasi");
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!data) return <div>Data request donasi tidak ditemukan.</div>;
   if (!Array.isArray(data)) return <div>Data tidak dalam format yang benar.</div>;
+  if (data.length === 0) return <div>Tidak ada data request donasi.</div>;
 
   return (
     <>
-      {data.length === 0 ? (
-        <div>Tidak ada data request donasi.</div>
-      ) : (
-        <table className="table table-striped">
-          <thead>
+      <div className="table-responsive">
+        <table className="table table-bordered table-striped align-middle">
+          <thead className="table-dark">
             <tr>
               <th>No</th>
               <th>Deskripsi</th>
@@ -70,16 +78,30 @@ const RequestDonasiTable = ({ data }) => {
               <tr key={requestDonasi.id_request_donasi}>
                 <td>{index + 1}</td>
                 <td>{requestDonasi.deskripsi}</td>
-                <td>{requestDonasi.tanggal_pengajuan}</td>
-                <td>{requestDonasi.status_pengajuan}</td>
+                <td>{requestDonasi.tanggal_pengajuan?.split(" ")[0] || "-"}</td>
+                <td>
+                  {requestDonasi.status_pengajuan === "Pending" ? (
+                    <span className="badge bg-warning">Pending</span>
+                  ) : (
+                    <span className="badge bg-success">Disetujui</span>
+                  )}
+                </td>
                 <td>{requestDonasi.organisasi?.nama_organisasi || "-"}</td>
                 <td>
                   {requestDonasi.status_pengajuan === "Pending" ? (
                     <button
                       className="btn btn-success btn-sm"
                       onClick={() => openModal(requestDonasi)}
+                      disabled={loading}
                     >
-                      Setujui
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                          Memproses...
+                        </>
+                      ) : (
+                        'Setujui'
+                      )}
                     </button>
                   ) : (
                     <span className="text-muted">Sudah Disetujui</span>
@@ -89,7 +111,7 @@ const RequestDonasiTable = ({ data }) => {
             ))}
           </tbody>
         </table>
-      )}
+      </div>
 
       <ModalAlokasiDonasi
         show={showModal}
@@ -98,6 +120,7 @@ const RequestDonasiTable = ({ data }) => {
         selectedBarang={selectedBarang}
         onSelectBarang={setSelectedBarang}
         onSubmit={handleSubmit}
+        loading={loading}
       />
     </>
   );
