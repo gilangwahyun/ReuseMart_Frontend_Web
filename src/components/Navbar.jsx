@@ -74,7 +74,7 @@ const Navbar = ({ onKategoriSelect = () => {}, onSearch = () => {}, activeKatego
   const handleKategoriClick = (namaKategori) => {
     setShowPanel(false);
     onKategoriSelect(namaKategori);
-    setSearchKeyword(""); // Reset pencarian saat memilih kategori
+    setSearchKeyword("");
   };
 
   const handleSearchClick = (e) => {
