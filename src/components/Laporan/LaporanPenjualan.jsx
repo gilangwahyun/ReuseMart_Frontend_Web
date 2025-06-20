@@ -19,12 +19,19 @@ const formatDateTimeLong = (dateStr) => {
   });
 };
 
+// Array nama bulan dalam bahasa Indonesia
+const namaBulan = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
 const LaporanPenjualan = () => {
   const [laporan, setLaporan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tahun, setTahun] = useState(new Date().getFullYear());
   const [tahunOptions, setTahunOptions] = useState([]);
+  const [dataLengkap, setDataLengkap] = useState([]);
   
   const chartRef = useRef(null);
   const tableRef = useRef(null);
@@ -46,6 +53,57 @@ const LaporanPenjualan = () => {
     try {
       const data = await getLaporanPenjualanBulanan(year);
       setLaporan(data);
+      
+      // Memastikan data lengkap untuk 12 bulan
+      const dataLengkapBulan = [];
+      const dataBulanMap = new Map();
+      
+      // Konversi data yang ada ke dalam Map untuk mempermudah pencarian
+      if (data && data.data) {
+        data.data.forEach(item => {
+          // Cari index bulan berdasarkan nama bulan
+          const indexBulan = namaBulan.findIndex(bulan => 
+            bulan.toLowerCase() === item.nama_bulan.toLowerCase()
+          );
+          
+          if (indexBulan !== -1) {
+            dataBulanMap.set(indexBulan, item);
+          }
+        });
+      }
+      
+      // Buat data untuk semua 12 bulan
+      let totalBarangTerjual = 0;
+      let totalTransaksi = 0;
+      let totalPenjualan = 0;
+      
+      for (let i = 0; i < 12; i++) {
+        const dataBulan = dataBulanMap.get(i) || {
+          nama_bulan: namaBulan[i],
+          jumlah_barang_terjual: 0,
+          jumlah_transaksi: 0,
+          total_penjualan: 0
+        };
+        
+        dataLengkapBulan.push(dataBulan);
+        
+        // Akumulasi total
+        totalBarangTerjual += dataBulan.jumlah_barang_terjual;
+        totalTransaksi += dataBulan.jumlah_transaksi;
+        totalPenjualan += dataBulan.total_penjualan;
+      }
+      
+      // Persiapkan data lengkap dengan total
+      const dataComplete = {
+        data: dataLengkapBulan,
+        total: {
+          total_barang_terjual: totalBarangTerjual,
+          total_transaksi: totalTransaksi,
+          total_penjualan: totalPenjualan
+        }
+      };
+      
+      setDataLengkap(dataComplete);
       setError(null);
     } catch (err) {
       console.error("Error fetching laporan penjualan:", err);
@@ -128,7 +186,7 @@ const LaporanPenjualan = () => {
       colors: ['transparent']
     },
     xaxis: {
-      categories: laporan?.data.map(item => item.nama_bulan) || []
+      categories: dataLengkap?.data?.map(item => item.nama_bulan) || []
     },
     yaxis: {
       title: {
@@ -156,7 +214,7 @@ const LaporanPenjualan = () => {
   const chartSeries = [
     {
       name: 'Total Penjualan',
-      data: laporan?.data.map(item => item.total_penjualan) || []
+      data: dataLengkap?.data?.map(item => item.total_penjualan) || []
     }
   ];
 
@@ -190,14 +248,14 @@ const LaporanPenjualan = () => {
       minute: '2-digit',
       second: '2-digit'
     })}`, 15, 45);
-    doc.text(`Total Barang Terjual: ${laporan.total.total_barang_terjual}`, 15, 52);
-    doc.text(`Total Transaksi: ${laporan.total.total_transaksi}`, 15, 59);
-    doc.text(`Total Penjualan Kotor: ${formatRupiah(laporan.total.total_penjualan)}`, 15, 66);
+    doc.text(`Total Barang Terjual: ${dataLengkap.total.total_barang_terjual}`, 15, 52);
+    doc.text(`Total Transaksi: ${dataLengkap.total.total_transaksi}`, 15, 59);
+    doc.text(`Total Penjualan Kotor: ${formatRupiah(dataLengkap.total.total_penjualan)}`, 15, 66);
     
     // Tabel data
     autoTable(doc, {
       head: [["No", "Bulan", "Jumlah Barang Terjual", "Jumlah Transaksi", "Total Penjualan Kotor"]],
-      body: laporan.data.map((item, index) => [
+      body: dataLengkap.data.map((item, index) => [
         index + 1,
         item.nama_bulan,
         item.jumlah_barang_terjual.toString(),
@@ -207,9 +265,9 @@ const LaporanPenjualan = () => {
       foot: [[
         "",
         "TOTAL",
-        laporan.total.total_barang_terjual.toString(),
-        laporan.total.total_transaksi.toString(),
-        formatRupiah(laporan.total.total_penjualan)
+        dataLengkap.total.total_barang_terjual.toString(),
+        dataLengkap.total.total_transaksi.toString(),
+        formatRupiah(dataLengkap.total.total_penjualan)
       ]],
       startY: 75,
       theme: 'grid',
@@ -273,7 +331,7 @@ const LaporanPenjualan = () => {
                       <p className="text-muted mb-0">Jl. Green Eco Park No. 456 Yogyakarta</p>
                     </div>
                     <div className="text-end">
-                      {!loading && !error && laporan && (
+                      {!loading && !error && dataLengkap && (
                         <Button 
                           variant="success" 
                           onClick={handlePrintPDF}
@@ -324,7 +382,7 @@ const LaporanPenjualan = () => {
                   </div>
                 ) : error ? (
                   <div className="alert alert-danger">{error}</div>
-                ) : laporan ? (
+                ) : dataLengkap ? (
                   <>
                     {/* Info ringkasan */}
                     <div className="row mb-4">
@@ -332,7 +390,7 @@ const LaporanPenjualan = () => {
                         <div className="card bg-light">
                           <div className="card-body text-center">
                             <h5 className="card-title">Total Barang Terjual</h5>
-                            <h2 className="card-text text-success">{laporan.total.total_barang_terjual}</h2>
+                            <h2 className="card-text text-success">{dataLengkap.total.total_barang_terjual}</h2>
                           </div>
                         </div>
                       </div>
@@ -340,7 +398,7 @@ const LaporanPenjualan = () => {
                         <div className="card bg-light">
                           <div className="card-body text-center">
                             <h5 className="card-title">Total Transaksi</h5>
-                            <h2 className="card-text text-success">{laporan.total.total_transaksi}</h2>
+                            <h2 className="card-text text-success">{dataLengkap.total.total_transaksi}</h2>
                           </div>
                         </div>
                       </div>
@@ -348,7 +406,7 @@ const LaporanPenjualan = () => {
                         <div className="card bg-light">
                           <div className="card-body text-center">
                             <h5 className="card-title">Total Penjualan Kotor</h5>
-                            <h2 className="card-text text-success">{formatRupiah(laporan.total.total_penjualan)}</h2>
+                            <h2 className="card-text text-success">{formatRupiah(dataLengkap.total.total_penjualan)}</h2>
                           </div>
                         </div>
                       </div>
@@ -366,7 +424,7 @@ const LaporanPenjualan = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {laporan.data.map((item, index) => (
+                          {dataLengkap.data.map((item, index) => (
                             <tr key={index}>
                               <td className="text-center">{index + 1}</td>
                               <td>{item.nama_bulan}</td>
@@ -379,9 +437,9 @@ const LaporanPenjualan = () => {
                         <tfoot className="bg-light fw-bold">
                           <tr>
                             <td colSpan="2" className="text-end">TOTAL</td>
-                            <td className="text-center">{laporan.total.total_barang_terjual}</td>
-                            <td className="text-center">{laporan.total.total_transaksi}</td>
-                            <td className="text-end">{formatRupiah(laporan.total.total_penjualan)}</td>
+                            <td className="text-center">{dataLengkap.total.total_barang_terjual}</td>
+                            <td className="text-center">{dataLengkap.total.total_transaksi}</td>
+                            <td className="text-end">{formatRupiah(dataLengkap.total.total_penjualan)}</td>
                           </tr>
                         </tfoot>
                       </Table>

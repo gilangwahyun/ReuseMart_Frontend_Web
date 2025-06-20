@@ -56,6 +56,8 @@ import CSDashboard from '../pages/cs/CSDashboard';
 import KlaimMerchandiseManagement from '../pages/cs/KlaimMerchandiseManagement';
 import DiskusiBarangCS from '../pages/cs/DiskusiBarangCS';
 import RiwayatTransaksiPenitipan from '../pages/pegawaiGudang/RiwayatTransaksiPenitipan';
+import LaporanPenjualanKategoriPage from "../pages/owner/LaporanPenjualanKategoriPage";
+import LaporanPenitipanHabisPage from "../pages/owner/LaporanPenitipanHabisPage";
 
 const AppRoutes = () => {
   return (  
@@ -107,6 +109,8 @@ const AppRoutes = () => {
         <Route path='/owner/laporan-stok' element={< LaporanStokGudangPage />} />
         <Route path='/owner/laporan-penjualan' element={< LaporanPenjualanPage />} />
         <Route path='/owner/laporan-komisi' element={< LaporanKomisiPage />} />
+        <Route path='/owner/laporan-penjualan-kategori' element={< LaporanPenjualanKategoriPage />} />
+        <Route path='/owner/laporan-penitipan-habis' element={< LaporanPenitipanHabisPage />} />
         <Route path='/alamat/pembeli' element={< AlamatForm />} />
         <Route path='/DashboardPegawaiGudang' element={< PegawaiGudangDashboard />} />
         <Route path='/pegawaiGudang/penitipan' element={< PenitipanManagement />} />

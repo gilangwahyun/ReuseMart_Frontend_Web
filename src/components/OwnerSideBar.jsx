@@ -12,6 +12,8 @@ import {
   FaMoneyBillWave,
   FaBoxes,
   FaChartBar,
+  FaCalendarTimes,
+  FaListAlt,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -41,6 +43,8 @@ const OwnerSidebar = () => {
     { to: "/owner/request-donasi", icon: <FaClipboardList />, label: "Request Donasi" },
     { to: "/owner/laporan-transaksi", icon: <FaMoneyBillWave />, label: "Laporan Transaksi" },
     { to: "/owner/laporan-penjualan", icon: <FaChartBar />, label: "Laporan Penjualan" },
+    { to: "/owner/laporan-penjualan-kategori", icon: <FaListAlt />, label: "Laporan Kategori" },
+    { to: "/owner/laporan-penitipan-habis", icon: <FaCalendarTimes />, label: "Laporan Penitipan Habis" },
     { to: "/owner/laporan-stok", icon: <FaBoxes />, label: "Laporan Stok Gudang" },
     { to: "/owner/laporan-komisi", icon: <FaMoneyBillWave />, label: "Laporan Komisi" },
   ];
