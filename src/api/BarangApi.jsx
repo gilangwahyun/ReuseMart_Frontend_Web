@@ -224,6 +224,16 @@ export const updateBarangStatus = async (id, status) => {
   }
 };
 
+export const getSalesReportByCategory = async () => {
+  try {
+    const response = await useAxios.get(`${API_URL}/reports/sales-by-category`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching sales report by category:", error);
+    throw error;
+  }
+};
+
 export const getLaporanStokGudang = async () => {
   try {
     const response = await useAxios.get(`${API_URL}/laporan/stok-gudang`);

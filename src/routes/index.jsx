@@ -11,6 +11,7 @@ import RegisterPenitip from '../pages/auth/RegisterPenitip';
 import DashboardProfilPembeli from '../pages/client/DashboardProfilPembeli';
 import DashboardProfilPenitip from '../pages/client/DashboardProfilPenitip';
 import CRUDPenitip from '../pages/auth/CRUDPenitip';
+import CRUDPenitipCS from '../pages/cs/CRUDPenitipCS';
 import DashboardOrganisasi from '../pages/client/DashboardOrganisasi';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import PegawaiManagement from "../pages/admin/PegawaiManagement";
@@ -119,6 +120,7 @@ const AppRoutes = () => {
         <Route path='/DashboardCS' element={<CSDashboard />} />
         <Route path='/cs/klaim-merchandise' element={<KlaimMerchandiseManagement />} />
         <Route path='/cs/diskusi-barang' element={<DiskusiBarangCS />} />
+        <Route path='/cs/crud-penitip' element={<CRUDPenitipCS />} />
       </Routes>
     </Router>
   );

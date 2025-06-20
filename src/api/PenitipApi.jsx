@@ -17,6 +17,21 @@ export const registerPenitip = async (data) => {
   }
 };
 
+// Create penitip (untuk digunakan di CRUD seperti di PegawaiManagement)
+export const createPenitip = async (data) => {
+  try {
+    const response = await useAxios.post(API_URL, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Create penitip error:", error);
+    throw error;
+  }
+};
+
 // Tampilkan semua penitip
 export const getAllPenitip = async () => {
   try {
@@ -68,7 +83,14 @@ export const getPenitipByUserId = async (id_user) => {
 // Update penitip
 export const updatePenitip = async (id, data) => {
   try {
-    const response = await useAxios.put(`/penitip/${id}`, data);
+    // Cek apakah data adalah instance dari FormData
+    const isFormData = data instanceof FormData;
+    
+    const response = await useAxios.put(`/penitip/${id}`, data, {
+      headers: isFormData ? {
+        'Content-Type': 'multipart/form-data'
+      } : {}
+    });
     return response.data;
   } catch (error) {
     console.error(`Error saat update penitip ID ${id}:`, error);

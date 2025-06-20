@@ -61,6 +61,22 @@ export const getByIdBarang = async (id) => {
   }
 };
 
+// Get expired consignments report
+export const getExpiredConsignmentsReport = async () => {
+  try {
+    // Use real data from the database
+    const response = await useAxios.get(`${API_URL}/expired/report`);
+    
+    // Sample data endpoint is commented out, only for reference
+    // const response = await useAxios.get(`${API_URL}/sample/expired`);
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching expired consignments report:", error);
+    throw error;
+  }
+};
+
 // Memperpanjang masa penitipan barang
 export const extendPenitipanBarang = async (id, extendData) => {
   try {
