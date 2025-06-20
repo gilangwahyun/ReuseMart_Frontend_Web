@@ -9,6 +9,7 @@ import HorizontalNavProfilPenitip from "../../components/HorizontalNavProfilPeni
 import DaftarPenitipanBarang from "../../components/penitip/DaftarPenitipanBarang";
 import RequestPengambilanBarang from "../../components/penitip/RequestPengambilanBarang";
 import RequestPerpanjanganPenitipan from "../../components/penitip/RequestPerpanjanganPenitipan";
+import { FaUserCircle } from "react-icons/fa";
 
 export default function DashboardProfilPenitip() {
   const { id_user } = useParams();
@@ -143,63 +144,62 @@ export default function DashboardProfilPenitip() {
 
   if (loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="success" />
-        <p className="mt-3">Sedang memuat dashboard Anda...</p>
+      <Container fluid className="py-5 px-4 bg-light min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <Spinner animation="border" variant="success" style={{ width: "3rem", height: "3rem" }} />
+          <p className="mt-3 text-muted">Sedang memuat profil Anda...</p>
+        </div>
       </Container>
     );
   }
 
   if (error) {
     return (
-      <Container className="py-5">
-        <Alert variant="danger" className="text-center">{error}</Alert>
-        <div className="text-center mt-3">
-          <button 
-            className="btn btn-success" 
-            onClick={() => navigate('/')}
-          >
-            Kembali ke Beranda
-          </button>
-        </div>
+      <Container fluid className="py-5 px-4 bg-light min-vh-100 d-flex align-items-center justify-content-center">
+        <Alert variant="danger" className="text-center shadow-sm">
+          <h5 className="mb-2">Terjadi Kesalahan</h5>
+          <p className="mb-0">{error}</p>
+        </Alert>
       </Container>
     );
   }
 
   return (
-    <Container fluid className="py-4 px-4 bg-light min-vh-100">
-      <Row className="mb-4">
-        <Col>
-          <Card className="border-0 shadow-sm border-success">
-            <Card.Body className="py-3">
-              <h3 className="mb-0 text-success">
-                Selamat datang, {profile?.data?.nama_penitip || "Penitip"}
+    <Container fluid className="p-0 bg-light min-vh-100">
+      {/* Header Hero Section */}
+      <div className="bg-success text-white py-4 px-4 mb-4">
+        <Container>
+          <Row className="align-items-center">
+            <Col xs="auto">
+              <div className="bg-white rounded-circle p-3 shadow-sm">
+                <FaUserCircle size={50} className="text-success" />
+              </div>
+            </Col>
+            <Col>
+              <h3 className="fw-bold mb-1">
+                Halo, {profile?.data?.nama_penitip || "Penitip"}!
               </h3>
-              <p className="text-muted mb-0">
-                Berikut adalah informasi akun penitip Anda.
+              <p className="mb-0 opacity-75">
+                Selamat datang di Dashboard Profil Penitip ReuseMart
               </p>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+            </Col>
+          </Row>
+        </Container>
+      </div>
 
-      {/* Nav horizontal di atas */}
-      <Row className="mb-3">
-        <Col>
-          <HorizontalNavProfilPenitip
-            activeKey={activeTab}
-            onSelect={handleTabSelect}
-            hasSelectedTransaction={selectedTx !== null}
-          />
-        </Col>
-      </Row>
+      <Container>
+        {/* Nav horizontal di atas */}
+        <HorizontalNavProfilPenitip
+          activeKey={activeTab}
+          onSelect={handleTabSelect}
+          hasSelectedTransaction={selectedTx !== null}
+        />
 
-      {/* Konten utama */}
-      <Row>
-        <Col>
-          <Card className="border-0 shadow-sm p-3 border-success">{renderContent()}</Card>
-        </Col>
-      </Row>
+        {/* Konten utama */}
+        <div className="content-wrapper">
+          {renderContent()}
+        </div>
+      </Container>
     </Container>
   );
 } 

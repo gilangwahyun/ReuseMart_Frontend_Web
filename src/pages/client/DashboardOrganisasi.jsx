@@ -8,10 +8,12 @@ import {
   createRequestDonasiByOrganisasi,
 } from '../../api/RequestDonasiApi';
 import { getOrganisasi } from '../../api/OrganisasiApi';
+import { useNavigate } from 'react-router-dom';
 import ListRequestDonasi from '../../components/ListRequestDonasi';
 import BuatRequestDonasi from '../../components/BuatRequestDonasi';
-import SidebarDashboardOrganisasi from '../../components/SidebarDashboardOrganisasi';
-import { FaUser, FaMapMarkerAlt, FaPhoneAlt, FaInfoCircle, FaCalendarAlt, FaClipboardList, FaPlus, FaUserAlt } from 'react-icons/fa';
+import HorizontalNavOrganisasi from '../../components/HorizontalNavOrganisasi';
+import { FaUser, FaMapMarkerAlt, FaPhoneAlt, FaInfoCircle, FaCalendarAlt, FaClipboardList, FaPlus, FaUserCircle, FaChartBar, FaTimes, FaBars, FaSignOutAlt } from 'react-icons/fa';
+import { Nav, Spinner } from 'react-bootstrap';
 
 const DashboardOrganisasi = () => {
   const [organisasi, setOrganisasi] = useState(null);
@@ -21,6 +23,7 @@ const DashboardOrganisasi = () => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('profile');
   const [statusFilter, setStatusFilter] = useState('all');
+  const navigate = useNavigate();
 
   // Safely get user data from localStorage
   const getUserData = () => {
@@ -171,18 +174,28 @@ const DashboardOrganisasi = () => {
   // Render content based on active tab
   const renderContent = () => {
     if (loading) {
-      return <div className="text-center py-5">Memuat data...</div>;
+      return (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="success" style={{ width: "3rem", height: "3rem" }} />
+          <p className="mt-3 text-muted">Sedang memuat data...</p>
+        </div>
+      );
     }
     
     if (error) {
-      return <Alert variant="danger" className="my-3">{error}</Alert>;
+      return (
+        <Alert variant="danger" className="my-3 shadow-sm">
+          <h5 className="mb-2">Terjadi Kesalahan</h5>
+          <p className="mb-0">{error}</p>
+        </Alert>
+      );
     }
 
     switch (activeTab) {
       case 'profile':
         return (
           <Card className="shadow-sm mb-4 border-0">
-            <Card.Header className="bg-primary text-white py-3">
+            <Card.Header className="bg-success text-white py-3">
               <h5 className="mb-0">Profil Organisasi</h5>
             </Card.Header>
             
@@ -190,7 +203,7 @@ const DashboardOrganisasi = () => {
               <>
                 <div className="bg-light text-center py-4 border-bottom">
                   <div className="mb-3">
-                    <div className="mx-auto rounded-circle bg-primary d-flex align-items-center justify-content-center" 
+                    <div className="mx-auto rounded-circle bg-success d-flex align-items-center justify-content-center" 
                          style={{width: '100px', height: '100px'}}>
                       <FaUser size={40} className="text-white" />
                     </div>
@@ -252,31 +265,38 @@ const DashboardOrganisasi = () => {
       case 'list-request':
         return (
           <>
-            <Row className="mb-3">
-              <Col md={8}>
-                <Form.Group>
-                  <Form.Control
-                    type="text"
-                    placeholder="Cari deskripsi request donasi..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Select 
-                    value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value)}
-                  >
-                    <option value="all">Semua Status</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Sudah Disetujui">Sudah Disetujui</option>
-                    <option value="Ditolak">Ditolak</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
+            <Card className="shadow-sm border-0 mb-4">
+              <Card.Header className="bg-success text-white py-3">
+                <h5 className="mb-0">Filter Request Donasi</h5>
+              </Card.Header>
+              <Card.Body>
+                <Row className="mb-3">
+                  <Col md={8}>
+                    <Form.Group>
+                      <Form.Control
+                        type="text"
+                        placeholder="Cari deskripsi request donasi..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Select 
+                        value={statusFilter}
+                        onChange={e => setStatusFilter(e.target.value)}
+                      >
+                        <option value="all">Semua Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Sudah Disetujui">Sudah Disetujui</option>
+                        <option value="Ditolak">Ditolak</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
             <ListRequestDonasi
               requests={filteredRequests}
               onDelete={handleDelete}
@@ -288,17 +308,19 @@ const DashboardOrganisasi = () => {
         return <BuatRequestDonasi onCreate={handleCreate} />;
       case 'statistics':
         return (
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-info text-white">
+          <Card className="shadow-sm mb-4 border-0">
+            <Card.Header className="bg-success text-white py-3">
               <h5 className="mb-0">Statistik Donasi</h5>
             </Card.Header>
-            <Card.Body>
-              <p className="text-center text-muted">Fitur statistik donasi akan segera hadir!</p>
+            <Card.Body className="py-5 text-center">
+              <FaChartBar size={48} className="text-success mb-3 opacity-50" />
+              <h5 className="mb-2">Fitur Statistik Donasi</h5>
+              <p className="text-muted mb-0">Fitur statistik donasi akan segera hadir!</p>
             </Card.Body>
           </Card>
         );
       default:
-        return <Alert variant="info">Silakan pilih menu di sidebar</Alert>;
+        return <Alert variant="info">Silakan pilih menu di atas</Alert>;
     }
   };
 
@@ -309,7 +331,7 @@ const DashboardOrganisasi = () => {
     // Calculate statistics
     const pendingRequests = requests.filter(r => r?.status_pengajuan === 'Pending').length;
     const approvedRequests = requests.filter(r => r?.status_pengajuan === 'Sudah Disetujui').length;
-    const rejectedRequests = requests.filter(r => r?.status_pengajuan === 'Rejected').length;
+    const rejectedRequests = requests.filter(r => r?.status_pengajuan === 'Ditolak').length;
     
     return (
       <Row className="mb-4">
@@ -343,7 +365,7 @@ const DashboardOrganisasi = () => {
           <Card className="border-0 shadow-sm h-100">
             <Card.Body className="d-flex align-items-center">
               <div className="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-                <FaUserAlt className="text-warning" size={24} />
+                <FaUser className="text-warning" size={24} />
               </div>
               <div>
                 <h6 className="mb-0 text-muted">Pending</h6>
@@ -356,32 +378,66 @@ const DashboardOrganisasi = () => {
     );
   };
 
-  // Add debugging
-  console.log("Rendering Dashboard:", { 
-    user: !!user, 
-    organisasi: !!organisasi, 
-    requestsCount: requests.length, 
-    activeTab 
-  });
+  if (loading) {
+    return (
+      <Container fluid className="py-5 px-4 bg-light min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <Spinner animation="border" variant="success" style={{ width: "3rem", height: "3rem" }} />
+          <p className="mt-3 text-muted">Sedang memuat data organisasi...</p>
+        </div>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container fluid className="py-5 px-4 bg-light min-vh-100 d-flex align-items-center justify-content-center">
+        <Alert variant="danger" className="text-center shadow-sm">
+          <h5 className="mb-2">Terjadi Kesalahan</h5>
+          <p className="mb-0">{error}</p>
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
-    <Container fluid className="py-4">
-      <Row>
-        <Col md={3}>
-          <SidebarDashboardOrganisasi activeKey={activeTab} onSelect={(k) => setActiveTab(k)} />
-        </Col>
-        <Col md={9}>
-          <Card className="border-0 shadow-sm mb-4">
-            <Card.Body>
-              <h2 className="mb-0">Dashboard Organisasi</h2>
-              {organisasi && <p className="text-muted mb-0">{organisasi.nama_organisasi || ''}</p>}
-            </Card.Body>
-          </Card>
-          
-          {!loading && !error && getDashboardSummary()}
+    <Container fluid className="p-0 bg-light min-vh-100">
+      {/* Header Hero Section */}
+      <div className="bg-success text-white py-4 px-4 mb-4">
+        <Container>
+          <Row className="align-items-center">
+            <Col xs="auto">
+              <div className="bg-white rounded-circle p-3 shadow-sm">
+                <FaUserCircle size={50} className="text-success" />
+              </div>
+            </Col>
+            <Col>
+              <h3 className="fw-bold mb-1">
+                {organisasi?.nama_organisasi || "Organisasi"}
+              </h3>
+              <p className="mb-0 opacity-75">
+                Dashboard Organisasi ReuseMart
+              </p>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+
+      <Container>
+        {/* Nav horizontal di atas */}
+        <HorizontalNavOrganisasi
+          activeKey={activeTab}
+          onSelect={(k) => setActiveTab(k)}
+        />
+
+        {/* Dashboard Summary */}
+        {getDashboardSummary()}
+        
+        {/* Konten utama */}
+        <div className="content-wrapper">
           {renderContent()}
-        </Col>
-      </Row>
+        </div>
+      </Container>
     </Container>
   );
 };
