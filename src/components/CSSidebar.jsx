@@ -8,6 +8,7 @@ import {
   FaSignOutAlt,
   FaGift,
   FaComments,
+  FaUsers,
 } from "react-icons/fa";
 import { Logout } from "../api/AuthApi";
 
@@ -34,6 +35,7 @@ const CSSidebar = () => {
     { to: "/VerifikasiPembayaranCS", icon: <FaMoneyCheckAlt />, label: "Verifikasi Pembayaran" },
     { to: "/cs/klaim-merchandise", icon: <FaGift />, label: "Klaim Merchandise" },
     { to: "/cs/diskusi-barang", icon: <FaComments />, label: "Diskusi Barang" },
+    { to: "/cs/crud-penitip", icon: <FaUsers />, label: "Kelola Penitip" },
   ];
 
   return (
