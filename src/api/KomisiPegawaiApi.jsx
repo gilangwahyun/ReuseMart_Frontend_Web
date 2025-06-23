@@ -2,32 +2,54 @@ import useAxios from ".";
 
 const API_URL = "/komisiPegawai";
 
-// Mendapatkan semua data komisi pegawai
-export const getAllKomisiPegawai = async () => {
+// Ambil semua data komisi pegawai
+export const getKomisiPegawai = async () => {
   try {
-    const response = await useAxios.get(API_URL);
-    return response.data.data;
+    const response = await useAxios.get("/komisiPegawai");
+    return response.data;
   } catch (error) {
-    console.error("Error fetching komisi pegawai:", error);
+    console.error("Error fetching komisi pegawai data:", error);
     throw error;
   }
 };
 
-// Mendapatkan data komisi pegawai berdasarkan ID
+// Ambil data komisi pegawai berdasarkan ID
 export const getKomisiPegawaiById = async (id) => {
   try {
-    const response = await useAxios.get(`${API_URL}/${id}`);
-    return response.data.data;
+    const response = await useAxios.get(`/komisiPegawai/${id}`);
+    return response.data;
   } catch (error) {
-    console.error(`Error fetching komisi pegawai dengan ID ${id}:`, error);
+    console.error(`Error fetching komisi pegawai with id ${id}:`, error);
     throw error;
   }
 };
 
-// Menambahkan komisi pegawai baru
-export const createKomisiPegawai = async (data) => {
+// Ambil data komisi pegawai berdasarkan ID transaksi
+export const getKomisiPegawaiByTransaksi = async (id_transaksi) => {
   try {
-    const response = await useAxios.post(API_URL, data);
+    const response = await useAxios.get(`/komisiPegawai/transaksi/${id_transaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching komisi pegawai for transaksi ${id_transaksi}:`, error);
+    throw error;
+  }
+};
+
+// Ambil data komisi pegawai berdasarkan ID detail transaksi
+export const getKomisiPegawaiByDetailTransaksi = async (id_detail_transaksi) => {
+  try {
+    const response = await useAxios.get(`/komisiPegawai/detailTransaksi/${id_detail_transaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching komisi pegawai for detail transaksi ${id_detail_transaksi}:`, error);
+    throw error;
+  }
+};
+
+// Tambah data komisi pegawai baru
+export const createKomisiPegawai = async (komisiData) => {
+  try {
+    const response = await useAxios.post("/komisiPegawai", komisiData);
     return response.data;
   } catch (error) {
     console.error("Error creating komisi pegawai:", error);
@@ -35,46 +57,42 @@ export const createKomisiPegawai = async (data) => {
   }
 };
 
-// Memperbarui komisi pegawai berdasarkan ID
-export const updateKomisiPegawai = async (id, data) => {
+// Batch create untuk komisi pegawai
+export const createBatchKomisiPegawai = async (komisiArray) => {
   try {
-    const response = await useAxios.put(`${API_URL}/${id}`, data);
+    if (!komisiArray || komisiArray.length === 0) {
+      return { message: "No komisi data provided" };
+    }
+    
+    const response = await useAxios.post("/komisiPegawai/batch", {
+      komisi: komisiArray
+    });
+    
     return response.data;
   } catch (error) {
-    console.error(`Error updating komisi pegawai dengan ID ${id}:`, error);
+    console.error("Error creating batch komisi pegawai:", error);
     throw error;
   }
 };
 
-// Membuat komisi pegawai secara batch
-export const createBatchKomisiPegawai = async (batchKomisi) => {
+// Update data komisi pegawai
+export const updateKomisiPegawai = async (id, komisiData) => {
   try {
-    const response = await useAxios.post('/komisiPegawai/batch', { komisi: batchKomisi });
+    const response = await useAxios.put(`/komisiPegawai/${id}`, komisiData);
     return response.data;
   } catch (error) {
-    console.error("Error creating batch KomisiPegawai:", error);
+    console.error(`Error updating komisi pegawai ${id}:`, error);
     throw error;
   }
 };
 
-// Menghapus komisi pegawai berdasarkan ID
+// Hapus data komisi pegawai
 export const deleteKomisiPegawai = async (id) => {
   try {
-    const response = await useAxios.delete(`${API_URL}/${id}`);
+    const response = await useAxios.delete(`/komisiPegawai/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error deleting komisi pegawai dengan ID ${id}:`, error);
-    throw error;
-  }
-};
-
-// Mendapatkan komisi pegawai berdasarkan ID transaksi
-export const getKomisiPegawaiByTransaksi = async (idTransaksi) => {
-  try {
-    const response = await useAxios.get(`/komisiPegawai/transaksi/${idTransaksi}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching KomisiPegawai by transaksi:", error);
+    console.error(`Error deleting komisi pegawai ${id}:`, error);
     throw error;
   }
 };

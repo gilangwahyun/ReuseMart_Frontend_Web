@@ -25,6 +25,8 @@ const JadwalTable = ({
         return <Badge bg="success">Sudah Diambil</Badge>;
       case "Sudah Sampai":
         return <Badge bg="success">Sudah Sampai</Badge>;
+      case "Selesai":
+        return <Badge bg="success">Selesai</Badge>;
       case "Hangus":
         return <Badge bg="danger">Hangus</Badge>;
       case "Dibatalkan":
@@ -42,6 +44,11 @@ const JadwalTable = ({
 
   const isCourierDelivery = (item) => {
     return item && item.pegawai && item.id_pegawai;
+  };
+  
+  const handleStatusUpdate = (jadwalId, newStatus) => {
+    console.log(`JadwalTable: handleStatusUpdate called with jadwalId=${jadwalId}, newStatus=${newStatus}`);
+    updateStatusJadwal(jadwalId, newStatus);
   };
 
   if (loading) {
@@ -103,7 +110,7 @@ const JadwalTable = ({
                         variant="primary"
                         size="sm"
                         className="w-100"
-                        onClick={() => updateStatusJadwal(item.id_jadwal, "Sedang di Kurir")}
+                        onClick={() => handleStatusUpdate(item.id_jadwal, "Sedang di Kurir")}
                         disabled={processingStatus}
                         title="Tandai barang sedang di kurir dan kirim notifikasi"
                       >
@@ -113,7 +120,7 @@ const JadwalTable = ({
                         variant="success"
                         size="sm"
                         className="w-100"
-                        onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Sampai")}
+                        onClick={() => handleStatusUpdate(item.id_jadwal, "Sudah Sampai")}
                         disabled={processingStatus}
                         title="Tandai barang sudah sampai dan kirim notifikasi"
                       >
@@ -127,7 +134,7 @@ const JadwalTable = ({
                       variant="success"
                       size="sm"
                       className="w-100"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Diambil")}
+                      onClick={() => handleStatusUpdate(item.id_jadwal, "Sudah Diambil")}
                       disabled={processingStatus}
                       title="Tandai barang sudah diambil dan kirim notifikasi"
                     >
@@ -140,7 +147,7 @@ const JadwalTable = ({
                       variant="success"
                       size="sm"
                       className="w-100"
-                      onClick={() => updateStatusJadwal(item.id_jadwal, "Sudah Sampai")}
+                      onClick={() => handleStatusUpdate(item.id_jadwal, "Sudah Sampai")}
                       disabled={processingStatus}
                       title="Tandai barang sudah sampai dan kirim notifikasi"
                     >
@@ -149,6 +156,7 @@ const JadwalTable = ({
                   )}
                   
                   {(item.status_jadwal !== "Sudah Sampai" && 
+                    item.status_jadwal !== "Selesai" && 
                     item.status_jadwal !== "Hangus" && 
                     item.status_jadwal !== "Sudah Diambil") && (
                     <Button
@@ -157,6 +165,21 @@ const JadwalTable = ({
                       className="w-100"
                       onClick={() => handleCetakNota(item.id_jadwal)}
                       title={isCourierDelivery(item) ? "Cetak nota pengiriman" : "Cetak nota pengambilan"}
+                    >
+                      <i className="bi bi-printer"></i> Cetak Nota
+                    </Button>
+                  )}
+                  
+                  {(item.status_jadwal === "Sudah Sampai" || 
+                    item.status_jadwal === "Selesai" || 
+                    item.status_jadwal === "Sudah Diambil" || 
+                    item.status_jadwal === "Hangus") && (
+                    <Button
+                      variant="info"
+                      size="sm"
+                      className="w-100"
+                      onClick={() => handleCetakNota(item.id_jadwal)}
+                      title="Cetak nota"
                     >
                       <i className="bi bi-printer"></i> Cetak Nota
                     </Button>

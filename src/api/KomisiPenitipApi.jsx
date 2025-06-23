@@ -2,32 +2,54 @@ import useAxios from ".";
 
 const API_URL = "/komisiPenitip";
 
-// Mendapatkan semua data komisi penitip
-export const getAllKomisiPenitip = async () => {
+// Ambil semua data komisi penitip
+export const getKomisiPenitip = async () => {
   try {
-    const response = await useAxios.get(API_URL);
-    return response.data.data;
+    const response = await useAxios.get("/komisiPenitip");
+    return response.data;
   } catch (error) {
-    console.error("Error fetching komisi penitip:", error);
+    console.error("Error fetching komisi penitip data:", error);
     throw error;
   }
 };
 
-// Mendapatkan data komisi penitip berdasarkan ID
+// Ambil data komisi penitip berdasarkan ID
 export const getKomisiPenitipById = async (id) => {
   try {
-    const response = await useAxios.get(`${API_URL}/${id}`);
-    return response.data.data;
+    const response = await useAxios.get(`/komisiPenitip/${id}`);
+    return response.data;
   } catch (error) {
-    console.error(`Error fetching komisi penitip dengan ID ${id}:`, error);
+    console.error(`Error fetching komisi penitip with id ${id}:`, error);
     throw error;
   }
 };
 
-// Menambahkan komisi penitip baru
-export const createKomisiPenitip = async (data) => {
+// Ambil data komisi penitip berdasarkan ID transaksi
+export const getKomisiPenitipByTransaksi = async (id_transaksi) => {
   try {
-    const response = await useAxios.post(API_URL, data);
+    const response = await useAxios.get(`/komisiPenitip/transaksi/${id_transaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching komisi penitip for transaksi ${id_transaksi}:`, error);
+    throw error;
+  }
+};
+
+// Ambil data komisi penitip berdasarkan ID detail transaksi
+export const getKomisiPenitipByDetailTransaksi = async (id_detail_transaksi) => {
+  try {
+    const response = await useAxios.get(`/komisiPenitip/detailTransaksi/${id_detail_transaksi}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching komisi penitip for detail transaksi ${id_detail_transaksi}:`, error);
+    throw error;
+  }
+};
+
+// Tambah data komisi penitip baru
+export const createKomisiPenitip = async (komisiData) => {
+  try {
+    const response = await useAxios.post("/komisiPenitip", komisiData);
     return response.data;
   } catch (error) {
     console.error("Error creating komisi penitip:", error);
@@ -35,46 +57,46 @@ export const createKomisiPenitip = async (data) => {
   }
 };
 
-// Memperbarui komisi penitip berdasarkan ID
-export const updateKomisiPenitip = async (id, data) => {
+// Batch create untuk komisi penitip
+export const createBatchKomisiPenitip = async (komisiArray) => {
   try {
-    const response = await useAxios.put(`${API_URL}/${id}`, data);
+    if (!komisiArray || komisiArray.length === 0) {
+      return { message: "No komisi data provided" };
+    }
+    
+    const response = await useAxios.post("/komisiPenitip/batch", {
+      komisi: komisiArray
+    });
+    
     return response.data;
   } catch (error) {
-    console.error(`Error updating komisi penitip dengan ID ${id}:`, error);
+    console.error("Error creating batch komisi penitip:", error);
     throw error;
   }
 };
 
-export const createBatchKomisiPenitip = async (batchKomisi) => {
+// Update data komisi penitip
+export const updateKomisiPenitip = async (id, komisiData) => {
   try {
-    const response = await useAxios.post('/komisiPenitip/batch', { komisi: batchKomisi });
+    const response = await useAxios.put(`/komisiPenitip/${id}`, komisiData);
     return response.data;
   } catch (error) {
-    console.error("Error creating batch KomisiPenitip:", error);
+    console.error(`Error updating komisi penitip ${id}:`, error);
+    throw error;
   }
 };
 
-// Menghapus komisi penitip berdasarkan ID
+// Hapus data komisi penitip
 export const deleteKomisiPenitip = async (id) => {
   try {
-    const response = await useAxios.delete(`${API_URL}/${id}`);
+    const response = await useAxios.delete(`/komisiPenitip/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error deleting komisi penitip dengan ID ${id}:`, error);
+    console.error(`Error deleting komisi penitip ${id}:`, error);
     throw error;
   }
 };
 
-export const getKomisiPenitipByTransaksi = async (idTransaksi) => {
-  try {
-    const response = await useAxios.get(`/komisiPenitip/transaksi/${idTransaksi}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching KomisiPenitip by transaksi:", error);
-  }
-};
-    
 // Mendapatkan laporan komisi penitip bulanan
 export const getLaporanKomisiPenitipBulanan = async (tahun, bulan = null, idPenitip = null) => {
   try {

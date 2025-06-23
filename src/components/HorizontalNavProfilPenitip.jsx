@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaUser, FaHistory, FaReceipt, FaBars, FaTimes, FaBoxOpen, FaHandPaper, FaCalendarPlus, FaSignOutAlt } from "react-icons/fa";
+import { FaUser, FaHistory, FaReceipt, FaBars, FaTimes, FaBoxOpen, FaHandPaper, FaCalendarPlus, FaSignOutAlt, FaMoneyBill } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { Logout } from "../api/AuthApi";
 
@@ -31,7 +31,8 @@ const HorizontalNavProfilPenitip = ({
     { key: "penitipan", icon: <FaBoxOpen />, label: "Penitipan Barang" },
     { key: "request-pengambilan", icon: <FaHandPaper />, label: "Request Pengambilan" },
     { key: "request-perpanjangan", icon: <FaCalendarPlus />, label: "Request Perpanjangan" },
-    { key: "history", icon: <FaHistory />, label: "Riwayat Transaksi" },
+    // { key: "history", icon: <FaHistory />, label: "Riwayat Transaksi" },
+    { key: "penarikan-saldo", icon: <FaMoneyBill/>, label: "Penarikan Saldo"},
   ];
 
   if (hasSelectedTransaction) {

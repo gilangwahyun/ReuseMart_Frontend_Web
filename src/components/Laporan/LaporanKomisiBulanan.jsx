@@ -56,7 +56,7 @@ const LaporanKomisiBulanan = () => {
     try {
       const response = await getLaporanKomisi(year, month);
       setLaporan(response);
-      console.log(response);
+      console.log("Laporan komisi data:", response);
       setError(null);
     } catch (err) {
       console.error("Error fetching laporan komisi:", err);
@@ -91,7 +91,7 @@ const LaporanKomisiBulanan = () => {
 
     // Tabel data
     const tableColumn = [
-      "No", "ID Transaksi", "ID Barang", "Nama Barang", "Harga Jual", 
+      "No", "ID Transaksi", "ID Detail", "ID Barang", "Nama Barang", "Harga Jual", 
       "Tanggal Masuk", "Tanggal Laku", "Komisi Hunter", 
       "Komisi ReUse Mart", "Bonus Penitip"
     ];
@@ -99,6 +99,7 @@ const LaporanKomisiBulanan = () => {
     const tableRows = laporan.data.map((item, index) => [
       index + 1,
       item.id_transaksi,
+      item.id_detail_transaksi,
       item.id_barang,
       item.nama_barang,
       formatRupiah(item.harga_jual),
@@ -111,7 +112,7 @@ const LaporanKomisiBulanan = () => {
 
     // Tambahkan baris total
     tableRows.push([
-      "", "", "", "TOTAL", "", "", "",
+      "", "", "", "", "TOTAL", "", "", "",
       formatRupiah(laporan.total.total_komisi_hunter),
       formatRupiah(laporan.total.total_komisi_reuse_mart),
       formatRupiah(laporan.total.total_bonus_penitip)
@@ -227,6 +228,7 @@ const LaporanKomisiBulanan = () => {
                           <tr>
                             <th className="text-center">No</th>
                             <th>ID Transaksi</th>
+                            <th>ID Detail</th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
                             <th className="text-end">Harga Jual</th>
@@ -242,6 +244,7 @@ const LaporanKomisiBulanan = () => {
                             <tr key={index}>
                               <td className="text-center">{index + 1}</td>
                               <td>{item.id_transaksi}</td>
+                              <td>{item.id_detail_transaksi}</td>
                               <td>{item.id_barang}</td>
                               <td>{item.nama_barang}</td>
                               <td className="text-end">{formatRupiah(item.harga_jual)}</td>
@@ -255,13 +258,13 @@ const LaporanKomisiBulanan = () => {
                         </tbody>
                         <tfoot className="bg-light fw-bold">
                           <tr>
-                            <td colSpan="7" className="text-end">TOTAL</td>
+                            <td colSpan="8" className="text-end">TOTAL</td>
                             <td className="text-end">{formatRupiah(laporan.total.total_komisi_hunter)}</td>
                             <td className="text-end">{formatRupiah(laporan.total.total_komisi_reuse_mart)}</td>
                             <td className="text-end">{formatRupiah(laporan.total.total_bonus_penitip)}</td>
                           </tr>
                           <tr>
-                            <td colSpan="7" className="text-end">TOTAL KESELURUHAN</td>
+                            <td colSpan="8" className="text-end">TOTAL KESELURUHAN</td>
                             <td colSpan="3" className="text-end">{formatRupiah(laporan.total.total_keseluruhan)}</td>
                           </tr>
                         </tfoot>

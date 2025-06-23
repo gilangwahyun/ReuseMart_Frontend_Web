@@ -146,7 +146,8 @@ const PenjadwalanPage = () => {
       console.log("Creating company commission for hangus item:", jadwalData);
       
       // Get transaction details
-      const detailTransaksi = await getDetailTransaksiByTransaksi(jadwalData.id_transaksi);
+      const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${jadwalData.id_transaksi}`);
+      const detailTransaksi = detailTransaksiResponse.data;
       
       if (!detailTransaksi || detailTransaksi.length === 0) {
         console.warn("No transaction details found, skipping commission creation");
@@ -157,38 +158,29 @@ const PenjadwalanPage = () => {
       
       // Check first if any commissions already exist
       try {
-        const existingCommissions = await useAxios.get(`/komisiPerusahaan/transaksi/${jadwalData.id_transaksi}`);
-        if (existingCommissions.data && existingCommissions.data.length > 0) {
-          console.log(`Found existing commissions for transaction ${jadwalData.id_transaksi}, skipping creation`);
-          return;
+        // Check using the first detail transaction as a sample
+        if (detailTransaksi.length > 0) {
+          const firstDetailId = detailTransaksi[0].id_detail_transaksi;
+          const existingCommissions = await useAxios.get(`/komisiPerusahaan/detailTransaksi/${firstDetailId}`);
+          if (existingCommissions.data && existingCommissions.data.length > 0) {
+            console.log(`Found existing commissions for detail transaction, skipping creation`);
+            return;
+          }
         }
       } catch (error) {
         // If 404 or any error, assume no commissions exist and continue
-        console.log(`No existing commissions found for transaction ${jadwalData.id_transaksi}, proceeding with creation`);
+        console.log(`No existing commissions found, proceeding with creation`);
       }
       
-      // Get only unique items
-      const uniqueItemsMap = new Map();
-      detailTransaksi.forEach(item => {
-        if (item && item.id_barang) {
-          if (!uniqueItemsMap.has(item.id_barang)) {
-            uniqueItemsMap.set(item.id_barang, item);
-          }
-        }
-      });
-      
-      const uniqueItems = Array.from(uniqueItemsMap.values());
-      console.log(`Creating commissions for ${uniqueItems.length} unique items`);
-      
       // Create company kommissions for each item (20% of item price)
-      const komisiEntries = uniqueItems.map(item => {
-        const komisiPerusahaan = item.harga_item * 0.20;
-        console.log(`Computing commission for item ${item.id_barang}: ${komisiPerusahaan}`);
+      const komisiEntries = detailTransaksi.map(detail => {
+        const hargaItem = detail.harga_item || 0;
+        const komisiPerusahaan = hargaItem * 0.20;
+        console.log(`Computing commission for detail ${detail.id_detail_transaksi}: ${komisiPerusahaan}`);
         
         return {
-          id_transaksi: jadwalData.id_transaksi,
-          jumlah_komisi: komisiPerusahaan,
-          id_barang: item.id_barang
+          id_detail_transaksi: detail.id_detail_transaksi,
+          jumlah_komisi: komisiPerusahaan
         };
       });
       
@@ -209,134 +201,405 @@ const PenjadwalanPage = () => {
     }
   };
 
+  // Fungsi untuk memeriksa komisi yang sudah ada
+  const checkExistingCommissions = async (id_transaksi) => {
+    try {
+      console.log(`Checking existing commissions for transaction ID: ${id_transaksi}`);
+      
+      // Get transaction details
+      const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${id_transaksi}`);
+      
+      // Periksa respon dan pastikan berupa array
+      if (!detailTransaksiResponse || !detailTransaksiResponse.data) {
+        console.log("No valid response for transaction details");
+        return { found: false, message: "No valid response for transaction details" };
+      }
+      
+      // Handle different response structures
+      let detailTransaksi = [];
+      if (detailTransaksiResponse.data.success !== undefined) {
+        // API is returning { success: true, message: "...", data: [...] } format
+        console.log("Using data field from success/data structure");
+        detailTransaksi = detailTransaksiResponse.data.data || [];
+      } else if (Array.isArray(detailTransaksiResponse.data)) {
+        // API is directly returning array
+        detailTransaksi = detailTransaksiResponse.data;
+      } else {
+        console.warn("Unexpected response format from API:", detailTransaksiResponse.data);
+        detailTransaksi = [];
+      }
+        
+      if (detailTransaksi.length === 0) {
+        console.log("No transaction details found for commission check");
+        return { found: false, message: "No transaction details found" };
+      }
+      
+      console.log(`Found ${detailTransaksi.length} detail transactions to check`);
+      
+      // Check the first detail transaction for commissions
+      if (!detailTransaksi[0] || !detailTransaksi[0].id_detail_transaksi) {
+        console.log("Detail transaction data is missing id_detail_transaksi");
+        return { found: false, message: "Invalid detail transaction data" };
+      }
+      
+      const firstDetailId = detailTransaksi[0].id_detail_transaksi;
+      
+      // Check for komisi perusahaan
+      try {
+        const komisiPerusahaan = await useAxios.get(`/komisiPerusahaan/detailTransaksi/${firstDetailId}`);
+        if (komisiPerusahaan && komisiPerusahaan.data) {
+          console.log("Komisi perusahaan found:", komisiPerusahaan.data);
+          return { 
+            found: true, 
+            type: "perusahaan", 
+            data: komisiPerusahaan.data,
+            message: "Komisi perusahaan sudah ada untuk transaksi ini" 
+          };
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          console.log("No komisi perusahaan found for this detail transaction (404)");
+        } else {
+          console.error("Error checking komisi perusahaan:", error);
+        }
+      }
+      
+      // Check for komisi pegawai
+      try {
+        const komisiPegawai = await useAxios.get(`/komisiPegawai/detailTransaksi/${firstDetailId}`);
+        if (komisiPegawai && komisiPegawai.data) {
+          console.log("Komisi pegawai found:", komisiPegawai.data);
+          return { 
+            found: true, 
+            type: "pegawai", 
+            data: komisiPegawai.data,
+            message: "Komisi pegawai sudah ada untuk transaksi ini" 
+          };
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          console.log("No komisi pegawai found for this detail transaction (404)");
+        } else {
+          console.error("Error checking komisi pegawai:", error);
+        }
+      }
+      
+      // Check for komisi penitip
+      try {
+        const komisiPenitip = await useAxios.get(`/komisiPenitip/detailTransaksi/${firstDetailId}`);
+        if (komisiPenitip && komisiPenitip.data) {
+          console.log("Komisi penitip found:", komisiPenitip.data);
+          return { 
+            found: true, 
+            type: "penitip", 
+            data: komisiPenitip.data,
+            message: "Komisi penitip sudah ada untuk transaksi ini" 
+          };
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          console.log("No komisi penitip found for this detail transaction (404)");
+        } else {
+          console.error("Error checking komisi penitip:", error);
+        }
+      }
+      
+      return { found: false, message: "No commissions found for this transaction" };
+    } catch (error) {
+      console.error("Error checking existing commissions:", error);
+      return { found: false, error: error.message, message: "Error checking commissions" };
+    }
+  };
+
   // Update createKomisi to use the batch approach
   const createKomisi = async (jadwalData) => {
     try {
       console.log("Creating commissions for jadwal:", jadwalData);
+      console.log("Status jadwal saat createKomisi:", jadwalData.status_jadwal);
       
       // Get transaction details
-      const detailTransaksi = await getDetailTransaksiByTransaksi(jadwalData.id_transaksi);
+      console.log(`Requesting detail transaksi for id_transaksi: ${jadwalData.id_transaksi}`);
+      const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${jadwalData.id_transaksi}`);
+      console.log("Raw detail transaksi response:", detailTransaksiResponse);
       
-      if (!detailTransaksi || detailTransaksi.length === 0) {
-        console.warn("No transaction details found, skipping commission creation");
+      // Periksa respon dan pastikan berupa array
+      if (!detailTransaksiResponse) {
+        console.warn("No response received from detailTransaksi API");
         return false;
+      }
+      
+      if (!detailTransaksiResponse.data) {
+        console.warn("No data field in detailTransaksi response");
+        return false;
+      }
+      
+      // Periksa apakah response menggunakan struktur dengan field success dan data
+      let detailTransaksi = [];
+      if (detailTransaksiResponse.data.success !== undefined) {
+        console.log("Response using success/data structure:", detailTransaksiResponse.data);
+        
+        if (detailTransaksiResponse.data.data && Array.isArray(detailTransaksiResponse.data.data)) {
+          detailTransaksi = detailTransaksiResponse.data.data;
+        } else {
+          console.warn("Data field is not an array in success/data structure");
+        }
+      } else {
+        // Langsung menggunakan data jika tidak menggunakan struktur success/data
+        detailTransaksi = Array.isArray(detailTransaksiResponse.data) 
+          ? detailTransaksiResponse.data 
+          : [];
+      }
+      
+      console.log("Processed detailTransaksi:", detailTransaksi);
+      
+      if (detailTransaksi.length === 0) {
+        console.warn("No transaction details found, skipping commission creation");
+        
+        // Coba cara alternatif untuk mendapatkan detail transaksi
+        try {
+          console.log("Trying alternative way to get transaction details...");
+          const transaksiResponse = await useAxios.get(`/transaksi/${jadwalData.id_transaksi}`);
+          console.log("Transaction data:", transaksiResponse.data);
+          
+          if (transaksiResponse.data && transaksiResponse.data.detailTransaksi && 
+              Array.isArray(transaksiResponse.data.detailTransaksi) && 
+              transaksiResponse.data.detailTransaksi.length > 0) {
+            console.log("Found detail transaksi through transaction relationship");
+            detailTransaksi = transaksiResponse.data.detailTransaksi;
+            console.log("Using detail transaksi from transaction:", detailTransaksi);
+          } else {
+            console.warn("Alternative method also failed to find detail transaksi");
+            return false;
+          }
+        } catch (error) {
+          console.error("Error in alternative method:", error);
+          return false;
+        }
       }
 
       console.log(`Transaction ${jadwalData.id_transaksi} has ${detailTransaksi.length} detail records`);
       
-      // Check first if any commissions already exist
+      // Get additional details about penitipan and pegawai
+      let penitipanPegawaiDetails = [];
       try {
-        const existingCommissions = await useAxios.get(`/komisiPerusahaan/transaksi/${jadwalData.id_transaksi}`);
-        if (existingCommissions.data && existingCommissions.data.length > 0) {
-          console.log(`Found existing commissions for transaction ${jadwalData.id_transaksi}, skipping creation`);
-          return true;
-        }
+        const pegawaiResponse = await getPenitipanPegawaiByTransaksi(jadwalData.id_transaksi);
+        console.log("Raw pegawai response:", pegawaiResponse);
+        penitipanPegawaiDetails = Array.isArray(pegawaiResponse) ? pegawaiResponse : [];
+        console.log("Penitipan pegawai details:", penitipanPegawaiDetails);
       } catch (error) {
-        // If 404 or any error, assume no commissions exist and continue
-        console.log(`No existing commissions found for transaction ${jadwalData.id_transaksi}, proceeding with creation`);
+        console.error("Error fetching penitipan pegawai details:", error);
       }
       
-      // Get additional details
-      const penitipanPegawaiDetails = await getPenitipanPegawaiByTransaksi(jadwalData.id_transaksi);
-      const penitipanPenitipDetails = await getPenitipanPenitipByTransaksi(jadwalData.id_transaksi);
+      let penitipanPenitipDetails = [];
+      try {
+        const penitipResponse = await getPenitipanPenitipByTransaksi(jadwalData.id_transaksi);
+        console.log("Raw penitip response:", penitipResponse);
+        penitipanPenitipDetails = Array.isArray(penitipResponse) ? penitipResponse : [];
+        console.log("Penitipan penitip details:", penitipanPenitipDetails);
+      } catch (error) {
+        console.error("Error fetching penitipan penitip details:", error);
+      }
       
-      // Get only unique items
-      const uniqueItemsMap = new Map();
-      detailTransaksi.forEach(item => {
-        if (item && item.id_barang) {
-          if (!uniqueItemsMap.has(item.id_barang)) {
-            uniqueItemsMap.set(item.id_barang, item);
-          }
-        }
-      });
-      
-      const uniqueItems = Array.from(uniqueItemsMap.values());
-      console.log(`Creating commissions for ${uniqueItems.length} unique items`);
+      // Get transaction data for tanggal_transaksi
+      const transaksiResponse = await useAxios.get(`/transaksi/${jadwalData.id_transaksi}`);
+      const transaksi = transaksiResponse.data;
+      const tanggalTransaksi = new Date(transaksi.tanggal_transaksi);
       
       // Prepare the commission entries for all types
       const pegawaiEntries = [];
       const penitipEntries = [];
       const perusahaanEntries = [];
       
-      // Process each unique item
-      for (const item of uniqueItems) {
-        const hargaItem = item.harga_item || 0;
-        
-        // Skip zero-priced items
-        if (hargaItem <= 0) {
-          console.log(`Skipping zero-priced item ${item.id_barang}`);
+      // Check first if any commissions already exist
+      try {
+        // Check using the first detail transaction as a sample
+        if (detailTransaksi.length > 0 && detailTransaksi[0].id_detail_transaksi) {
+          const firstDetailId = detailTransaksi[0].id_detail_transaksi;
+          console.log("Checking for existing commissions for detail ID:", firstDetailId);
+          
+          try {
+            const existingCommissions = await useAxios.get(`/komisiPerusahaan/detailTransaksi/${firstDetailId}`);
+            console.log("Existing commissions response:", existingCommissions);
+            
+            if (existingCommissions && existingCommissions.data && 
+                (Array.isArray(existingCommissions.data) ? existingCommissions.data.length > 0 : existingCommissions.data)) {
+              console.log(`Found existing commissions for detail transaction, skipping creation:`, existingCommissions.data);
+              return true;
+            } else {
+              console.log("No existing commissions found in response data");
+            }
+          } catch (error) {
+            // Jika error 404, berarti memang belum ada komisi, jadi tetap lanjutkan
+            if (error.response && error.response.status === 404) {
+              console.log("404 response: No existing commissions found, will create new ones");
+            } else {
+              console.error("Error checking existing commissions:", error);
+            }
+          }
+        } else {
+          console.log("Cannot check for existing commissions: no valid detail transaction ID");
+        }
+      } catch (error) {
+        // If 404 or any error, assume no commissions exist and continue
+        console.log(`Error checking for existing commissions: ${error.message}`);
+      }
+      
+      // Process each detail item individually
+      for (const detail of detailTransaksi) {
+        if (!detail || !detail.id_barang || !detail.id_detail_transaksi) {
+          console.log("Skipping invalid detail item:", detail);
           continue;
         }
         
-        console.log(`Computing commissions for item ${item.id_barang} with price ${hargaItem}`);
+        const idBarang = detail.id_barang;
+        const idDetailTransaksi = detail.id_detail_transaksi;
+        const hargaItem = detail.harga_item || 0;
         
-        // Calculate commissions
-        const totalKomisiPerusahaan = hargaItem * 0.20; // 20% of price
+        // Skip zero-priced items
+        if (hargaItem <= 0) {
+          console.log(`Skipping zero-priced item ${idBarang} (Detail ID: ${idDetailTransaksi})`);
+          continue;
+        }
         
-        // Create pegawai commission if applicable
-        const pegawaiDetail = penitipanPegawaiDetails?.find(p => p.id_barang === item.id_barang);
-        if (pegawaiDetail?.id_pegawai) {
+        console.log(`Computing commissions for item ${idBarang} with price ${hargaItem} (Detail ID: ${idDetailTransaksi})`);
+        
+        // Get penitipan details for this item
+        const penitipDetail = penitipanPenitipDetails.find(p => p && p.id_barang === idBarang);
+        const pegawaiDetail = penitipanPegawaiDetails.find(p => p && p.id_barang === idBarang);
+        
+        console.log("Penitip detail for this item:", penitipDetail);
+        console.log("Pegawai detail for this item:", pegawaiDetail);
+        
+        // Check if item has perpanjangan
+        let hasAdaPerpanjangan = false;
+        try {
+          const barangResponse = await useAxios.get(`/barang/${idBarang}`);
+          hasAdaPerpanjangan = barangResponse.data && barangResponse.data.ada_perpanjangan === 'ya';
+          console.log(`Item ${idBarang} has perpanjangan: ${hasAdaPerpanjangan}`);
+        } catch (error) {
+          console.error(`Error checking barang perpanjangan status: ${error}`);
+        }
+        
+        // Calculate base commission rate
+        let komisiRate = hasAdaPerpanjangan ? 0.30 : 0.20; // 30% if ada perpanjangan, 20% otherwise
+        let totalKomisiPerusahaan = hargaItem * komisiRate;
+        
+        // Check if item was sold in less than 7 days from tanggal_awal_penitipan
+        let bonusPenitip = false;
+        if (penitipDetail && penitipDetail.tanggal_awal_penitipan) {
+          const tanggalAwalPenitipan = new Date(penitipDetail.tanggal_awal_penitipan);
+          const diffTime = Math.abs(tanggalTransaksi - tanggalAwalPenitipan);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          console.log(`Item ${idBarang} days difference: ${diffDays} days (tanggal_awal_penitipan: ${penitipDetail.tanggal_awal_penitipan}, tanggal_transaksi: ${transaksi.tanggal_transaksi})`);
+          
+          if (diffDays < 7) {
+            bonusPenitip = true;
+            console.log(`Item ${idBarang} sold within ${diffDays} days - eligible for penitip bonus`);
+          }
+        } else {
+          console.log(`Item ${idBarang} has no tanggal_awal_penitipan, cannot calculate bonus eligibility`);
+        }
+        
+        // Initialize remaining komisi for perusahaan
+        let remainingKomisiPerusahaan = totalKomisiPerusahaan;
+        
+        // Create pegawai commission if applicable (item has a hunter)
+        if (pegawaiDetail && pegawaiDetail.id_pegawai) {
           const komisiPegawai = hargaItem * 0.05;  // 5% of price
           pegawaiEntries.push({
-            id_transaksi: jadwalData.id_transaksi,
+            id_detail_transaksi: idDetailTransaksi,
             id_pegawai: pegawaiDetail.id_pegawai,
-            jumlah_komisi: komisiPegawai,
-            id_barang: item.id_barang
+            jumlah_komisi: komisiPegawai
           });
+          
+          // Reduce the remaining komisi for perusahaan
+          remainingKomisiPerusahaan -= komisiPegawai;
+          console.log(`Allocated ${komisiPegawai} to hunter ID: ${pegawaiDetail.id_pegawai}`);
+        } else {
+          console.log(`Item ${idBarang} has no hunter (pegawai), no hunter commission allocated`);
         }
         
-        // Create penitip commission if applicable
-        const penitipDetail = penitipanPenitipDetails?.find(p => p.id_barang === item.id_barang);
-        if (penitipDetail?.id_penitip && penitipDetail?.id_penitipan) {
+        // Create penitip commission if eligible (sold within 7 days)
+        if (bonusPenitip && penitipDetail && penitipDetail.id_penitip) {
           const komisiPenitip = totalKomisiPerusahaan * 0.10; // 10% of company commission
           penitipEntries.push({
-            id_transaksi: jadwalData.id_transaksi,
-            id_penitipan: penitipDetail.id_penitipan,
-            jumlah_komisi: komisiPenitip,
-            id_barang: item.id_barang
+            id_detail_transaksi: idDetailTransaksi,
+            id_penitip: penitipDetail.id_penitip,
+            jumlah_komisi: komisiPenitip
           });
+          
+          // Reduce the remaining komisi for perusahaan
+          remainingKomisiPerusahaan -= komisiPenitip;
+          console.log(`Allocated ${komisiPenitip} as bonus to penitip ID: ${penitipDetail.id_penitip}`);
+        } else {
+          console.log(`Item ${idBarang} not eligible for penitip bonus: bonusPenitip=${bonusPenitip}, id_penitip=${penitipDetail?.id_penitip}`);
         }
         
-        // Calculate company commission (remainder)
-        const komisiPenitip = totalKomisiPerusahaan * 0.10;
-        const komisiPerusahaan = totalKomisiPerusahaan - komisiPenitip;
-        
-        // Add company commission
+        // Add company commission (remainder)
         perusahaanEntries.push({
-          id_transaksi: jadwalData.id_transaksi,
-          jumlah_komisi: komisiPerusahaan,
-          id_barang: item.id_barang
+          id_detail_transaksi: idDetailTransaksi,
+          jumlah_komisi: remainingKomisiPerusahaan
         });
+        
+        console.log(`Final allocation for item ${idBarang} (Detail ID: ${idDetailTransaksi}):
+          - Harga Item: ${hargaItem}
+          - Total Komisi (${komisiRate*100}%): ${totalKomisiPerusahaan}
+          - Perusahaan: ${remainingKomisiPerusahaan}
+          - Has Hunter: ${pegawaiDetail?.id_pegawai ? 'Yes' : 'No'}
+          - Bonus Penitip: ${bonusPenitip ? 'Yes' : 'No'}`);
       }
       
       // Create all commissions in batches
       try {
+        console.log("Commission entries summary:");
+        console.log("Pegawai entries:", pegawaiEntries);
+        console.log("Penitip entries:", penitipEntries);
+        console.log("Perusahaan entries:", perusahaanEntries);
+        
         // Create pegawai commissions
         if (pegawaiEntries.length > 0) {
           console.log(`Creating ${pegawaiEntries.length} KomisiPegawai entries`);
-          await createBatchKomisiPegawai(pegawaiEntries);
+          const pegawaiResult = await createBatchKomisiPegawai(pegawaiEntries);
+          console.log("KomisiPegawai creation result:", pegawaiResult);
+        } else {
+          console.log("No KomisiPegawai entries to create");
         }
         
         // Create penitip commissions
         if (penitipEntries.length > 0) {
           console.log(`Creating ${penitipEntries.length} KomisiPenitip entries`);
-          await createBatchKomisiPenitip(penitipEntries);
+          const penitipResult = await createBatchKomisiPenitip(penitipEntries);
+          console.log("KomisiPenitip creation result:", penitipResult);
+        } else {
+          console.log("No KomisiPenitip entries to create");
         }
         
         // Create perusahaan commissions
         if (perusahaanEntries.length > 0) {
           console.log(`Creating ${perusahaanEntries.length} KomisiPerusahaan entries`);
-          await createBatchKomisiPerusahaan(perusahaanEntries);
+          const perusahaanResult = await createBatchKomisiPerusahaan(perusahaanEntries);
+          console.log("KomisiPerusahaan creation result:", perusahaanResult);
+        } else {
+          console.log("No KomisiPerusahaan entries to create");
         }
         
         console.log("Commission records created successfully");
         return true;
       } catch (error) {
         console.error("Error creating commissions in batch:", error);
+        if (error.response) {
+          console.error("Error response data:", error.response.data);
+          console.error("Error response status:", error.response.status);
+        }
         return false;
       }
     } catch (error) {
       console.error("Error in createKomisi:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+      }
       return false;
     }
   };
@@ -346,6 +609,8 @@ const PenjadwalanPage = () => {
       if (!silent) {
         setProcessingStatus(true);
       }
+      
+      console.log(`updateStatusJadwal called with id=${id}, newStatus=${newStatus}, silent=${silent}, createCommission=${createCommission}`);
       
       const currentJadwal = await useAxios.get(`/jadwal/${id}`);
       
@@ -357,17 +622,72 @@ const PenjadwalanPage = () => {
         return true;
       }
       
+      // Jika status baru adalah "Sudah Sampai", ubah menjadi "Selesai"
+      let statusToUpdate = newStatus;
+      if (newStatus === "Sudah Sampai") {
+        statusToUpdate = "Selesai";
+        console.log(`Converting status from "Sudah Sampai" to "Selesai"`);
+      }
+      
+      console.log(`Will update jadwal ${id} status from "${currentJadwal.data.status_jadwal}" to "${statusToUpdate}"`);
+      
+      // Jika status baru adalah "Sudah Diambil" atau "Sudah Sampai", cek dulu apakah komisi sudah terbentuk
+      let existingCommissions = { found: false };
+      if (newStatus === "Sudah Sampai" || newStatus === "Sudah Diambil") {
+        try {
+          existingCommissions = await checkExistingCommissions(currentJadwal.data.id_transaksi);
+          console.log("Existing commissions check result:", existingCommissions);
+        } catch (error) {
+          console.error("Error checking existing commissions:", error);
+        }
+      }
+      
       const response = await useAxios.put(`/jadwal/${id}`, {
         ...currentJadwal.data,
         id_transaksi: currentJadwal.data.id_transaksi,
         id_pegawai: currentJadwal.data.id_pegawai,
         tanggal: currentJadwal.data.tanggal,
-        status_jadwal: newStatus
+        status_jadwal: statusToUpdate
       });
       
-      if (newStatus === "Sudah Sampai" || newStatus === "Sudah Diambil") {
-        console.log(`Creating commissions for status: ${newStatus}`);
-        await createKomisi(currentJadwal.data);
+      console.log(`Jadwal update response:`, response.data);
+      
+      if ((newStatus === "Sudah Sampai" || newStatus === "Sudah Diambil") && !existingCommissions.found) {
+        console.log(`Creating commissions for status: ${newStatus} (updated to: ${statusToUpdate})`);
+        
+        let komisiResult = false;
+        try {
+          komisiResult = await createKomisi(currentJadwal.data);
+          console.log(`createKomisi result: ${komisiResult ? 'success' : 'failed'}`);
+        } catch (error) {
+          console.error("Error calling createKomisi:", error);
+        }
+        
+        // If komisi creation failed, force create it directly
+        if (!komisiResult) {
+          console.log("Initial komisi creation failed, checking if we need to force create it...");
+          
+          let checkAgain = false;
+          try {
+            const commissionCheck = await checkExistingCommissions(currentJadwal.data.id_transaksi);
+            checkAgain = commissionCheck.found;
+            console.log("Commission check after failed creation:", commissionCheck);
+          } catch (error) {
+            console.error("Error in second commission check:", error);
+          }
+          
+          if (!checkAgain) {
+            console.log("No existing commissions found after update, forcing direct komisi creation");
+            // Attempt to directly create commission records using a simpler approach
+            try {
+              await forceCreateCommission(currentJadwal.data);
+            } catch (error) {
+              console.error("Error in force create commission:", error);
+            }
+          } else {
+            console.log("Commissions were created successfully after all");
+          }
+        }
         
         const transaction = await useAxios.get(`/transaksi/${currentJadwal.data.id_transaksi}`);
         
@@ -375,26 +695,43 @@ const PenjadwalanPage = () => {
           try {
             // Get transaction details to calculate the correct points
             const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaction.data.id_transaksi}`);
-            const detailTransaksiData = detailTransaksiResponse.data;
+            
+            // Validasi dan pastikan detailTransaksiData adalah array
+            if (!detailTransaksiResponse || !detailTransaksiResponse.data) {
+              throw new Error("Invalid transaction details response");
+            }
+            
+            const detailTransaksiData = Array.isArray(detailTransaksiResponse.data) 
+              ? detailTransaksiResponse.data 
+              : [];
+            
+            if (detailTransaksiData.length === 0) {
+              throw new Error("No transaction details found");
+            }
             
             // Get complete item details for accurate pricing
-            const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
+            const itemsWithDetails = [];
+            for (const item of detailTransaksiData) {
               try {
+                if (!item || !item.id_barang) continue;
+                
                 const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
                 const barang = barangResponse.data;
                 
-                return {
+                itemsWithDetails.push({
                   ...item,
-                  harga: item.harga_beli || barang?.harga || 0
-                };
+                  harga: item.harga_beli || (barang ? barang.harga : 0) || 0
+                });
               } catch (error) {
-                console.error(`Error fetching barang ${item.id_barang} details:`, error);
-                return {
-                  ...item,
-                  harga: item.harga_beli || 0
-                };
+                console.error(`Error fetching barang ${item?.id_barang} details:`, error);
+                if (item) {
+                  itemsWithDetails.push({
+                    ...item,
+                    harga: item.harga_beli || 0
+                  });
+                }
               }
-            }));
+            }
             
             // Calculate accurate total amount from items
             const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
@@ -450,7 +787,7 @@ const PenjadwalanPage = () => {
         if (!silent) {
           setStatusMessage({
             type: "success",
-            text: `Status berhasil diperbarui menjadi ${newStatus}. Notifikasi telah dikirim ke pembeli dan penitip.`
+            text: `Status berhasil diperbarui menjadi ${statusToUpdate}. Notifikasi telah dikirim ke pembeli dan penitip.`
           });
         }
       }
@@ -499,6 +836,115 @@ const PenjadwalanPage = () => {
       return false;
     }
   };
+  
+  // Fungsi sederhana untuk membuat komisi langsung
+  const forceCreateCommission = async (jadwalData) => {
+    try {
+      console.log("Forcing commission creation as fallback...");
+      
+      // Get transaction details
+      console.log(`Requesting detail transaksi for id_transaksi: ${jadwalData.id_transaksi} (force method)`);
+      const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${jadwalData.id_transaksi}`);
+      console.log("Force method - Raw detail transaksi response:", detailTransaksiResponse);
+      
+      // Periksa respon dan pastikan berupa array
+      if (!detailTransaksiResponse || !detailTransaksiResponse.data) {
+        console.warn("Invalid response for transaction details in forceCreateCommission");
+        
+        // Coba cara alternatif untuk mendapatkan detail transaksi
+        try {
+          console.log("Force method - Trying alternative way to get transaction details...");
+          const transaksiResponse = await useAxios.get(`/transaksi/${jadwalData.id_transaksi}`);
+          console.log("Force method - Transaction data:", transaksiResponse.data);
+          
+          if (transaksiResponse.data && transaksiResponse.data.detailTransaksi && 
+              Array.isArray(transaksiResponse.data.detailTransaksi) && 
+              transaksiResponse.data.detailTransaksi.length > 0) {
+            
+            // Jika berhasil mendapatkan detail transaksi dari relasi, lanjutkan pembuatan komisi
+            const detailTransaksi = transaksiResponse.data.detailTransaksi;
+            console.log("Force method - Using detail transaksi from transaction:", detailTransaksi);
+            
+            // Create company commissions directly (20% of item price)
+            const perusahaanEntries = [];
+            for (const detail of detailTransaksi) {
+              if (!detail || !detail.id_detail_transaksi) continue;
+              
+              perusahaanEntries.push({
+                id_detail_transaksi: detail.id_detail_transaksi,
+                jumlah_komisi: (detail.harga_item || 0) * 0.20 // Simple 20% calculation
+              });
+            }
+            
+            if (perusahaanEntries.length > 0) {
+              console.log("Force creating perusahaan commissions:", perusahaanEntries);
+              await createBatchKomisiPerusahaan(perusahaanEntries);
+              console.log("Force created company commissions successfully");
+              return true;
+            }
+          } else {
+            console.warn("Force method - Alternative method also failed to find detail transaksi");
+            return false;
+          }
+        } catch (error) {
+          console.error("Force method - Error in alternative method:", error);
+          return false;
+        }
+      }
+      
+      // Pastikan detailTransaksi adalah array
+      let detailTransaksi = [];
+      
+      // Periksa apakah response menggunakan struktur dengan field success dan data
+      if (detailTransaksiResponse.data.success !== undefined) {
+        console.log("Force method - Response using success/data structure:", detailTransaksiResponse.data);
+        
+        if (detailTransaksiResponse.data.data && Array.isArray(detailTransaksiResponse.data.data)) {
+          detailTransaksi = detailTransaksiResponse.data.data;
+        } else {
+          console.warn("Force method - Data field is not an array in success/data structure");
+          return false;
+        }
+      } else {
+        // Langsung menggunakan data jika tidak menggunakan struktur success/data
+        detailTransaksi = Array.isArray(detailTransaksiResponse.data) 
+          ? detailTransaksiResponse.data 
+          : [];
+      }
+      
+      console.log("Force method - Processed detailTransaksi:", detailTransaksi);
+      
+      if (detailTransaksi.length === 0) {
+        console.warn("Force method - No transaction details found for force commission creation");
+        return false;
+      }
+      
+      // Create company commissions directly (20% of item price)
+      const perusahaanEntries = [];
+      for (const detail of detailTransaksi) {
+        if (!detail || !detail.id_detail_transaksi) continue;
+        
+        perusahaanEntries.push({
+          id_detail_transaksi: detail.id_detail_transaksi,
+          jumlah_komisi: (detail.harga_item || 0) * 0.20 // Simple 20% calculation
+        });
+      }
+      
+      if (perusahaanEntries.length > 0) {
+        console.log("Force creating perusahaan commissions:", perusahaanEntries);
+        await createBatchKomisiPerusahaan(perusahaanEntries);
+        console.log("Force created company commissions successfully");
+        return true;
+      } else {
+        console.log("Force method - No valid entries to force create commissions");
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error in forceCreateCommission:", error);
+      return false;
+    }
+  };
 
   const handleCetakNota = async (jadwalId) => {
     try {
@@ -518,6 +964,7 @@ const PenjadwalanPage = () => {
       }
 
       const transaksiId = jadwalData.id_transaksi;
+      console.log(`Processing nota for jadwal ID: ${jadwalId}, transaksi ID: ${transaksiId}`);
       
       // Check if a nota already exists for this transaction
       let existingNota = null;
@@ -542,12 +989,39 @@ const PenjadwalanPage = () => {
       }
       
       // First get transaction details and other necessary data
+      console.log("Fetching transaction data...");
       const transaksiResponse = await useAxios.get(`/transaksi/${transaksiId}`);
+      if (!transaksiResponse.data) {
+        throw new Error("Data transaksi tidak ditemukan");
+      }
       const transaksiData = transaksiResponse.data;
+      console.log("Transaction data:", transaksiData);
+      
+      // Validate transaction has pembeli ID
+      if (!transaksiData.id_pembeli) {
+        throw new Error("ID Pembeli tidak tersedia pada data transaksi");
+      }
       
       // Get pembeli data
-      const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
-      const pembeliData = pembeliResponse.data;
+      console.log(`Fetching pembeli data for ID: ${transaksiData.id_pembeli}...`);
+      let pembeliData;
+      try {
+        const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+        if (!pembeliResponse.data) {
+          throw new Error("Pembeli tidak ditemukan");
+        }
+        pembeliData = pembeliResponse.data;
+        console.log("Pembeli data:", pembeliData);
+      } catch (error) {
+        console.error("Error fetching pembeli data:", error);
+        
+        // Fallback data jika pembeli tidak ditemukan
+        pembeliData = {
+          nama_pembeli: "Pembeli tidak teridentifikasi",
+          id_user: null
+        };
+        console.log("Using fallback pembeli data:", pembeliData);
+      }
       
       // Get pembeli user data to get email
       let buyerEmail = "Email tidak tersedia";
@@ -563,19 +1037,52 @@ const PenjadwalanPage = () => {
       }
       
       // Get alamat data
-      const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
-      const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
-      
-      // Format address for storage
-      const formattedAddress = alamatData ? alamatData.alamat_lengkap : 'Alamat tidak tersedia';
+      let formattedAddress = 'Alamat tidak tersedia';
+      try {
+        console.log(`Fetching alamat for pembeli ID: ${transaksiData.id_pembeli}...`);
+        const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
+        const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+        
+        // Format address for storage
+        if (alamatData && alamatData.alamat_lengkap) {
+          formattedAddress = alamatData.alamat_lengkap;
+        }
+        console.log("Formatted address:", formattedAddress);
+      } catch (error) {
+        console.error("Error fetching alamat data:", error);
+      }
       
       // Get transaction items
+      console.log(`Fetching detail transaksi for transaksi ID: ${transaksiId}...`);
       const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiId}`);
-      const detailTransaksiData = detailTransaksiResponse.data;
+      let detailTransaksiData = [];
+      
+      // Handle different response structures
+      if (detailTransaksiResponse.data?.success !== undefined) {
+        detailTransaksiData = detailTransaksiResponse.data.data || [];
+      } else if (Array.isArray(detailTransaksiResponse.data)) {
+        detailTransaksiData = detailTransaksiResponse.data;
+      } else {
+        console.warn("Unexpected response format from API:", detailTransaksiResponse.data);
+      }
+      
+      if (!detailTransaksiData || detailTransaksiData.length === 0) {
+        throw new Error("Detail transaksi tidak ditemukan");
+      }
+      
+      console.log(`Found ${detailTransaksiData.length} transaction details`);
       
       // Get complete item details
       const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
         try {
+          if (!item || !item.id_barang) {
+            console.warn("Invalid detail item:", item);
+            return {
+              nama_barang: "Barang tidak diketahui",
+              harga: 0
+            };
+          }
+          
           const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
           const barang = barangResponse.data;
           
@@ -586,17 +1093,18 @@ const PenjadwalanPage = () => {
             harga: item.harga_beli || barang?.harga || 0
           };
         } catch (error) {
-          console.error(`Error fetching barang ${item.id_barang} details:`, error);
+          console.error(`Error fetching barang ${item?.id_barang} details:`, error);
           return {
             ...item,
-            nama_barang: `Barang #${item.id_barang}`,
-            harga: item.harga_beli || 0
+            nama_barang: `Barang #${item?.id_barang || 'unknown'}`,
+            harga: item?.harga_beli || 0
           };
         }
       }));
       
       // Calculate total amount
       const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
+      console.log("Calculated total amount:", totalAmount);
       
       // Calculate points based on total amount (1 point per 10,000 rupiah)
       const calculatePoints = (amount) => {
@@ -611,6 +1119,7 @@ const PenjadwalanPage = () => {
       };
       
       const points = calculatePoints(totalAmount);
+      console.log("Calculated points:", points);
       
       // Generate a unique invoice number with transaction ID
       if (!invoiceNumber) {
@@ -648,7 +1157,7 @@ const PenjadwalanPage = () => {
         poin_diperoleh: points,
         total_setelah_diskon: totalAmount,
         alamat_pembeli: formattedAddress,
-        nama_pembeli: pembeliData.nama_pembeli,
+        nama_pembeli: pembeliData.nama_pembeli || "Pembeli tidak teridentifikasi",
         email_pembeli: buyerEmail,
       };
       

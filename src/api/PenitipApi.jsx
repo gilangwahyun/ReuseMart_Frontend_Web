@@ -189,3 +189,13 @@ export const getTransaksiByPenitipId = async (id_penitip) => {
     return [];
   }
 };
+
+export const tarikSaldo = async (id_penitip, data) => {
+  try {
+    const response = await useAxios.post(`${API_URL}/${id_penitip}/tarik-saldo`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error tarik saldo untuk penitip ID ${id_penitip}:`, error);
+    return { message: 'Gagal tarik saldo', error: error.message };
+  }
+};

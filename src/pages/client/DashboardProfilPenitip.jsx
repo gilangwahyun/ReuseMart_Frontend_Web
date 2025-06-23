@@ -10,6 +10,7 @@ import DaftarPenitipanBarang from "../../components/penitip/DaftarPenitipanBaran
 import RequestPengambilanBarang from "../../components/penitip/RequestPengambilanBarang";
 import RequestPerpanjanganPenitipan from "../../components/penitip/RequestPerpanjanganPenitipan";
 import { FaUserCircle } from "react-icons/fa";
+import PenarikanSaldo from "./PenarikanSaldoPage";
 
 export default function DashboardProfilPenitip() {
   const { id_user } = useParams();
@@ -127,6 +128,9 @@ export default function DashboardProfilPenitip() {
             loading={loading}
           />
         );
+
+      case "penarikan-saldo":
+        return <PenarikanSaldo idUser={id_user}/>;
       
       case "detail":
         return (

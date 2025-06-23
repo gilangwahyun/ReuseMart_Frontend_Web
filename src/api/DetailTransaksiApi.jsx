@@ -8,7 +8,19 @@ export const getDetailTransaksiByTransaksi = async (id_transaksi) => {
     const response = await useAxios.get(`/detailTransaksi/transaksi/${id_transaksi}`);
     
     console.log("Response from API:", response.data);
-    return response.data;
+    
+    // Handle different response structures
+    if (response.data && response.data.success !== undefined) {
+      // API is returning { success: true, message: "...", data: [...] } format
+      console.log("Using data field from success/data structure");
+      return response.data.data || [];
+    } else if (Array.isArray(response.data)) {
+      // API is directly returning array
+      return response.data;
+    } else {
+      console.warn("Unexpected response format from API:", response.data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching transaction details:", error);
     return []; // Return empty array on error
@@ -22,7 +34,16 @@ export const getPenitipanDetailsByTransaksi = async (id_transaksi) => {
     const response = await useAxios.get(`/detailTransaksi/transaksi/${id_transaksi}/penitipan-details`);
     
     console.log("Response from API (penitipan details):", response.data);
-    return response.data;
+    
+    // Handle different response structures
+    if (response.data && response.data.success !== undefined) {
+      return response.data.data || [];
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    } else {
+      console.warn("Unexpected response format from API (penitipan details):", response.data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching penitipan details for transaction:", error);
     return []; // Return empty array on error
@@ -37,7 +58,16 @@ export const getPenitipanPegawaiByTransaksi = async (id_transaksi) => {
     const response = await useAxios.get(`/transaksi/${id_transaksi}/penitipan-pegawai-join`);
     
     console.log("Response from API (penitipan-pegawai details):", response.data);
-    return response.data;
+    
+    // Handle different response structures
+    if (response.data && response.data.success !== undefined) {
+      return response.data.data || [];
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    } else {
+      console.warn("Unexpected response format from API (penitipan-pegawai details):", response.data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching penitipan-pegawai details for transaction:", error);
     return []; // Return empty array on error
@@ -52,7 +82,16 @@ export const getPenitipanPenitipByTransaksi = async (id_transaksi) => {
     const response = await useAxios.get(`/transaksi/${id_transaksi}/penitipan-penitip`);
     
     console.log("Response from API (penitipan-penitip details):", response.data);
-    return response.data;
+    
+    // Handle different response structures
+    if (response.data && response.data.success !== undefined) {
+      return response.data.data || [];
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    } else {
+      console.warn("Unexpected response format from API (penitipan-penitip details):", response.data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching penitipan-penitip details for transaction:", error);
     return []; // Return empty array on error
