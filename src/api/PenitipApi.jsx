@@ -86,14 +86,35 @@ export const updatePenitip = async (id, data) => {
     // Cek apakah data adalah instance dari FormData
     const isFormData = data instanceof FormData;
     
-    const response = await useAxios.put(`/penitip/${id}`, data, {
-      headers: isFormData ? {
-        'Content-Type': 'multipart/form-data'
-      } : {}
-    });
-    return response.data;
+    // Log data yang akan dikirim
+    console.log('Updating Penitip ID:', id);
+    console.log('Is FormData:', isFormData);
+    
+    if (isFormData) {
+      // Log FormData contents for debugging
+      for (let pair of data.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+      
+      // Use POST method with custom endpoint for FormData
+      const response = await useAxios.post(`/penitip/${id}/update`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      console.log('Update Response (POST):', response.data);
+      return response.data;
+    } else {
+      // Use PUT method for regular JSON updates
+      const response = await useAxios.put(`/penitip/${id}`, data);
+      
+      console.log('Update Response (PUT):', response.data);
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error saat update penitip ID ${id}:`, error);
+    console.error('Error details:', error.response?.data || 'No response data');
     throw error;
   }
 };

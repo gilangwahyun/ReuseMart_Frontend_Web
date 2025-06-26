@@ -131,16 +131,16 @@ export default function PenitipPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Yakin hapus penitip ini?")) return;
+    if (!window.confirm("Yakin hapus penitip ini? Akun pengguna yang terkait juga akan dihapus secara permanen.")) return;
     setLoading(true);
     try {
       await deletePenitip(id);
-      setMessage("Berhasil dihapus!");
+      setMessage("Penitip dan akun pengguna terkait berhasil dihapus!");
       setSelected(null);
       await loadAllPenitip();
       setActiveTab("list");
     } catch (err) {
-      setMessage("Gagal hapus: " + (err.response?.data?.message || ""));
+      setMessage("Gagal hapus: " + (err.response?.data?.message || err.message));
     }
     setLoading(false);
   };
