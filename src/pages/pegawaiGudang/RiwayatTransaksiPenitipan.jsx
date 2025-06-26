@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PegawaiGudangSideBar from '../../components/PegawaiGudangSideBar';
+import PegawaiGudangSideBar from '../../components/PegawaiGudangSidebar';
 import { getAllPenitipanBarang, updatePenitipanBarang } from '../../api/PenitipanBarangApi';
 import { getAllNotaPenitipanBarang } from '../../api/NotaPenitipanBarangApi';
 import { FaPrint, FaSearch, FaEye, FaTimes } from 'react-icons/fa';

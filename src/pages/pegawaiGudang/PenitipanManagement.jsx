@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllBarang, searchBarangAllField } from "../../api/BarangApi";
 import PenitipanBarangTable from "../../components/PegawaiGudangComponents/PenitipanBarangTable";
-import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
+import PegawaiGudangSidebar from "../../components/PegawaiGudangSidebar";
 import { getAllPenitip } from '../../api/PenitipApi';
 import { getAllPegawai } from '../../api/PegawaiApi';
 import { getAllKategori } from '../../api/KategoriBarangApi';
@@ -255,7 +255,7 @@ const PenitipanManagement = () => {
 
   return (
     <div className="d-flex">
-      <PegawaiGudangSideBar />
+      <PegawaiGudangSidebar />
       <div className="p-4 w-100">
         <div className="flex-grow-1 ms-3">
           <div className="d-flex justify-content-between align-items-center mb-3">
