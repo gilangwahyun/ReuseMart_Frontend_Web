@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Badge, Alert, Button, Modal } from 'react-bootstrap';
-import { FaCalendarAlt, FaEye, FaCalendarPlus } from 'react-icons/fa';
+import { Row, Col, Card, Table, Badge, Alert, Button, Modal, Form } from 'react-bootstrap';
+import { FaCalendarAlt, FaEye, FaCalendarPlus, FaSearch } from 'react-icons/fa';
 import { getPenitipanByPenitipId } from '../../api/PenitipanBarangApi';
 
 const DaftarPenitipanBarang = ({ idPenitip }) => {
   const [penitipan, setPenitipan] = useState([]);
+  const [filteredPenitipan, setFilteredPenitipan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [debug, setDebug] = useState(null);
   const [selectedPenitipan, setSelectedPenitipan] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [filters, setFilters] = useState({
+    startDate: '',
+    status: '',
+    namaBarang: ''
+  });
 
   useEffect(() => {
     if (!idPenitip) {
@@ -20,6 +26,11 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
 
     fetchPenitipanData();
   }, [idPenitip]);
+
+  // Apply filters whenever penitipan data or filters change
+  useEffect(() => {
+    applyFilters();
+  }, [penitipan, filters]);
 
   // Function to fetch penitipan data
   const fetchPenitipanData = async () => {
@@ -49,6 +60,7 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
 
       console.log(`Received ${penitipanData.length} penitipan records`);
       setPenitipan(penitipanData);
+      setFilteredPenitipan(penitipanData);
       
     } catch (error) {
       console.error("Error fetching penitipan data:", error);
@@ -57,6 +69,77 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to handle filter changes
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Function to apply filters to penitipan data
+  const applyFilters = () => {
+    let filtered = [...penitipan];
+    
+    // Filter by start date if provided
+    if (filters.startDate) {
+      const filterDate = new Date(filters.startDate);
+      filterDate.setHours(0, 0, 0, 0); // Set to beginning of day for comparison
+      
+      filtered = filtered.filter(item => {
+        const startDate = new Date(item.tanggal_awal_penitipan);
+        startDate.setHours(0, 0, 0, 0);
+        return startDate.getTime() === filterDate.getTime();
+      });
+    }
+    
+    // Filter by status if selected
+    if (filters.status) {
+      const now = new Date();
+      
+      filtered = filtered.filter(item => {
+        const endDate = new Date(item.tanggal_akhir_penitipan);
+        
+        if (filters.status === 'aktif') {
+          // For "Aktif" status, filter items where end date is in the future
+          // and not all items have "Habis" status
+          return endDate >= now && !isPenitipanSelesai(item);
+        } else if (filters.status === 'selesai') {
+          // For "Selesai" status, filter items where end date is in the past
+          // or all items have "Habis" status
+          return endDate < now || isPenitipanSelesai(item);
+        }
+        
+        // Return all if status filter doesn't match known values
+        return true;
+      });
+    }
+    
+    // Filter by product name if provided
+    if (filters.namaBarang && filters.namaBarang.trim() !== '') {
+      const searchTerm = filters.namaBarang.toLowerCase().trim();
+      
+      filtered = filtered.filter(item => {
+        // Check if item has barang array and at least one barang matches the search term
+        return item.barang && Array.isArray(item.barang) && item.barang.some(barang => 
+          barang.nama_barang && barang.nama_barang.toLowerCase().includes(searchTerm)
+        );
+      });
+    }
+    
+    setFilteredPenitipan(filtered);
+  };
+
+  // Function to reset filters
+  const resetFilters = () => {
+    setFilters({
+      startDate: '',
+      status: '',
+      namaBarang: ''
+    });
   };
 
   // Function to handle view details button click
@@ -221,7 +304,7 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
   const getDashboardSummary = () => {
     // Calculate active vs expired penitipan
     const now = new Date();
-    const activePenitipan = penitipan.filter(item => {
+    const activePenitipan = filteredPenitipan.filter(item => {
       const endDate = new Date(item.tanggal_akhir_penitipan);
       return endDate >= now;
     }).length;
@@ -263,13 +346,73 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
       {/* Stats Section */}
       {getDashboardSummary()}
       
+      {/* Search and Filter Section */}
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Header className="bg-light">
+          <h6 className="mb-0"><FaSearch className="me-2" /> Cari Penitipan</h6>
+        </Card.Header>
+        <Card.Body>
+          <Form>
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Tanggal Mulai</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="startDate"
+                    value={filters.startDate}
+                    onChange={handleFilterChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select
+                    name="status"
+                    value={filters.status}
+                    onChange={handleFilterChange}
+                  >
+                    <option value="">Semua Status</option>
+                    <option value="aktif">Aktif</option>
+                    <option value="selesai">Selesai</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nama Barang</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="namaBarang"
+                    value={filters.namaBarang}
+                    onChange={handleFilterChange}
+                    placeholder="Cari berdasarkan nama barang"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col className="d-flex justify-content-end">
+                <Button 
+                  variant="outline-secondary" 
+                  onClick={resetFilters}
+                >
+                  Reset Filter
+                </Button>
+              </Col>
+            </Row>
+          </Form>
+        </Card.Body>
+      </Card>
+      
       {/* Data Table */}
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-success text-white py-3">
           <h5 className="mb-0">Daftar Penitipan Barang</h5>
         </Card.Header>
         <Card.Body>
-          {penitipan.length > 0 ? (
+          {filteredPenitipan.length > 0 ? (
             <Table responsive striped hover className="mb-0">
               <thead>
                 <tr>
@@ -281,7 +424,7 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
                 </tr>
               </thead>
               <tbody>
-                {penitipan.map((item) => {
+                {filteredPenitipan.map((item) => {
                   const now = new Date();
                   const tanggalAkhir = new Date(item.tanggal_akhir_penitipan);
                   const isActive = tanggalAkhir >= now;
@@ -310,7 +453,7 @@ const DaftarPenitipanBarang = ({ idPenitip }) => {
             </Table>
           ) : (
             <div className="text-center py-4">
-              <p className="mb-0 text-muted">Belum ada penitipan barang.</p>
+              <p className="mb-0 text-muted">Tidak ada data penitipan yang sesuai dengan filter.</p>
             </div>
           )}
         </Card.Body>
