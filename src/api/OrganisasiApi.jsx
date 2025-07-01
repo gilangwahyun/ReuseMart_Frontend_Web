@@ -4,7 +4,6 @@ const API_URL = "/organisasi"
 
 export const createOrganisasi = async (userData) => {
     try {
-      console.log("Creating organisasi with data:", userData);
       const response = await useAxios.post(API_URL, userData);
       return response.data;
     } catch (error) {
@@ -15,7 +14,6 @@ export const createOrganisasi = async (userData) => {
 
 export const getOrganisasi = async () => {
   try {
-    console.log("Fetching all organisasi data");
     const response = await useAxios.get(API_URL);
     
     // Validate the response
@@ -24,7 +22,6 @@ export const getOrganisasi = async () => {
       return [];
     }
     
-    console.log(`Retrieved ${response.data.length} organisasi records`);
     return response.data;
   } catch (error) {
     console.error("Error fetching organisasi:", error);
@@ -46,7 +43,6 @@ export const updateOrganisasi = async (id, organisasiData) => {
 
 export const getOrganisasiById = async (id) => {
   try {
-    console.log(`Fetching organisasi with id ${id}`);
     const response = await useAxios.get(`${API_URL}/${id}`);
     return response.data;
   } catch (error) {
@@ -57,7 +53,6 @@ export const getOrganisasiById = async (id) => {
 
 export const deleteOrganisasi = async (id) => {
   try {
-    console.log(`Deleting organisasi with id ${id}`);
     const response = await useAxios.delete(`${API_URL}/${id}`);
     return response.data;
   } catch (error) {
@@ -68,7 +63,6 @@ export const deleteOrganisasi = async (id) => {
 
 export const getOrganisasiWithoutRequest = async () => {
   try {
-    console.log("Fetching organisasi without requests");
     const response = await useAxios.get(`${API_URL}/without-request`);
     
     // Validate the response
