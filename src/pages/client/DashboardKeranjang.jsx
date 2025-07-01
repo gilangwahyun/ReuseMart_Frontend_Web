@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BASE_URL } from "../../api/index";
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Container, Card, Button, Table, Row, Col, Image } from 'react-bootstrap';
 import { FaTrash, FaShoppingBag, FaInfoCircle, FaImage } from 'react-icons/fa';
@@ -236,7 +237,7 @@ const DashboardKeranjang = () => {
                         <Link to={`/product/${item.barang.id_barang}`}>
                           {itemThumbnails[item.barang.id_barang] ? (
                             <Image 
-                              src={`http://127.0.0.1:8000/${itemThumbnails[item.barang.id_barang].url_foto}`}
+                              src={`${BASE_URL}${itemThumbnails[item.barang.id_barang].url_foto}`}
                               alt={item.barang.nama_barang} 
                               width={80} 
                               height={80} 

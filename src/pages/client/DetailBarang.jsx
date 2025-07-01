@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { BASE_URL } from "../../api/index";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -322,7 +323,7 @@ const DetailBarang = () => {
                             key={foto.id_foto_barang}
                           >
                             <img
-                              src={`http://127.0.0.1:8000/${foto.url_foto}`}
+                              src={`${BASE_URL}${foto.url_foto}`}
                               className="d-block w-100 rounded"
                               alt={`Foto ${barang.nama_barang} ${index + 1}`}
                               style={{ height: "400px", objectFit: "cover", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}

@@ -60,7 +60,8 @@ export default function LoginPage() {
 
           if (user.role === 'Pegawai') {
             const jabatanResponse = await getJabatanByUser(user.id_user);
-            const { id_jabatan } = jabatanResponse.data;
+            const id_jabatan = parseInt(jabatanResponse.data.id_jabatan, 10);
+            console.log(jabatanResponse);
 
             switch (id_jabatan) {
               case 1:

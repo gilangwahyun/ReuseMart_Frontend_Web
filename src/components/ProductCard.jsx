@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { BASE_URL } from "../api/index";
 import { getFotoBarangByIdBarang } from "../api/fotoBarangApi";
 import { getByIdBarang } from "../api/PenitipanBarangApi"; // Import API untuk mendapatkan data penitipan berdasarkan id_barang
 import { FaShieldAlt, FaUserAlt  } from "react-icons/fa"; // Import ikon garansi dan toko
@@ -103,7 +104,7 @@ const ProductCard = ({ product }) => {
       
       <Link to={`/product/${product.id_barang}`} className="text-decoration-none text-dark">
         <img
-          src={thumbnailFoto ? `http://127.0.0.1:8000/${thumbnailFoto.url_foto}` : "/assets/logoReuseMart.png"}
+          src={thumbnailFoto ? `${BASE_URL}${thumbnailFoto.url_foto}` : "/assets/logoReuseMart.png"}
           className="card-img-top"
           alt={product.nama_barang}
           style={{ height: "200px", objectFit: "cover" }}

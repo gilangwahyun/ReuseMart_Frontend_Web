@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BASE_URL } from "../../api/index";
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBarangById, updateBarang } from '../../api/BarangApi';
 import { getFotoBarangByIdBarang, uploadFotoBarang, deleteFotoBarang, updateFotoBarang } from '../../api/FotoBarangApi';
@@ -237,7 +238,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
               {fotoBarang.map((foto, idx) => (
                 <div key={foto.id_foto_barang || idx} className="position-relative mb-2">
                   <img
-                    src={`http://127.0.0.1:8000/${foto.url_foto || foto.url}`}
+                    src={`${BASE_URL}${foto.url_foto || foto.url}`}
                     alt={`Foto ${barang.nama_barang} ${idx + 1}`}
                     style={{
                       width: '100%',
