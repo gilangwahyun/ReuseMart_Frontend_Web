@@ -97,9 +97,87 @@ const DetailBarang = () => {
           }
 
           // Check for TOP SELLER badge
-          const topSellerResult = await getCurrentTopSeller();
-          if (topSellerResult.data && topSellerResult.data.id_penitip === penitipanResult.penitip.id_penitip) {
-            setTopSellerBadge(topSellerResult.data);
+          try {
+            const topSellerResult = await getCurrentTopSeller();
+            console.log('Top Seller result:', topSellerResult);
+            
+            // ID penitip dari barang yang sedang dilihat
+            const penitipId = penitipanResult.penitip.id_penitip;
+            console.log('ID Penitip pada barang:', penitipId, 'tipe:', typeof penitipId);
+            
+            // Periksa struktur respons
+            if (topSellerResult) {
+              // Cek apakah struktur nested (topSellerResult.data)
+              if (topSellerResult.data) {
+                console.log('ID Penitip di badge (nested):', topSellerResult.data.id_penitip, 'tipe:', typeof topSellerResult.data.id_penitip);
+                
+                // Konversi ke string untuk perbandingan yang konsisten
+                if (String(topSellerResult.data.id_penitip) === String(penitipId)) {
+                  console.log('Badge found - nested data structure:', topSellerResult.data);
+                  setTopSellerBadge(topSellerResult.data);
+                } else {
+                  console.log('Badge tidak cocok (nested) - Badge ID:', topSellerResult.data.id_penitip, 'Penitip ID:', penitipId);
+                }
+              } 
+              // Cek apakah struktur flat (topSellerResult langsung)
+              else if (topSellerResult.id_penitip) {
+                console.log('ID Penitip di badge (flat):', topSellerResult.id_penitip, 'tipe:', typeof topSellerResult.id_penitip);
+                
+                // Konversi ke string untuk perbandingan yang konsisten
+                if (String(topSellerResult.id_penitip) === String(penitipId)) {
+                  console.log('Badge found - flat structure:', topSellerResult);
+                  setTopSellerBadge(topSellerResult);
+                } else {
+                  console.log('Badge tidak cocok (flat) - Badge ID:', topSellerResult.id_penitip, 'Penitip ID:', penitipId);
+                }
+              }
+              // Cek kemungkinan respons adalah array
+              else if (Array.isArray(topSellerResult)) {
+                console.log('Badge response is an array, searching for matching penitip...');
+                
+                // Cari penitip yang cocok dalam array
+                const matchingBadge = topSellerResult.find(badge => 
+                  String(badge.id_penitip) === String(penitipId) || 
+                  String(badge.penitip?.id_penitip) === String(penitipId) ||
+                  String(badge.ID_penitip) === String(penitipId)
+                );
+                
+                if (matchingBadge) {
+                  console.log('Badge found in array:', matchingBadge);
+                  setTopSellerBadge(matchingBadge);
+                } else {
+                  console.log('No matching badge found in array for penitip ID:', penitipId);
+                }
+              }
+              // Coba cari field ID_penitip (uppercase) jika ada
+              else if (topSellerResult.ID_penitip) {
+                console.log('ID Penitip di badge (uppercase):', topSellerResult.ID_penitip, 'tipe:', typeof topSellerResult.ID_penitip);
+                
+                if (String(topSellerResult.ID_penitip) === String(penitipId)) {
+                  console.log('Badge found - uppercase ID structure:', topSellerResult);
+                  setTopSellerBadge(topSellerResult);
+                } else {
+                  console.log('Badge tidak cocok (uppercase) - Badge ID:', topSellerResult.ID_penitip, 'Penitip ID:', penitipId);
+                }
+              }
+              // Coba cari field penitip.id_penitip jika ada
+              else if (topSellerResult.penitip?.id_penitip) {
+                console.log('ID Penitip di badge (nested penitip):', topSellerResult.penitip.id_penitip, 'tipe:', typeof topSellerResult.penitip.id_penitip);
+                
+                if (String(topSellerResult.penitip.id_penitip) === String(penitipId)) {
+                  console.log('Badge found - nested penitip structure:', topSellerResult);
+                  setTopSellerBadge(topSellerResult);
+                } else {
+                  console.log('Badge tidak cocok (nested penitip) - Badge ID:', topSellerResult.penitip.id_penitip, 'Penitip ID:', penitipId);
+                }
+              } else {
+                console.log('Struktur data badge tidak seperti yang diharapkan:', topSellerResult);
+              }
+            } else {
+              console.log('Tidak ada top seller yang dikembalikan dari API');
+            }
+          } catch (error) {
+            console.error('Error fetching top seller badge:', error);
           }
         }
       } catch (err) {
@@ -384,11 +462,11 @@ const DetailBarang = () => {
                         <div className="badge bg-warning text-white ms-2 d-flex align-items-center" 
                              style={{ fontSize: '0.8rem', padding: '0.35em 0.65em' }}>
                           <FaStar className="me-1" style={{ fontSize: '0.9rem' }} />
-                          {topSellerBadge.nama_badge}
+                          {topSellerBadge.nama_badge || "TOP SELLER"}
                           <OverlayTrigger
                             placement="top"
                             overlay={
-                              <Tooltip id={`tooltip-${topSellerBadge.id_badge}`}>
+                              <Tooltip id={`tooltip-${topSellerBadge.id_badge || 'topseller'}`}>
                                 Penitip dengan performa penjualan terbaik bulan lalu
                               </Tooltip>
                             }

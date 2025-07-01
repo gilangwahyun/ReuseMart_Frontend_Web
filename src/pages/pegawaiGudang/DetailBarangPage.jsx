@@ -162,7 +162,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
   };
 
   const handleDeleteFoto = (fotoId, isThumbnail) => {
-    if (isThumbnail) {
+    if (isThumbnail === "1") {
       toast.warning('Foto ini adalah thumbnail. Pilih thumbnail baru sebelum menghapus foto ini.');
       return;
     }
@@ -249,15 +249,15 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                       objectFit: 'cover',
                       borderRadius: '6px',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                      border: foto.is_thumbnail ? '3px solid #198754' : '1px solid #ddd',
+                      border: foto.is_thumbnail === "1" ? '3px solid #198754' : '1px solid #ddd',
                     }}
                   />
                   {/* Badge Thumbnail */}
-                  {foto.is_thumbnail === 1 && (
+                  {foto.is_thumbnail === "1" && (
                     <span className="badge bg-success position-absolute top-0 start-0 m-2">Thumbnail</span>
                   )}
                   {/* Tombol jadikan thumbnail */}
-                  {!foto.is_thumbnail && (
+                  {foto.is_thumbnail !== "1" && (
                     <button
                       className="btn btn-sm btn-outline-success position-absolute top-0 end-0 m-1"
                       style={{ zIndex: 2 }}
@@ -268,7 +268,7 @@ const DetailBarangPage = ({ isEditMode = false }) => {
                     </button>
                   )}
                   {/* Tombol hapus hanya di edit mode dan bukan thumbnail */}
-                  {editMode && !foto.is_thumbnail && (
+                  {editMode && foto.is_thumbnail !== "1" && (
                     <button
                       className="btn btn-sm btn-danger position-absolute bottom-0 end-0 m-1"
                       style={{ zIndex: 2 }}

@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Modal, Button } from "react-bootstrap";
+import { BASE_URL } from "../../api/index";
 
 const PenitipTable = ({ data, onEdit, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
   const handleShowImage = (imagePath) => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    setSelectedImage(`${baseUrl}/${imagePath}`);
+    setSelectedImage(`${BASE_URL}/${imagePath}`);
     setShowModal(true);
   };
   
