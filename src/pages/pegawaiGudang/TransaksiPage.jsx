@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllPegawai } from "../../api/PegawaiApi";
 import { createJadwal } from "../../api/JadwalApi";
 import TransaksiTable from "../../components/PegawaiGudangComponents/TransaksiTable"; // Import komponen tabel
-import PegawaiGudangSideBar from "../../components/PegawaiGudangSideBar";
+import PegawaiGudangSidebar from "../../components/PegawaiGudangSidebar";
 import { getFotoBarangByIdBarang } from "../../api/fotoBarangApi"; // Import API untuk foto barang
 
 const TransaksiPage = () => {
@@ -681,7 +681,7 @@ const TransaksiPage = () => {
 
   return (
     <div className="d-flex">
-      <PegawaiGudangSideBar />
+      <PegawaiGudangSidebar />
       <div className="p-4 w-100">
         <div className="flex-grow-1 ms-3">
           <div className="d-flex justify-content-between align-items-center mb-3">

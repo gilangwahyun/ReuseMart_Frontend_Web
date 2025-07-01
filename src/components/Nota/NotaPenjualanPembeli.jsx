@@ -273,18 +273,29 @@ const NotaPenjualanPembeli = () => {
   const generatePDF = async (data) => {
     try {
       if (!data) {
+        console.log("[NOTA PEMBELI] No data available for PDF generation");
         setPdfError("Tidak ada data untuk membuat PDF");
         return;
       }
       
-      console.log("Generating PDF with invoice number:", data.invoiceNumber);
+      console.log("[NOTA PEMBELI] Starting PDF generation with invoice number:", data.invoiceNumber);
+      console.log("[NOTA PEMBELI] PDF data:", {
+        invoiceNumber: data.invoiceNumber,
+        jadwalId: data.jadwal?.id_jadwal,
+        transaksiId: data.transaksi?.id_transaksi,
+        pembeliName: data.pembeli?.nama_pembeli,
+        totalItems: data.items?.length || 0,
+        totalAmount: data.items?.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0) || 0
+      });
       
       const blob = await pdf(<NotaPengambilanDocument data={data} />).toBlob();
+      console.log("[NOTA PEMBELI] PDF blob created successfully");
       setPdfBlob(blob);
       setIsPdfReady(true);
       setPdfError(null);
+      console.log("[NOTA PEMBELI] PDF generation completed successfully");
     } catch (err) {
-      console.error("Error generating PDF:", err);
+      console.error("[NOTA PEMBELI] Error generating PDF:", err);
       setPdfError(`Gagal membuat PDF: ${err.message}`);
     }
   };
@@ -308,6 +319,7 @@ const NotaPenjualanPembeli = () => {
   useEffect(() => {
     const fetchNotaData = async () => {
       setLoading(true);
+      console.log(`[NOTA PEMBELI] Starting fetchNotaData for jadwal ID: ${id_jadwal}`);
       try {
         // Initialize variables here to prevent "Cannot access before initialization" errors
         let buyerEmail = "Email tidak tersedia";
@@ -315,39 +327,52 @@ const NotaPenjualanPembeli = () => {
         let invoiceNumber = "";
 
         // Step 1: Get jadwal data
+        console.log(`[NOTA PEMBELI] Fetching jadwal data for ID: ${id_jadwal}`);
         const jadwalResponse = await useAxios.get(`/jadwal/${id_jadwal}`);
         const jadwalData = jadwalResponse.data;
+        console.log(`[NOTA PEMBELI] Jadwal data:`, jadwalData);
 
         // Verify this is a self-pickup transaction (id_pegawai should be null)
         if (jadwalData.id_pegawai !== null) {
+          console.log(`[NOTA PEMBELI] This is not a self-pickup transaction. id_pegawai: ${jadwalData.id_pegawai}`);
           setError('Ini bukan transaksi pengambilan mandiri.');
           setLoading(false);
           return;
         }
 
         // Step 2: Get transaction data
+        console.log(`[NOTA PEMBELI] Fetching transaction data for ID: ${jadwalData.id_transaksi}`);
         const transaksiResponse = await useAxios.get(`/transaksi/${jadwalData.id_transaksi}`);
         const transaksiData = transaksiResponse.data;
+        console.log(`[NOTA PEMBELI] Transaction data:`, transaksiData);
 
         // Step 2.5: Get nota penjualan data if it exists
         try {
+          console.log(`[NOTA PEMBELI] Checking if nota exists for transaction ID: ${transaksiData.id_transaksi}`);
           const notaPenjualan = await getNotaPenjualanByTransaksiId(transaksiData.id_transaksi);
           if (notaPenjualan) {
             invoiceNumber = notaPenjualan.nomor_nota;
-            console.log("Found existing nota with number:", invoiceNumber);
+            console.log(`[NOTA PEMBELI] Found existing nota with number: ${invoiceNumber}`, notaPenjualan);
           } else {
-            console.log("No existing nota found, creating a new one for self-pickup transaction");
+            console.log("[NOTA PEMBELI] No existing nota found, will create a new one for self-pickup transaction");
             
             // Check if we've already attempted to create a nota in this component lifecycle
             if (!notaCreationAttempted.current) {
               notaCreationAttempted.current = true;
+              console.log("[NOTA PEMBELI] First attempt to create nota in this component lifecycle");
               
               try {
                 // Get transaction details to calculate total
+                console.log(`[NOTA PEMBELI] Fetching transaction details for ID: ${transaksiData.id_transaksi}`);
                 const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiData.id_transaksi}`);
-                const detailTransaksiData = detailTransaksiResponse.data;
+                // Ensure detailTransaksiData is always an array
+                const detailTransaksiData = Array.isArray(detailTransaksiResponse.data) ? 
+                  detailTransaksiResponse.data : 
+                  (detailTransaksiResponse.data ? [detailTransaksiResponse.data] : []);
+                console.log(`[NOTA PEMBELI] Transaction details:`, detailTransaksiData);
                 
                 // Get item details to calculate total
+                console.log(`[NOTA PEMBELI] Fetching item details for ${detailTransaksiData.length} items`);
                 const itemDetails = await Promise.all(detailTransaksiData.map(async (item) => {
                   try {
                     const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
@@ -359,44 +384,61 @@ const NotaPenjualanPembeli = () => {
                       nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`
                     };
                   } catch (error) {
-                    console.error(`Error fetching barang ${item.id_barang}:`, error);
+                    console.error(`[NOTA PEMBELI] Error fetching barang ${item?.id_barang}:`, error);
                     return {
                       ...item,
-                      harga: item.harga_beli || 0,
-                      nama_barang: `Barang #${item.id_barang}`
+                      harga: item?.harga_beli || 0,
+                      nama_barang: `Barang #${item?.id_barang || 'unknown'}`
                     };
                   }
                 }));
+                console.log(`[NOTA PEMBELI] Item details:`, itemDetails);
                 
                 // Calculate total amount
                 const totalAmount = itemDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
-                console.log("Calculated total amount:", totalAmount);
+                console.log(`[NOTA PEMBELI] Calculated total amount: ${totalAmount}`);
                 const points = calculatePoints(totalAmount);
-                console.log("Calculated points:", points);
+                console.log(`[NOTA PEMBELI] Calculated points: ${points}`);
                 
                 // Generate a unique invoice number with transaction ID
+                console.log(`[NOTA PEMBELI] Generating invoice number for transaction ID: ${transaksiData.id_transaksi}`);
                 const newInvoiceNumber = await generateUniqueInvoiceNumber(transaksiData.id_transaksi);
-                console.log("Generated invoice number:", newInvoiceNumber);
+                console.log(`[NOTA PEMBELI] Generated invoice number: ${newInvoiceNumber}`);
 
                 // Format address
+                console.log(`[NOTA PEMBELI] Fetching address for pembeli ID: ${transaksiData.id_pembeli}`);
                 const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
                 const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
                 const formattedAddress = alamatData ? alamatData.alamat_lengkap : 'Alamat tidak tersedia';
+                console.log(`[NOTA PEMBELI] Formatted address: ${formattedAddress}`);
 
                 // Get buyer email
+                console.log(`[NOTA PEMBELI] Fetching pembeli data for ID: ${transaksiData.id_pembeli}`);
                 const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
                 const pembeliData = pembeliResponse.data;
+                console.log(`[NOTA PEMBELI] Pembeli data:`, pembeliData);
                 // Use the already initialized buyerEmail variable
                 
-                if (pembeliData.id_user) {
+                if (pembeliData && pembeliData.id_user) {
                   try {
+                    console.log(`[NOTA PEMBELI] Fetching user data for pembeli user ID: ${pembeliData.id_user}`);
                     const pembeliUserResponse = await useAxios.get(`/pembeli/user/${pembeliData.id_user}`);
                     if (pembeliUserResponse.data?.user?.email) {
                       buyerEmail = pembeliUserResponse.data.user.email;
+                      console.log(`[NOTA PEMBELI] Found buyer email: ${buyerEmail}`);
+                    } else {
+                      // Provide a valid email when missing
+                      buyerEmail = "no-email@example.com";
+                      console.log(`[NOTA PEMBELI] No email found in user data, using default: ${buyerEmail}`);
                     }
                   } catch (error) {
-                    console.error("Error fetching pembeli user data:", error);
+                    console.error("[NOTA PEMBELI] Error fetching pembeli user data:", error);
+                    buyerEmail = "no-email@example.com";
+                    console.log(`[NOTA PEMBELI] Error getting email, using default: ${buyerEmail}`);
                   }
+                } else {
+                  buyerEmail = "no-email@example.com";
+                  console.log(`[NOTA PEMBELI] No pembeli user ID available, using default email: ${buyerEmail}`);
                 }
 
                 // Format datetime with time for MySQL compatibility
@@ -415,6 +457,7 @@ const NotaPenjualanPembeli = () => {
                 };
 
                 // Create nota data
+                console.log(`[NOTA PEMBELI] Creating nota data object with invoice number: ${newInvoiceNumber}`);
                 const notaData = {
                   id_transaksi: transaksiData.id_transaksi,
                   nomor_nota: newInvoiceNumber,
@@ -433,16 +476,16 @@ const NotaPenjualanPembeli = () => {
                   email_pembeli: buyerEmail
                 };
                 
-                console.log("Creating nota with data:", notaData);
+                console.log("[NOTA PEMBELI] Creating nota with data:", notaData);
                 const createdNota = await createNotaPenjualanBarang(notaData);
-                console.log("Created nota response:", createdNota);
+                console.log("[NOTA PEMBELI] Created nota response:", createdNota);
                 
                 // Extract id_nota_penjualan from the response, handling different response formats
                 const notaPenjualanId = createdNota.data?.id_nota_penjualan || createdNota?.id_nota_penjualan;
-                console.log("Extracted nota ID:", notaPenjualanId);
+                console.log(`[NOTA PEMBELI] Extracted nota ID: ${notaPenjualanId}`);
                 
                 if (!notaPenjualanId) {
-                  console.error("Failed to get id_nota_penjualan from response:", createdNota);
+                  console.error("[NOTA PEMBELI] Failed to get id_nota_penjualan from response:", createdNota);
                   setError("ID nota penjualan tidak ditemukan dalam respon");
                   setLoading(false);
                   return;
@@ -455,26 +498,29 @@ const NotaPenjualanPembeli = () => {
                   harga_barang: item.harga
                 }));
                 
-                console.log("Creating nota details with data:", notaDetailsData);
+                console.log("[NOTA PEMBELI] Creating nota details with data:", notaDetailsData);
                 await createBatchNotaDetailPenjualan(notaDetailsData);
-                console.log("Nota details created successfully");
+                console.log("[NOTA PEMBELI] Nota details created successfully");
                 
                 invoiceNumber = newInvoiceNumber;
               } catch (createError) {
-                console.error("Error in nota creation process:", createError);
+                console.error("[NOTA PEMBELI] Error in nota creation process:", createError);
                 
                 // Try one more time to check if a nota was actually created despite the error
                 try {
+                  console.log(`[NOTA PEMBELI] Rechecking if nota exists after error for transaction ID: ${transaksiData.id_transaksi}`);
                   const recheckNota = await getNotaPenjualanByTransaksiId(transaksiData.id_transaksi);
                   if (recheckNota) {
-                    console.log("Found nota on recheck after error:", recheckNota);
+                    console.log("[NOTA PEMBELI] Found nota on recheck after error:", recheckNota);
                     invoiceNumber = recheckNota.nomor_nota;
                   } else {
+                    console.log("[NOTA PEMBELI] No nota found on recheck after error");
                     setError('Gagal membuat nota baru. Detail: ' + createError.message);
                     setLoading(false);
                     return;
                   }
                 } catch (recheckError) {
+                  console.error("[NOTA PEMBELI] Error during recheck after nota creation error:", recheckError);
                   setError('Gagal membuat nota baru. Detail: ' + createError.message);
                   setLoading(false);
                   return;
@@ -483,136 +529,230 @@ const NotaPenjualanPembeli = () => {
             } else {
               // If we've already attempted to create a nota, try to fetch it again
               // This handles the case where the first attempt succeeded but the response wasn't processed
-              console.log("Already attempted to create nota, checking one more time");
+              console.log("[NOTA PEMBELI] Already attempted to create nota, checking one more time");
               const recheckNota = await getNotaPenjualanByTransaksiId(transaksiData.id_transaksi);
               if (recheckNota) {
-                console.log("Found nota on additional check:", recheckNota);
+                console.log("[NOTA PEMBELI] Found nota on additional check:", recheckNota);
                 invoiceNumber = recheckNota.nomor_nota;
               } else {
+                console.log("[NOTA PEMBELI] No nota found on additional check, creating fallback invoice number");
                 // Generate a fallback invoice number for display
                 const now = new Date();
                 const year = now.getFullYear().toString().slice(-2);
                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
+                // Add null check for transaksiData.id_transaksi
+                const transactionId = transaksiData && transaksiData.id_transaksi ? 
+                  transaksiData.id_transaksi.toString().padStart(3, '0') : 
+                  Math.floor(Math.random() * 999).toString().padStart(3, '0');
                 // Add a random suffix to avoid collisions
                 const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
                 invoiceNumber = `${year}.${month}.${transactionId}-${randomSuffix}`;
-                console.log("Using fallback invoice number:", invoiceNumber);
+                console.log(`[NOTA PEMBELI] Using fallback invoice number: ${invoiceNumber}`);
               }
             }
           }
         } catch (error) {
-          console.error("Error in nota fetching/creation main process:", error);
+          console.error("[NOTA PEMBELI] Error in nota fetching/creation main process:", error);
           // Set fallback invoice number if everything fails
           const now = new Date();
           const year = now.getFullYear().toString().slice(-2);
           const month = (now.getMonth() + 1).toString().padStart(2, '0');
-          const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
+          // Add null check for transaksiData.id_transaksi
+          const transactionId = transaksiData && transaksiData.id_transaksi ? 
+            transaksiData.id_transaksi.toString().padStart(3, '0') : 
+            Math.floor(Math.random() * 999).toString().padStart(3, '0');
           // Add a random suffix to avoid collisions
           const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
           invoiceNumber = `${year}.${month}.${transactionId}-${randomSuffix}`;
-          console.log("Using fallback invoice number after error:", invoiceNumber);
+          console.log(`[NOTA PEMBELI] Using fallback invoice number after error: ${invoiceNumber}`);
         }
 
         // Step 3: Get pembeli data to get the id_user
-        const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
-        const pembeliData = pembeliResponse.data;
-        
-        console.log("Pembeli data:", pembeliData);
-        const buyerUserId = pembeliData.id_user; // Get the buyer's user ID
-        console.log("Buyer's User ID:", buyerUserId);
-        
+        let pembeliData = { nama_pembeli: "Pembeli tidak teridentifikasi", id_user: null };
+        try {
+          if (transaksiData && transaksiData.id_pembeli) {
+            console.log(`[NOTA PEMBELI] Fetching pembeli data for ID: ${transaksiData.id_pembeli}`);
+            const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+            pembeliData = pembeliResponse.data || pembeliData;
+            console.log("[NOTA PEMBELI] Pembeli data:", pembeliData);
+          } else {
+            console.log("[NOTA PEMBELI] No pembeli ID available in transaction data, using default");
+          }
+        } catch (error) {
+          console.error("[NOTA PEMBELI] Error fetching pembeli data:", error);
+        }
+
         // Step 4: Get the user email using the pembeli/user endpoint
-        if (buyerUserId) {
+        if (pembeliData.id_user) {
           try {
-            // Use the endpoint that returns both pembeli and nested user data
-            const pembeliUserResponse = await useAxios.get(`/pembeli/user/${buyerUserId}`);
-            console.log("Pembeli user response:", pembeliUserResponse.data);
+            console.log(`[NOTA PEMBELI] Fetching user data for pembeli user ID: ${pembeliData.id_user}`);
+            const pembeliUserResponse = await useAxios.get(`/pembeli/user/${pembeliData.id_user}`);
+            console.log("[NOTA PEMBELI] Pembeli user response:", pembeliUserResponse.data);
             
             // Extract email from the nested user object
             if (pembeliUserResponse.data && 
                 pembeliUserResponse.data.user && 
                 pembeliUserResponse.data.user.email) {
               buyerEmail = pembeliUserResponse.data.user.email;
-              console.log("Found buyer email:", buyerEmail);
+              console.log(`[NOTA PEMBELI] Found buyer email: ${buyerEmail}`);
+            } else {
+              console.log("[NOTA PEMBELI] No valid email found in user data, using default");
             }
             
             // Get the customer's current points
             if (pembeliUserResponse.data && 
                 typeof pembeliUserResponse.data.jumlah_poin !== 'undefined') {
               currentPoints = pembeliUserResponse.data.jumlah_poin || 0;
-              console.log("Found customer's current points:", currentPoints);
+              console.log(`[NOTA PEMBELI] Found customer's current points: ${currentPoints}`);
+            } else {
+              console.log("[NOTA PEMBELI] No points data found, using default (0)");
             }
           } catch (error) {
-            console.error("Error fetching pembeli/user data:", error);
+            console.error("[NOTA PEMBELI] Error fetching pembeli/user data:", error);
           }
+        } else {
+          console.log("[NOTA PEMBELI] No pembeli user ID available, skipping user data fetch");
         }
 
         // Step 5: Get address data
-        const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
-        const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+        let alamatData = null;
+        try {
+          if (transaksiData && transaksiData.id_pembeli) {
+            console.log(`[NOTA PEMBELI] Fetching alamat for pembeli ID: ${transaksiData.id_pembeli}`);
+            const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
+            if (Array.isArray(alamatResponse.data) && alamatResponse.data.length > 0) {
+              alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+              console.log("[NOTA PEMBELI] Found address:", alamatData);
+            } else {
+              console.log("[NOTA PEMBELI] No address data found");
+            }
+          } else {
+            console.log("[NOTA PEMBELI] No pembeli ID available, skipping address fetch");
+          }
+        } catch (error) {
+          console.error("[NOTA PEMBELI] Error fetching alamat data:", error);
+        }
 
         // Step 6: Get transaction items
-        const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiData.id_transaksi}`);
-        const detailTransaksiData = detailTransaksiResponse.data;
+        let detailTransaksiData2 = [];
+        try {
+          if (transaksiData && transaksiData.id_transaksi) {
+            console.log(`[NOTA PEMBELI] Fetching transaction details for ID: ${transaksiData.id_transaksi}`);
+            const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiData.id_transaksi}`);
+            if (detailTransaksiResponse && detailTransaksiResponse.data) {
+              // Ensure we always have an array
+              detailTransaksiData2 = Array.isArray(detailTransaksiResponse.data) ? 
+                detailTransaksiResponse.data : 
+                (detailTransaksiResponse.data ? [detailTransaksiResponse.data] : []);
+              console.log(`[NOTA PEMBELI] Found ${detailTransaksiData2.length} transaction details:`, detailTransaksiData2);
+            } else {
+              console.log("[NOTA PEMBELI] No transaction details data found");
+            }
+          } else {
+            console.log("[NOTA PEMBELI] No transaction ID available, skipping details fetch");
+          }
+        } catch (error) {
+          console.error("[NOTA PEMBELI] Error fetching transaction details:", error);
+        }
 
         // Step 7: Get complete item details
-        const itemsWithDetails = await Promise.all(detailTransaksiData.map(async (item) => {
-          try {
-            const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
-            const barang = barangResponse.data;
-            
-            // Fetch penitipan data to get nama_petugas_qc
-            let namaPetugasQC = "Tidak tersedia";
-            try {
-              const penitipanResponse = await useAxios.get(`/penitipanBarang/barang/${item.id_barang}`);
-              if (penitipanResponse.data && penitipanResponse.data.nama_petugas_qc) {
-                namaPetugasQC = penitipanResponse.data.nama_petugas_qc;
+        let itemsWithDetails = [];
+        try {
+          if (Array.isArray(detailTransaksiData2) && detailTransaksiData2.length > 0) {
+            console.log(`[NOTA PEMBELI] Processing ${detailTransaksiData2.length} items for details`);
+            itemsWithDetails = await Promise.all(detailTransaksiData2.map(async (item) => {
+              try {
+                if (!item || !item.id_barang) {
+                  console.log("[NOTA PEMBELI] Invalid item without id_barang:", item);
+                  return {
+                    nama_barang: "Barang tidak valid",
+                    harga: 0,
+                    nama_petugas_qc: "Tidak tersedia"
+                  };
+                }
+
+                console.log(`[NOTA PEMBELI] Fetching barang details for ID: ${item.id_barang}`);
+                const barangResponse = await useAxios.get(`/barang/${item.id_barang}`);
+                const barang = barangResponse.data;
+                
+                // Fetch penitipan data to get nama_petugas_qc
+                let namaPetugasQC = "Tidak tersedia";
+                try {
+                  console.log(`[NOTA PEMBELI] Fetching penitipan data for barang ID: ${item.id_barang}`);
+                  const penitipanResponse = await useAxios.get(`/penitipanBarang/barang/${item.id_barang}`);
+                  if (penitipanResponse.data && penitipanResponse.data.nama_petugas_qc) {
+                    namaPetugasQC = penitipanResponse.data.nama_petugas_qc;
+                    console.log(`[NOTA PEMBELI] Found QC officer: ${namaPetugasQC}`);
+                  } else {
+                    console.log("[NOTA PEMBELI] No QC officer found in penitipan data");
+                  }
+                } catch (penitipanError) {
+                  console.error(`[NOTA PEMBELI] Error fetching penitipan for barang ${item.id_barang}:`, penitipanError);
+                }
+                
+                const itemDetail = {
+                  ...item,
+                  barang: barang,
+                  nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`,
+                  harga: item.harga_beli || barang?.harga || 0,
+                  nama_petugas_qc: namaPetugasQC
+                };
+                console.log(`[NOTA PEMBELI] Processed item detail:`, itemDetail);
+                return itemDetail;
+              } catch (error) {
+                console.error(`[NOTA PEMBELI] Error fetching barang details:`, error);
+                return {
+                  ...item,
+                  nama_barang: item && item.id_barang ? `Barang #${item.id_barang}` : "Barang tidak diketahui",
+                  harga: item && item.harga_beli ? item.harga_beli : 0,
+                  nama_petugas_qc: "Tidak tersedia"
+                };
               }
-            } catch (penitipanError) {
-              console.error(`Error fetching penitipan for barang ${item.id_barang}:`, penitipanError);
-            }
-            
-            return {
-              ...item,
-              barang: barang,
-              nama_barang: barang?.nama_barang || `Barang #${item.id_barang}`,
-              harga: item.harga_beli || barang?.harga || 0,
-              nama_petugas_qc: namaPetugasQC
-            };
-          } catch (error) {
-            console.error(`Error fetching barang ${item.id_barang} details:`, error);
-            return {
-              ...item,
-              nama_barang: `Barang #${item.id_barang}`,
-              harga: item.harga_beli || 0,
-              nama_petugas_qc: "Tidak tersedia"
-            };
+            }));
+            console.log(`[NOTA PEMBELI] Processed ${itemsWithDetails.length} items with details`);
+          } else {
+            console.log("[NOTA PEMBELI] No items to process for details");
           }
-        }));
+        } catch (error) {
+          console.error("[NOTA PEMBELI] Error processing item details:", error);
+          itemsWithDetails = [];
+        }
 
         // Fetch QC officer name for display at the top level
         let qcOfficer = "Tidak tersedia";
         if (itemsWithDetails.length > 0 && itemsWithDetails[0].nama_petugas_qc) {
           qcOfficer = itemsWithDetails[0].nama_petugas_qc;
+          console.log(`[NOTA PEMBELI] Using QC officer for display: ${qcOfficer}`);
+        } else {
+          console.log("[NOTA PEMBELI] No QC officer available for display");
         }
 
         // Calculate total and points
-        const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0);
+        const totalAmount = itemsWithDetails.reduce((sum, item) => sum + (item.harga * (item.jumlah || 1)), 0) || 0;
+        console.log(`[NOTA PEMBELI] Calculated final total amount: ${totalAmount}`);
         const points = calculatePoints(totalAmount);
-        const totalPointsAfterTransaction = currentPoints + points;
+        console.log(`[NOTA PEMBELI] Calculated final points: ${points}`);
+        const totalPointsAfterTransaction = (currentPoints || 0) + points;
+        console.log(`[NOTA PEMBELI] Total points after transaction: ${totalPointsAfterTransaction}`);
 
         // Compile all data
         // Ensure we have an invoice number, if not create a fallback
         if (!invoiceNumber) {
+          console.log("[NOTA PEMBELI] No invoice number available, creating fallback");
           const now = new Date();
           const year = now.getFullYear().toString().slice(-2);
           const month = (now.getMonth() + 1).toString().padStart(2, '0');
-          const transactionId = transaksiData.id_transaksi.toString().padStart(3, '0');
-          invoiceNumber = `${year}.${month}.${transactionId}`;
-          console.log("Created final fallback invoice number:", invoiceNumber);
+          // Add null check for transaksiData.id_transaksi
+          const transactionId = transaksiData && transaksiData.id_transaksi ? 
+            transaksiData.id_transaksi.toString().padStart(3, '0') : 
+            Math.floor(Math.random() * 999).toString().padStart(3, '0');
+          // Add a random suffix for uniqueness
+          const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+          invoiceNumber = `${year}.${month}.${transactionId}-${randomSuffix}`;
+          console.log(`[NOTA PEMBELI] Created final fallback invoice number: ${invoiceNumber}`);
         }
 
+        console.log(`[NOTA PEMBELI] Preparing final nota data with invoice number: ${invoiceNumber}`);
         setNotaData({
           invoiceNumber: invoiceNumber,
           jadwal: jadwalData,
@@ -627,10 +767,10 @@ const NotaPenjualanPembeli = () => {
           totalPointsAfterTransaction: totalPointsAfterTransaction
         });
 
-        console.log("Final nota data prepared with invoice number:", invoiceNumber);
+        console.log(`[NOTA PEMBELI] Final nota data prepared with invoice number: ${invoiceNumber}`);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching nota data:', error);
+        console.error('[NOTA PEMBELI] Error fetching nota data:', error);
         setError('Gagal memuat data nota. Silakan coba lagi.');
         setLoading(false);
       }

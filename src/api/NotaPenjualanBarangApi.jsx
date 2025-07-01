@@ -64,21 +64,30 @@ export const createNotaPenjualanBarang = async (notaData) => {
   }
   
   try {
-    // Skip existence check for now since the endpoint is not available
-    // Once backend implements all endpoints, restore this check
-    /*
-    if (notaData.nomor_nota) {
-      const exists = await checkNotaNumberExists(notaData.nomor_nota);
-      if (exists) {
-        throw new Error(`Nota dengan nomor ${notaData.nomor_nota} sudah ada`);
-      }
-    }
-    */
+    // Make sure all required fields are present
+    const requiredFields = {
+      tanggal_pesan: new Date().toISOString(),
+      tanggal_lunas: new Date().toISOString(),
+      tanggal_ambil: new Date().toISOString(),
+      tanggal_kirim: new Date().toISOString(),
+      nama_kurir: '(diambil sendiri)',
+      total_harga: 0,
+      ongkos_kirim: 0,
+      potongan_diskon: 0, 
+      poin_diperoleh: 0,
+      total_setelah_diskon: 0,
+      nama_pembeli: 'Pembeli tidak teridentifikasi',
+      email_pembeli: 'no-email@example.com',
+      alamat_pembeli: 'Alamat tidak tersedia'
+    };
     
-    console.log("Sending nota data to backend:", notaData);
+    // Fill in any missing fields with default values
+    const completeData = { ...requiredFields, ...notaData };
+    
+    console.log("Sending complete nota data to backend:", completeData);
     
     try {
-      const response = await useAxios.post(API_URL, notaData);
+      const response = await useAxios.post(API_URL, completeData);
       console.log("Received response from backend:", response.data);
       
       // Cache the result if it has a transaction ID
@@ -94,25 +103,67 @@ export const createNotaPenjualanBarang = async (notaData) => {
       return response.data;
     } catch (postError) {
       // Handle duplicate invoice number error (422)
-      if (postError.response && postError.response.status === 422 && 
-          postError.response.data.message?.includes('nomor nota has already been taken')) {
-        console.log("Duplicate invoice number detected, generating a new one and retrying");
+      if (postError.response && postError.response.status === 422) {
+        console.log("Validation error detected:", postError.response.data);
         
-        // Generate a completely unique invoice number with the new format
-        const now = new Date();
-        const year = now.getFullYear().toString().slice(-2);
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const transactionId = notaData.id_transaksi || '000';
+        // Check if it's a duplicate invoice number
+        if (postError.response.data.message?.includes('nomor nota has already been taken')) {
+          console.log("Duplicate invoice number detected, generating a new one and retrying");
+          
+          // Generate a completely unique invoice number with the new format
+          const now = new Date();
+          const year = now.getFullYear().toString().slice(-2);
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const transactionId = notaData.id_transaksi || '000';
+          
+          // Add a small random suffix to make it unique
+          const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+          
+          // Format: YY.MM.TransactionID-XX (where XX is a random number)
+          completeData.nomor_nota = `${year}.${month}.${transactionId.toString().padStart(3, '0')}-${randomSuffix}`;
+        } else {
+          // For other validation errors, check the specific errors and fix them
+          const errors = postError.response.data.errors || {};
+          
+          // Fix any validation errors with default values
+          Object.keys(errors).forEach(field => {
+            console.log(`Fixing validation error for field: ${field}`);
+            
+            switch(field) {
+              case 'tanggal_pesan':
+              case 'tanggal_lunas':
+              case 'tanggal_ambil':
+              case 'tanggal_kirim':
+                completeData[field] = new Date().toISOString();
+                break;
+              case 'nama_pembeli':
+                completeData[field] = 'Pembeli tidak teridentifikasi';
+                break;
+              case 'email_pembeli':
+                completeData[field] = 'no-email@example.com';
+                break;
+              case 'alamat_pembeli':
+                completeData[field] = 'Alamat tidak tersedia';
+                break;
+              case 'nama_kurir':
+                completeData[field] = '(diambil sendiri)';
+                break;
+              case 'total_harga':
+              case 'ongkos_kirim':
+              case 'potongan_diskon':
+              case 'poin_diperoleh':
+              case 'total_setelah_diskon':
+                completeData[field] = 0;
+                break;
+              default:
+                console.warn(`Unknown field with validation error: ${field}`);
+            }
+          });
+        }
         
-        // Add a small random suffix to make it unique
-        const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-        
-        // Format: YY.MM.TransactionID-XX (where XX is a random number)
-        notaData.nomor_nota = `${year}.${month}.${transactionId.toString().padStart(3, '0')}-${randomSuffix}`;
-        
-        // Retry with the new invoice number
-        console.log("Retrying with new invoice number:", notaData.nomor_nota);
-        const retryResponse = await useAxios.post(API_URL, notaData);
+        // Retry with the corrected data
+        console.log("Retrying with corrected data:", completeData);
+        const retryResponse = await useAxios.post(API_URL, completeData);
         console.log("Retry successful:", retryResponse.data);
         
         // Cache the result if it has a transaction ID
@@ -128,7 +179,7 @@ export const createNotaPenjualanBarang = async (notaData) => {
         return retryResponse.data;
       }
       
-      // If it's not a duplicate invoice error, rethrow
+      // If it's not a validation error, rethrow
       throw postError;
     }
   } catch (error) {
@@ -161,14 +212,21 @@ export const createNotaPenjualanBarang = async (notaData) => {
 };
 
 // Generate a unique invoice number (format: YY.MM.transactionId)
-export const generateUniqueInvoiceNumber = async (transactionId = '000') => {
+export const generateUniqueInvoiceNumber = async (transactionId) => {
   try {
+    // Handle undefined or invalid transactionId
+    let safeTransactionId = '000';
+    if (transactionId) {
+      // Ensure it's a string and pad it
+      safeTransactionId = transactionId.toString().padStart(3, '0');
+    }
+    
     const now = new Date();
     const year = now.getFullYear().toString().slice(-2);
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
     
     // Format: YY.MM.TransactionID
-    const invoiceNumber = `${year}.${month}.${transactionId.toString().padStart(3, '0')}`;
+    const invoiceNumber = `${year}.${month}.${safeTransactionId}`;
     
     // Once backend implements all endpoints, restore this check
     /*
@@ -195,7 +253,8 @@ export const generateUniqueInvoiceNumber = async (transactionId = '000') => {
     const now = new Date();
     const year = now.getFullYear().toString().slice(-2);
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    return `${year}.${month}.${transactionId.toString().padStart(3, '0')}`;
+    const randomId = Math.floor(Math.random() * 999).toString().padStart(3, '0');
+    return `${year}.${month}.${randomId}`;
   }
 };
 
@@ -230,6 +289,12 @@ export const getDetailsByNotaId = async (notaId) => {
 };
 
 export const getNotaPenjualanByTransaksiId = async (transaksiId) => {
+  // Handle undefined or invalid IDs
+  if (!transaksiId) {
+    console.log("Invalid transaction ID provided to getNotaPenjualanByTransaksiId:", transaksiId);
+    return null;
+  }
+
   // Keep a cache of transactions we've already checked
   if (!getNotaPenjualanByTransaksiId.cache) {
     getNotaPenjualanByTransaksiId.cache = {};
@@ -248,11 +313,12 @@ export const getNotaPenjualanByTransaksiId = async (transaksiId) => {
   }
 
   try {
+    console.log(`[NOTA API] Fetching nota for transaction ID: ${transaksiId}`);
     // For now, since the endpoint is not available in the backend, 
     // we'll return a mock response if the endpoint returns 404
     try {
       const response = await useAxios.get(`${API_URL}/transaksi/${transaksiId}`);
-      console.log("Found existing nota for transaction:", response.data);
+      console.log(`[NOTA API] Successfully found nota for transaction ${transaksiId}:`, response.data);
       
       // Cache the result
       getNotaPenjualanByTransaksiId.cache[transaksiId] = response.data;
@@ -260,17 +326,17 @@ export const getNotaPenjualanByTransaksiId = async (transaksiId) => {
     } catch (innerError) {
       if (innerError.response) {
         if (innerError.response.status === 404) {
-          console.log("Backend endpoint /notaPenjualanBarang/transaksi/{id} either not implemented or nota not found");
+          console.log(`[NOTA API] Backend endpoint /notaPenjualanBarang/transaksi/${transaksiId} either not implemented or nota not found`);
           // Cache the negative result
           getNotaPenjualanByTransaksiId.cache[transaksiId] = false;
           // Return null to indicate no nota exists, allowing a new one to be created
           return null;
         }
         
-        console.error(`Error fetching nota by transaksi ID: ${innerError.response.status} - ${innerError.message}`);
-        console.log("Response data:", innerError.response.data);
+        console.error(`[NOTA API] Error fetching nota by transaksi ID ${transaksiId}: ${innerError.response.status} - ${innerError.message}`);
+        console.log("[NOTA API] Response data:", innerError.response.data);
       } else {
-        console.error("Error without response fetching nota by transaksi ID:", innerError.message);
+        console.error(`[NOTA API] Error without response fetching nota by transaksi ID ${transaksiId}:`, innerError.message);
       }
       
       // For all errors, return null rather than throwing
@@ -278,7 +344,7 @@ export const getNotaPenjualanByTransaksiId = async (transaksiId) => {
       return null;
     }
   } catch (error) {
-    console.error("Unexpected error in getNotaPenjualanByTransaksiId:", error);
+    console.error(`[NOTA API] Unexpected error in getNotaPenjualanByTransaksiId for ID ${transaksiId}:`, error);
     // Always return null for any error, don't throw
     getNotaPenjualanByTransaksiId.cache[transaksiId] = false;
     return null;

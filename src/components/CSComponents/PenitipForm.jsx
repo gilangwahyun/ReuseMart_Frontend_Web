@@ -8,6 +8,9 @@ const PenitipForm = ({ onSubmit, onClose, initialData = {}, loading }) => {
     nik: '',
     no_telepon: '',
     alamat: '',
+    saldo: '',
+    nominal_tarik: '',
+    jumlah_poin: '',
     foto_ktp: null,
   });
   const [errors, setErrors] = useState({});
@@ -23,6 +26,9 @@ const PenitipForm = ({ onSubmit, onClose, initialData = {}, loading }) => {
         nik: initialData.nik || '',
         no_telepon: initialData.no_telepon || '',
         alamat: initialData.alamat || '',
+        saldo: initialData.saldo || '',
+        nominal_tarik: initialData.nominal_tarik || '',
+        jumlah_poin: initialData.jumlah_poin || '',
       }));
 
       // Jika ada foto KTP, tampilkan preview
@@ -85,8 +91,20 @@ const PenitipForm = ({ onSubmit, onClose, initialData = {}, loading }) => {
     formData.append('nik', data.nik);
     formData.append('no_telepon', data.no_telepon);
     formData.append('alamat', data.alamat);
+    
+    // Explicitly ensure we're sending numeric values (even if empty)
+    formData.append('saldo', data.saldo || '0');
+    formData.append('nominal_tarik', data.nominal_tarik || '0');
+    formData.append('jumlah_poin', data.jumlah_poin || '0');
+    
     if (data.foto_ktp) formData.append('foto_ktp', data.foto_ktp);
     if (initialData.id_user) formData.append('id_user', initialData.id_user);
+
+    // Debug log the form data
+    console.log('Form data to be submitted:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value instanceof File ? 'File object' : value}`);
+    }
 
     onSubmit(formData);
   };
@@ -171,6 +189,44 @@ const PenitipForm = ({ onSubmit, onClose, initialData = {}, loading }) => {
           {errors.alamat && <div className="invalid-feedback">{errors.alamat}</div>}
         </div>
       </div>
+
+      {initialData.id_user && (
+        <div className="row">
+          <div className="col-md-4 mb-3">
+            <label className="form-label">Saldo</label>
+            <input
+              type="number"
+              name="saldo"
+              className="form-control"
+              value={data.saldo}
+              onChange={handleChange}
+            />
+            <small className="text-muted">Saldo penitip saat ini</small>
+          </div>
+          <div className="col-md-4 mb-3">
+            <label className="form-label">Nominal Tarik</label>
+            <input
+              type="number"
+              name="nominal_tarik"
+              className="form-control"
+              value={data.nominal_tarik}
+              onChange={handleChange}
+            />
+            <small className="text-muted">Nominal penarikan terakhir</small>
+          </div>
+          <div className="col-md-4 mb-3">
+            <label className="form-label">Jumlah Poin</label>
+            <input
+              type="number"
+              name="jumlah_poin"
+              className="form-control"
+              value={data.jumlah_poin}
+              onChange={handleChange}
+            />
+            <small className="text-muted">Akumulasi poin penitip</small>
+          </div>
+        </div>
+      )}
 
       <div className="mb-3">
         <label className="form-label">Foto KTP</label>

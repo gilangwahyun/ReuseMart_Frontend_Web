@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { BASE_URL } from "../../api/index";
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBarangById, updateBarang } from '../../api/BarangApi';
-import { getFotoBarangByIdBarang, uploadFotoBarang, deleteFotoBarang, updateFotoBarang } from '../../api/FotoBarangApi';
+import { getFotoBarangByIdBarang, uploadFotoBarang, deleteFotoBarang, updateFotoBarang } from '../../api/fotoBarangApi';
 import { getAllKategori } from "../../api/KategoriBarangApi";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PegawaiGudangSidebar from '../../components/PegawaiGudangSidebar';
 
 const DetailBarangPage = ({ isEditMode = false }) => {
   const { id } = useParams();
@@ -215,19 +216,21 @@ const DetailBarangPage = ({ isEditMode = false }) => {
   }
 
   return (
-    <div className="container my-5">
-      <div className="d-flex align-items-center mb-4">
-        <button className="btn btn-outline-success me-3" onClick={() => navigate(-1)}>
-          ← Kembali
-        </button>
-        <h2>{editMode ? 'Edit Detail Barang' : 'Detail Barang'}</h2>
-
-        {!editMode && (
-          <button className="btn btn-warning ms-auto" onClick={() => setEditMode(true)}>
-            ✏️ Edit
+    <div className="d-flex">
+      <PegawaiGudangSidebar />
+      <div className="container my-5">
+        <div className="d-flex align-items-center mb-4">
+          <button className="btn btn-outline-success me-3" onClick={() => navigate(-1)}>
+            ← Kembali
           </button>
-        )}
-      </div>
+          <h2>{editMode ? 'Edit Detail Barang' : 'Detail Barang'}</h2>
+
+          {!editMode && (
+            <button className="btn btn-warning ms-auto" onClick={() => setEditMode(true)}>
+              ✏️ Edit
+            </button>
+          )}
+        </div>
 
       <div className="row">
         {/* Kolom Foto */}
@@ -287,366 +290,367 @@ const DetailBarangPage = ({ isEditMode = false }) => {
             />
           )}
 
-          {/* Input upload foto hanya di edit mode, di bawah foto */}
-          {editMode && (
-            <div className="mt-3">
-              <label className="form-label fw-semibold">Upload Foto Baru:</label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="form-control"
-                onChange={(e) => handleFotoUpload(e.target.files)}
-              />
-              {fotoError && (
-                <div className="text-danger mt-2" style={{ fontSize: 14 }}>{fotoError}</div>
-              )}
-              {newPhotos.length > 0 && (
-                <div className="row mt-2 g-2">
-                  {newPhotos.map((file, i) => (
-                    <div className="col-auto position-relative" key={i} style={{ width: 100 }}>
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={file.name}
-                        style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger position-absolute top-0 end-0"
-                        style={{ zIndex: 2, padding: '2px 6px', fontSize: 12 }}
-                        onClick={() => setNewPhotos(prev => prev.filter((_, idx) => idx !== i))}
-                        title="Hapus foto baru"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {newPhotos.length > 0 && (
-                <div className="mt-2">
-                  <small className="text-muted">{newPhotos.length} foto baru akan diupload</small>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Kolom Detail dengan Tab */}
-        <div className="col-md-8">
-          {/* Tab Menu */}
-          <ul className="nav nav-tabs mb-3">
-            <li className="nav-item">
-              <button
-                className={`nav-link text-success ${activeTab === 'detail' ? 'active text-success fw-bold' : ''}`}
-                onClick={() => setActiveTab('detail')}
-              >
-                Detail Barang
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link text-success${activeTab === 'penitipan' ? 'active text-success fw-bold' : ''}`}
-                onClick={() => setActiveTab('penitipan')}
-              >
-                Info Penitipan
-              </button>
-            </li>
-            {/* Info Transaksi hanya tampil jika status_barang === 'Habis' dan status_transaksi === 'Lunas' */}
-            {(barang.status_barang === 'Habis' && barang.detail_transaksi?.transaksi?.status_transaksi === 'Lunas') && (
-              <li className="nav-item">
-                <button
-                  className={`nav-link text-success ${activeTab === 'transaksi' ? 'active text-success fw-bold' : ''}`}
-                  onClick={() => setActiveTab('transaksi')}
-                >
-                  Info Transaksi
-                </button>
-              </li>
-            )}
-
-            {/* Info Donasi tampil jika status_barang adalah 'Barang untuk donasi' atau 'Barang sudah Didonasikan' */}
-            {(barang.status_barang === 'Barang untuk donasi' || barang.status_barang === 'Barang sudah Didonasikan') && (
-              <li className="nav-item">
-                <button
-                  className={`nav-link text-success ${activeTab === 'donasi' ? 'active text-success fw-bold' : ''}`}
-                  onClick={() => setActiveTab('donasi')}
-                >
-                  Info Donasi
-                </button>
-              </li>
-            )}
-          </ul>
-
-          {/* Konten Tab */}
-          {activeTab === 'detail' && (
-            <>
-              {/* Nama Barang */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Nama Barang:</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="nama_barang"
-                    value={formData.nama_barang || ''}
-                    onChange={handleChange}
-                  />
-                ) : (
-                  <p className="border p-2 rounded bg-light">{barang.nama_barang}</p>
+            {/* Input upload foto hanya di edit mode, di bawah foto */}
+            {editMode && (
+              <div className="mt-3">
+                <label className="form-label fw-semibold">Upload Foto Baru:</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="form-control"
+                  onChange={(e) => handleFotoUpload(e.target.files)}
+                />
+                {fotoError && (
+                  <div className="text-danger mt-2" style={{ fontSize: 14 }}>{fotoError}</div>
                 )}
-              </div>
-
-              {/* Deskripsi */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Deskripsi:</label>
-                {editMode ? (
-                  <textarea
-                    className="form-control"
-                    name="deskripsi"
-                    value={formData.deskripsi || ''}
-                    onChange={handleChange}
-                    rows={4}
-                  />
-                ) : (
-                  <p className="border p-2 rounded bg-light">{barang.deskripsi}</p>
-                )}
-              </div>
-
-              {/* Harga */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Harga:</label>
-                {editMode ? (
-                  <input
-                    type="number"
-                    className="form-control"
-                    name="harga"
-                    value={formData.harga || ''}
-                    onChange={handleChange}
-                  />
-                ) : (
-                  <p className="border p-2 rounded bg-light">
-                    Rp {barang.harga.toLocaleString('id-ID')}
-                  </p>
-                )}
-              </div>
-
-              {/* Berat */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Berat (gram):</label>
-                {editMode ? (
-                  <input
-                    type="number"
-                    className="form-control"
-                    name="berat"
-                    value={formData.berat || ''}
-                    onChange={handleChange}
-                  />
-                ) : (
-                  <p className="border p-2 rounded bg-light">{barang.berat} gram</p>
-                )}
-              </div>
-
-              {/* Status Garansi */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Status Garansi:</label>
-                {editMode ? (
-                  <>
-                    <input
-                      type="date"
-                      className="form-control mb-2"
-                      name="masa_garansi"
-                      value={formData.masa_garansi ? formData.masa_garansi.substring(0, 10) : ''}
-                      onChange={handleChange}
-                      disabled={tanpaGaransi}
-                    />
-                    <div className="form-check mt-1">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="tanpaGaransi"
-                        checked={tanpaGaransi}
-                        onChange={handleTanpaGaransi}
-                      />
-                      <label className="form-check-label" htmlFor="tanpaGaransi">
-                        Barang tidak memiliki garansi
-                      </label>
-                    </div>
-                  </>
-                ) : (
-                  <p className="border p-2 rounded bg-light">
-                    {barang.masa_garansi ? formatDate(barang.masa_garansi) : 'Tidak ada garansi'}
-                  </p>
-                )}
-              </div>
-
-              {/* Status Barang */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Status Barang:</label>
-                {editMode ? (
-                  <select
-                    className="form-select"
-                    name="status_barang"
-                    value={formData.status_barang || ''}
-                    onChange={handleChange}
-                  >
-                    <option value="">-- Pilih status --</option>
-                    <option value="Aktif">Aktif</option>
-                    <option value="Non Aktif">Non Aktif</option>
-                    <option value="Habis">Habis</option>
-                    <option value="Barang untuk Donasi">Barang untuk Donasi</option>
-                    <option value="Barang sudah Didonasikan">Barang sudah Didonasikan</option>
-                  </select>
-                ) : (
-                  <p className="border p-2 rounded bg-light">{barang.status_barang}</p>
-                )}
-              </div>
-
-              {/* Kategori */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Kategori:</label>
-                {editMode ? (
-                  <select
-                    className="form-select"
-                    name="id_kategori"
-                    value={formData.id_kategori || ''}
-                    onChange={handleChange}
-                  >
-                    <option value="">-- Pilih Kategori --</option>
-                    {kategoriList.map((kat) => (
-                      <option key={kat.id_kategori} value={kat.id_kategori}>
-                        {kat.nama_kategori}
-                      </option>
+                {newPhotos.length > 0 && (
+                  <div className="row mt-2 g-2">
+                    {newPhotos.map((file, i) => (
+                      <div className="col-auto position-relative" key={i} style={{ width: 100 }}>
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                          style={{ zIndex: 2, padding: '2px 6px', fontSize: 12 }}
+                          onClick={() => setNewPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                          title="Hapus foto baru"
+                        >
+                          &times;
+                        </button>
+                      </div>
                     ))}
-                  </select>
-                ) : (
-                  <p className="border p-2 rounded bg-light">
-                    {barang.kategori?.nama_kategori || '-'}
-                  </p>
+                  </div>
+                )}
+                {newPhotos.length > 0 && (
+                  <div className="mt-2">
+                    <small className="text-muted">{newPhotos.length} foto baru akan diupload</small>
+                  </div>
                 )}
               </div>
+            )}
+          </div>
 
-              {/* Tombol Simpan / Batal */}
-              {editMode && (
-                <div className="d-flex gap-3">
-                  <button className="btn btn-success" onClick={handleUpdateClick}>
-                    💾 Simpan Perubahan
+          {/* Kolom Detail dengan Tab */}
+          <div className="col-md-8">
+            {/* Tab Menu */}
+            <ul className="nav nav-tabs mb-3">
+              <li className="nav-item">
+                <button
+                  className={`nav-link text-success ${activeTab === 'detail' ? 'active text-success fw-bold' : ''}`}
+                  onClick={() => setActiveTab('detail')}
+                >
+                  Detail Barang
+                </button>
+              </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link text-success${activeTab === 'penitipan' ? 'active text-success fw-bold' : ''}`}
+                  onClick={() => setActiveTab('penitipan')}
+                >
+                  Info Penitipan
+                </button>
+              </li>
+              {/* Info Transaksi hanya tampil jika status_barang === 'Habis' dan status_transaksi === 'Lunas' */}
+              {(barang.status_barang === 'Habis' && barang.detail_transaksi?.transaksi?.status_transaksi === 'Lunas') && (
+                <li className="nav-item">
+                  <button
+                    className={`nav-link text-success ${activeTab === 'transaksi' ? 'active text-success fw-bold' : ''}`}
+                    onClick={() => setActiveTab('transaksi')}
+                  >
+                    Info Transaksi
                   </button>
-                  <button className="btn btn-secondary" onClick={handleCancel}>
-                    ❌ Batal
-                  </button>
-                </div>
+                </li>
               )}
-            </>
-          )}
 
-          {activeTab === 'penitipan' && (
-            <>
-              <h6 className="fw-bold">Informasi Penitip</h6>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Nama Penitip:</label>
-                <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.nama_penitip || '-'}</p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Email Penitip:</label>
-                <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.user?.email || '-'}</p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Kontak Penitip:</label>
-                <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.no_telepon || '-'}</p>
-              </div>
-              <hr />
-              <h6 className="fw-bold">Informasi Penitipan</h6>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Tanggal Awal Penitipan:</label>
-                <p className="border p-2 rounded bg-light">
-                  {formatDateTime(barang.penitipan_barang?.tanggal_awal_penitipan)}
-                </p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Tanggal Akhir Penitipan:</label>
-                <p className="border p-2 rounded bg-light">
-                  {formatDateTime(barang.penitipan_barang?.tanggal_akhir_penitipan)}
-                </p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Nama Petugas QC:</label>
-                <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.nama_petugas_qc || '-'}</p>
-              </div>
-              
-              {/* Informasi Hunter */}
-              {barang.penitipan_barang?.pegawai && (
+              {/* Info Donasi tampil jika status_barang adalah 'Barang untuk donasi' atau 'Barang sudah Didonasikan' */}
+              {(barang.status_barang === 'Barang untuk donasi' || barang.status_barang === 'Barang sudah Didonasikan') && (
+                <li className="nav-item">
+                  <button
+                    className={`nav-link text-success ${activeTab === 'donasi' ? 'active text-success fw-bold' : ''}`}
+                    onClick={() => setActiveTab('donasi')}
+                  >
+                    Info Donasi
+                  </button>
+                </li>
+              )}
+            </ul>
+
+            {/* Konten Tab */}
+            {activeTab === 'detail' && (
+              <>
+                {/* Nama Barang */}
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Hunter:</label>
+                  <label className="form-label fw-semibold">Nama Barang:</label>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="nama_barang"
+                      value={formData.nama_barang || ''}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <p className="border p-2 rounded bg-light">{barang.nama_barang}</p>
+                  )}
+                </div>
+
+                {/* Deskripsi */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Deskripsi:</label>
+                  {editMode ? (
+                    <textarea
+                      className="form-control"
+                      name="deskripsi"
+                      value={formData.deskripsi || ''}
+                      onChange={handleChange}
+                      rows={4}
+                    />
+                  ) : (
+                    <p className="border p-2 rounded bg-light">{barang.deskripsi}</p>
+                  )}
+                </div>
+
+                {/* Harga */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Harga:</label>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="harga"
+                      value={formData.harga || ''}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <p className="border p-2 rounded bg-light">
+                      Rp {barang.harga.toLocaleString('id-ID')}
+                    </p>
+                  )}
+                </div>
+
+                {/* Berat */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Berat (gram):</label>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="berat"
+                      value={formData.berat || ''}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <p className="border p-2 rounded bg-light">{barang.berat} gram</p>
+                  )}
+                </div>
+
+                {/* Status Garansi */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Status Garansi:</label>
+                  {editMode ? (
+                    <>
+                      <input
+                        type="date"
+                        className="form-control mb-2"
+                        name="masa_garansi"
+                        value={formData.masa_garansi ? formData.masa_garansi.substring(0, 10) : ''}
+                        onChange={handleChange}
+                        disabled={tanpaGaransi}
+                      />
+                      <div className="form-check mt-1">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="tanpaGaransi"
+                          checked={tanpaGaransi}
+                          onChange={handleTanpaGaransi}
+                        />
+                        <label className="form-check-label" htmlFor="tanpaGaransi">
+                          Barang tidak memiliki garansi
+                        </label>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="border p-2 rounded bg-light">
+                      {barang.masa_garansi ? formatDate(barang.masa_garansi) : 'Tidak ada garansi'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Status Barang */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Status Barang:</label>
+                  {editMode ? (
+                    <select
+                      className="form-select"
+                      name="status_barang"
+                      value={formData.status_barang || ''}
+                      onChange={handleChange}
+                    >
+                      <option value="">-- Pilih status --</option>
+                      <option value="Aktif">Aktif</option>
+                      <option value="Non Aktif">Non Aktif</option>
+                      <option value="Habis">Habis</option>
+                      <option value="Barang untuk Donasi">Barang untuk Donasi</option>
+                      <option value="Barang sudah Didonasikan">Barang sudah Didonasikan</option>
+                    </select>
+                  ) : (
+                    <p className="border p-2 rounded bg-light">{barang.status_barang}</p>
+                  )}
+                </div>
+
+                {/* Kategori */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Kategori:</label>
+                  {editMode ? (
+                    <select
+                      className="form-select"
+                      name="id_kategori"
+                      value={formData.id_kategori || ''}
+                      onChange={handleChange}
+                    >
+                      <option value="">-- Pilih Kategori --</option>
+                      {kategoriList.map((kat) => (
+                        <option key={kat.id_kategori} value={kat.id_kategori}>
+                          {kat.nama_kategori}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="border p-2 rounded bg-light">
+                      {barang.kategori?.nama_kategori || '-'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Tombol Simpan / Batal */}
+                {editMode && (
+                  <div className="d-flex gap-3">
+                    <button className="btn btn-success" onClick={handleUpdateClick}>
+                      💾 Simpan Perubahan
+                    </button>
+                    <button className="btn btn-secondary" onClick={handleCancel}>
+                      ❌ Batal
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab === 'penitipan' && (
+              <>
+                <h6 className="fw-bold">Informasi Penitip</h6>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Nama Penitip:</label>
+                  <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.nama_penitip || '-'}</p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Email Penitip:</label>
+                  <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.user?.email || '-'}</p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Kontak Penitip:</label>
+                  <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.penitip?.no_telepon || '-'}</p>
+                </div>
+                <hr />
+                <h6 className="fw-bold">Informasi Penitipan</h6>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Tanggal Awal Penitipan:</label>
                   <p className="border p-2 rounded bg-light">
-                    {barang.penitipan_barang?.pegawai?.nama_pegawai} (ID: {barang.penitipan_barang?.pegawai?.id_pegawai})
+                    {formatDateTime(barang.penitipan_barang?.tanggal_awal_penitipan)}
                   </p>
                 </div>
-              )}
-            </>
-          )}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Tanggal Akhir Penitipan:</label>
+                  <p className="border p-2 rounded bg-light">
+                    {formatDateTime(barang.penitipan_barang?.tanggal_akhir_penitipan)}
+                  </p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Nama Petugas QC:</label>
+                  <p className="border p-2 rounded bg-light">{barang.penitipan_barang?.nama_petugas_qc || '-'}</p>
+                </div>
+                
+                {/* Informasi Hunter */}
+                {barang.penitipan_barang?.pegawai && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Hunter:</label>
+                    <p className="border p-2 rounded bg-light">
+                      {barang.penitipan_barang?.pegawai?.nama_pegawai} (ID: {barang.penitipan_barang?.pegawai?.id_pegawai})
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
 
-          {activeTab === 'transaksi' && (barang.status_barang === 'Habis' && barang.detail_transaksi?.transaksi?.status_transaksi === 'Lunas') && (
-            <>
-              <h5>Informasi Transaksi</h5>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Status Pembayaran:</label>
-                <p className="border p-2 rounded bg-light">{barang.detail_transaksi?.transaksi?.status_transaksi || '-'}</p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Tanggal Transaksi:</label>
-                <p className="border p-2 rounded bg-light">
-                  {formatDateTime(barang.detail_transaksi?.transaksi?.tanggal_transaksi)}
-                </p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Rating Pembeli:</label>
-                <p className="border p-2 rounded bg-light">{(barang.rating)}
-                </p>
-              </div>
-            </>
-          )}
+            {activeTab === 'transaksi' && (barang.status_barang === 'Habis' && barang.detail_transaksi?.transaksi?.status_transaksi === 'Lunas') && (
+              <>
+                <h5>Informasi Transaksi</h5>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Status Pembayaran:</label>
+                  <p className="border p-2 rounded bg-light">{barang.detail_transaksi?.transaksi?.status_transaksi || '-'}</p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Tanggal Transaksi:</label>
+                  <p className="border p-2 rounded bg-light">
+                    {formatDateTime(barang.detail_transaksi?.transaksi?.tanggal_transaksi)}
+                  </p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Rating Pembeli:</label>
+                  <p className="border p-2 rounded bg-light">{(barang.rating)}
+                  </p>
+                </div>
+              </>
+            )}
 
-          {activeTab === 'donasi' && (barang.status_barang === 'Barang untuk donasi' || barang.status_barang === 'Barang sudah Didonasikan') && (
-            <>
-              <h5>Informasi Donasi</h5>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Tanggal Donasi:</label>
-                <p className="border p-2 rounded bg-light">
-                  {formatDateTime(barang.alokasi_donasi?.tanggal_donasi)}
-                </p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Organisasi yang Menerima:</label>
-                <p className="border p-2 rounded bg-light">{barang.alokasi_donasi?.request_donasi?.organisasi?.nama_organisasi || '-'}</p>
-              </div>
-            </>
-          )}
+            {activeTab === 'donasi' && (barang.status_barang === 'Barang untuk donasi' || barang.status_barang === 'Barang sudah Didonasikan') && (
+              <>
+                <h5>Informasi Donasi</h5>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Tanggal Donasi:</label>
+                  <p className="border p-2 rounded bg-light">
+                    {formatDateTime(barang.alokasi_donasi?.tanggal_donasi)}
+                  </p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Organisasi yang Menerima:</label>
+                  <p className="border p-2 rounded bg-light">{barang.alokasi_donasi?.request_donasi?.organisasi?.nama_organisasi || '-'}</p>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-      
-      {/* Toast Container */}
-      <ToastContainer position="top-center" autoClose={3000} />
-      
-      {/* Modal Konfirmasi */}
-      {showConfirmModal && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Konfirmasi Perubahan</h5>
-                <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <p>Apakah Anda yakin ingin menyimpan perubahan pada data barang ini?</p>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmModal(false)}>Tidak</button>
-                <button type="button" className="btn btn-success" onClick={handleUpdate}>Ya, Simpan</button>
+        
+        {/* Toast Container */}
+        <ToastContainer position="top-center" autoClose={3000} />
+        
+        {/* Modal Konfirmasi */}
+        {showConfirmModal && (
+          <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Konfirmasi Perubahan</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <p>Apakah Anda yakin ingin menyimpan perubahan pada data barang ini?</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmModal(false)}>Tidak</button>
+                  <button type="button" className="btn btn-success" onClick={handleUpdate}>Ya, Simpan</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

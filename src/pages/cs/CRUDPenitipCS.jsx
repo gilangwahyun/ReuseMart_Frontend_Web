@@ -65,11 +65,26 @@ const CRUDPenitipCS = () => {
       if (editingPenitip) {
         if (!window.confirm("Apakah Anda yakin ingin mengupdate data penitip ini?")) return;
         
+        console.log('Editing penitip with ID:', editingPenitip.id_penitip);
+        console.log('Original penitip data:', editingPenitip);
+        
+        // Log FormData contents for debugging
+        console.log('FormData contents:');
+        for (let pair of formData.entries()) {
+          console.log(pair[0] + ': ' + (pair[0] === 'foto_ktp' ? 'File Object' : pair[1]));
+        }
+        
         setLoading(true);
         // Update existing penitip (formData sudah berisi id_user)
-        await updatePenitip(editingPenitip.id_penitip, formData);
-        fetchPenitip();
-        setSuccess("Penitip berhasil diupdate.");
+        try {
+          const response = await updatePenitip(editingPenitip.id_penitip, formData);
+          console.log('Update response:', response);
+          await fetchPenitip();
+          setSuccess("Penitip berhasil diupdate.");
+        } catch (updateError) {
+          console.error('Update error:', updateError);
+          setError("Terjadi kesalahan saat update: " + (updateError.response?.data?.message || updateError.message));
+        }
       } else {
         // Create new penitip - sama seperti pola di PegawaiManagement
         setLoading(true);
@@ -116,15 +131,15 @@ const CRUDPenitipCS = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus penitip ini?")) return;
+    if (!window.confirm("Apakah Anda yakin ingin menghapus penitip ini? Akun pengguna yang terkait juga akan dihapus secara permanen.")) return;
     setLoading(true);
     try {
       await deletePenitip(id);
-      setSuccess("Penitip berhasil dihapus.");
+      setSuccess("Penitip dan akun pengguna terkait berhasil dihapus.");
       fetchPenitip();
     } catch (err) {
       console.error("Gagal menghapus data penitip:", err);
-      setError("Gagal menghapus data penitip.");
+      setError("Gagal menghapus data penitip: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
