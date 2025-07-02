@@ -76,10 +76,46 @@ export const getAlamatById = async (id) => {
 export const getAlamatByPembeliId = async (id_pembeli) => {
   try {
     const response = await useAxios.get(`${API_URL}/pembeli/${id_pembeli}`);
-    return response.data;
+    
+    // Handle case where response is undefined, null, or not an array
+    if (!response.data) {
+      console.warn(`No address data returned for pembeli ${id_pembeli}`);
+      return [{
+        id_alamat: -1,
+        id_pembeli: id_pembeli,
+        alamat_lengkap: "- Alamat tidak tersedia -",
+        is_default: true
+      }];
+    }
+    
+    // Ensure we're working with an array
+    const addresses = Array.isArray(response.data) ? response.data : [response.data];
+    
+    // If the array is empty, return a default address
+    if (addresses.length === 0) {
+      console.warn(`Empty address list returned for pembeli ${id_pembeli}`);
+      return [{
+        id_alamat: -1,
+        id_pembeli: id_pembeli,
+        alamat_lengkap: "- Alamat tidak tersedia -",
+        is_default: true
+      }];
+    }
+    
+    // Ensure each address has alamat_lengkap
+    return addresses.map(address => ({
+      ...address,
+      alamat_lengkap: address.alamat_lengkap || "- Alamat tidak tersedia -"
+    }));
   } catch (error) {
     console.error(`Error fetching alamat for pembeli ${id_pembeli}:`, error);
-    throw error;
+    // Instead of throwing, return a default address
+    return [{
+      id_alamat: -1,
+      id_pembeli: id_pembeli,
+      alamat_lengkap: "- Alamat tidak tersedia -",
+      is_default: true
+    }];
   }
 };
 

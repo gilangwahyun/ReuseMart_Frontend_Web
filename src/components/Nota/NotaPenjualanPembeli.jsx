@@ -116,9 +116,9 @@ const NotaPengambilanDocument = ({ data }) => {
   // Format address
   const formattedAddress = alamat ? 
     [
-      alamat.alamat_lengkap
+      alamat.alamat_lengkap || "- Alamat tidak tersedia -"
     ].filter(part => part && part.trim() !== '').join(', ') : 
-    'Alamat tidak tersedia';
+    '- Alamat tidak tersedia -';
   
   return (
     <Document>
@@ -408,9 +408,20 @@ const NotaPenjualanPembeli = () => {
                 // Format address
                 console.log(`[NOTA PEMBELI] Fetching address for pembeli ID: ${transaksiData.id_pembeli}`);
                 const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
-                const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
-                const formattedAddress = alamatData ? alamatData.alamat_lengkap : 'Alamat tidak tersedia';
-                console.log(`[NOTA PEMBELI] Formatted address: ${formattedAddress}`);
+                let alamatData = null;
+                if (alamatResponse.data && Array.isArray(alamatResponse.data) && alamatResponse.data.length > 0) {
+                  alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+                  // Ensure alamat_lengkap is not undefined or empty
+                  if (!alamatData.alamat_lengkap || alamatData.alamat_lengkap.trim() === '') {
+                    alamatData.alamat_lengkap = "- Alamat tidak tersedia -";
+                  }
+                } else {
+                  alamatData = {
+                    alamat_lengkap: "- Alamat tidak tersedia -",
+                    is_default: true
+                  };
+                }
+                console.log(`[NOTA PEMBELI] Formatted address: ${alamatData.alamat_lengkap}`);
 
                 // Get buyer email
                 console.log(`[NOTA PEMBELI] Fetching pembeli data for ID: ${transaksiData.id_pembeli}`);
@@ -471,7 +482,7 @@ const NotaPenjualanPembeli = () => {
                   potongan_diskon: 0,
                   poin_diperoleh: points,
                   total_setelah_diskon: totalAmount,
-                  alamat_pembeli: formattedAddress,
+                  alamat_pembeli: alamatData.alamat_lengkap,
                   nama_pembeli: pembeliData.nama_pembeli,
                   email_pembeli: buyerEmail
                 };
@@ -828,9 +839,9 @@ const NotaPenjualanPembeli = () => {
   // Format address for display
   const formattedAddress = alamat ? 
     [
-      alamat.alamat_lengkap
+      alamat.alamat_lengkap || "- Alamat tidak tersedia -"
     ].filter(part => part && part.trim() !== '').join(', ') : 
-    'Alamat tidak tersedia';
+    '- Alamat tidak tersedia -';
 
   return (
     <Container className="my-4">

@@ -55,7 +55,11 @@ const Transaksi = () => {
 
   // Update perhitungan subtotal dengan pembulatan
   const subtotal = cartItems.reduce((sum, item) => {
-    const roundedPrice = roundPrice(item.barang.harga);
+    const itemHarga = typeof item.barang.harga === 'string' 
+      ? parseFloat(item.barang.harga) 
+      : item.barang.harga;
+    
+    const roundedPrice = roundPrice(itemHarga);
     return sum + roundedPrice;
   }, 0);
   
@@ -335,6 +339,7 @@ const Transaksi = () => {
                     <tr>
                       <th>No</th>
                       <th>Nama Barang</th>
+                      <th></th>
                       <th>Harga</th>
                     </tr>
                   </thead>
@@ -343,6 +348,7 @@ const Transaksi = () => {
                       <tr key={item.id_detail_keranjang}>
                         <td>{index + 1}</td>
                         <td>{item.barang.nama_barang}</td>
+                        <td></td>
                         <td>Rp {roundPrice(item.barang.harga).toLocaleString()}</td>
                       </tr>
                     ))}
