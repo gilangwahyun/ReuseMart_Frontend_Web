@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Badge, Alert, Card, Form, InputGroup } from "react-bootstrap";
 import { FaSearch, FaCheck, FaCheckDouble } from "react-icons/fa";
-import axios from "axios";
-import { BASE_URL } from "../../api";
+import useAxios from "../../api";
 import { updateBarangStatus } from "../../api/BarangApi";
 
 const RequestPengambilanList = () => {
@@ -16,7 +15,7 @@ const RequestPengambilanList = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/api/request-pengambilan`);
+      const response = await useAxios.get(`/request-pengambilan`);
       console.log("Request pengambilan data:", response.data);
       setRequests(response.data);
       setError(null);
@@ -32,7 +31,7 @@ const RequestPengambilanList = () => {
   const fetchPendingRequests = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/api/request-pengambilan/pending`);
+      const response = await useAxios.get(`/request-pengambilan/pending`);
       console.log("Pending request pengambilan data:", response.data);
       setRequests(response.data);
       setError(null);
@@ -52,7 +51,7 @@ const RequestPengambilanList = () => {
   // Handle approve request
   const handleApproveRequest = async (id) => {
     try {
-      const response = await axios.post(`${BASE_URL}/api/request-pengambilan/${id}/process`, {
+      const response = await useAxios.post(`/request-pengambilan/${id}/process`, {
         status: "Disetujui"
       });
       console.log("Approve response:", response.data);
@@ -88,7 +87,7 @@ const RequestPengambilanList = () => {
       const barangId = request.barang.id_barang;
       
       // First complete the request
-      const response = await axios.post(`${BASE_URL}/api/request-pengambilan/${id}/complete`, {});
+      const response = await useAxios.post(`/request-pengambilan/${id}/complete`, {});
       console.log("Complete response:", response.data);
       
       // Then update the barang status to "Sudah Diambil"

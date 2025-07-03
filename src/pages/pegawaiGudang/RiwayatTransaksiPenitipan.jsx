@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PegawaiGudangSideBar from '../../components/PegawaiGudangSidebar';
 import { getAllPenitipanBarang, updatePenitipanBarang } from '../../api/PenitipanBarangApi';
-import { getAllNotaPenitipanBarang } from '../../api/NotaPenitipanBarangApi';
+import { getAllNotaPenitipanBarang, getNotaByPenitipanId, printNotaByPenitipanId } from '../../api/NotaPenitipanBarangApi';
 import { FaPrint, FaSearch, FaEye, FaTimes } from 'react-icons/fa';
 import { getAllPenitip } from "../../api/PenitipApi";
 import { getAllPegawai } from "../../api/PegawaiApi";
@@ -57,6 +57,7 @@ const RiwayatTransaksiPenitipan = () => {
       
       // Mengambil data nota
       const notaData = await getAllNotaPenitipanBarang();
+      console.log('Data nota dari API:', notaData);
       
       // Mengambil data penitip dan pegawai untuk keperluan edit
       const [penitipRes, pegawaiRes, jabatanRes] = await Promise.all([
@@ -239,16 +240,50 @@ const RiwayatTransaksiPenitipan = () => {
   };
 
   // Fungsi untuk mencetak nota
-  const handlePrintNota = (id_penitipan) => {
+  const handlePrintNota = async (id_penitipan) => {
     try {
+      console.log('ID Penitipan yang dicari:', id_penitipan, 'tipe:', typeof id_penitipan);
+      console.log('Semua nota yang tersedia:', notaList);
+      
+      // Konversi ID ke string untuk memastikan pencocokan yang konsisten
+      const notaID = String(id_penitipan);
+      
       // Cari nota yang sesuai dengan id_penitipan
-      const nota = notaList.find(nota => nota.id_penitipan === id_penitipan);
+      const nota = notaList.find(nota => String(nota.id_penitipan) === notaID);
+      console.log('Nota yang ditemukan dari daftar:', nota);
       
       if (nota) {
         // Redirect ke halaman cetak nota dengan id_nota_penitipan
         navigate(`/pegawaiGudang/nota-penitipan/print?id_nota_penitipan=${nota.id_nota_penitipan}&from=riwayat-transaksi`);
-      } else {
-        toast.error('Nota tidak ditemukan untuk penitipan ini');
+        return;
+      }
+      
+      // Jika nota tidak ditemukan dalam daftar, coba ambil dari API langsung
+      console.log('Nota tidak ditemukan dari daftar, mencoba API getNotaByPenitipanId...');
+      try {
+        const notaFromApi = await getNotaByPenitipanId(id_penitipan);
+        console.log('Nota dari API:', notaFromApi);
+        
+        if (notaFromApi && notaFromApi.id_nota_penitipan) {
+          navigate(`/pegawaiGudang/nota-penitipan/print?id_nota_penitipan=${notaFromApi.id_nota_penitipan}&from=riwayat-transaksi`);
+          return;
+        }
+      } catch (apiError) {
+        console.error('Error mendapatkan nota dari API:', apiError);
+      }
+      
+      // Jika masih tidak ada, coba cetak langsung dengan API printNotaByPenitipanId
+      console.log('Mencoba cetak nota langsung dengan printNotaByPenitipanId...');
+      try {
+        await printNotaByPenitipanId(id_penitipan);
+        toast.success('Nota berhasil dicetak');
+      } catch (printError) {
+        console.error('Error mencetak nota:', printError);
+        toast.error('Gagal mencetak nota');
+        
+        // Terakhir, coba redirect ke halaman cetak dengan id_penitipan saja
+        console.log('Mencoba alternatif terakhir dengan ID penitipan langsung');
+        navigate(`/pegawaiGudang/nota-penitipan/print?id_penitipan=${id_penitipan}&from=riwayat-transaksi`);
       }
     } catch (err) {
       console.error('Error handling nota:', err);

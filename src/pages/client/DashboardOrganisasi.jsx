@@ -39,16 +39,40 @@ const DashboardOrganisasi = () => {
 
   const user = getUserData();
   const id_user = user?.id_user;
+  
+  // Debug user data
+  console.log("User data from localStorage:", user);
+  console.log("ID user:", id_user, "Type:", typeof id_user);
 
   // Ambil data organisasi user login
   const fetchOrganisasi = async () => {
     try {
-      const allOrgs = await getOrganisasi();
-      if (!Array.isArray(allOrgs)) {
-        console.error("Invalid response from getOrganisasi:", allOrgs);
+      console.log("Fetching organisasi data for user ID:", id_user);
+      const response = await getOrganisasi();
+      console.log("Raw response from getOrganisasi:", response);
+      
+      // Handle different response formats
+      let allOrgs = [];
+      if (Array.isArray(response)) {
+        allOrgs = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        allOrgs = response.data;
+      } else {
+        console.error("Unexpected response format from getOrganisasi:", response);
         return null;
       }
-      return allOrgs.find(o => o.id_user === id_user) || null;
+      
+      console.log("All organisations:", allOrgs);
+      
+      // Find organisation for current user - compare as strings to avoid type mismatch
+      const userOrg = allOrgs.find(o => {
+        console.log(`Comparing org id_user: ${o.id_user} (${typeof o.id_user}) with user id: ${id_user} (${typeof id_user})`);
+        return String(o.id_user) === String(id_user);
+      });
+      
+      console.log("Found organisation for user:", userOrg);
+      
+      return userOrg || null;
     } catch (err) {
       console.error("Error fetching organisasi:", err);
       throw err;

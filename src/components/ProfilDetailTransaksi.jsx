@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getDetailTransaksiByTransaksi } from "../api/DetailTransaksiApi";
 import { updateBarangRating } from "../api/BarangApi";
 import { getFotoBarangByIdBarang } from "../api/fotoBarangApi";
+import { BASE_URL } from "../api/index";
 import { getByIdBarang } from "../api/PenitipanBarangApi";
 import {
   Card, Button, Row, Col, ListGroup, Alert, Spinner, Modal, Badge, Image, Collapse
@@ -199,7 +200,7 @@ export default function ProfilDetailTransaksi({ transaction, onBack }) {
 
   const getThumbnailUrl = (barangId) => {
     if (thumbnails[barangId]) {
-      return `http://127.0.0.1:8000/${thumbnails[barangId].url_foto}`;
+      return `${BASE_URL}${thumbnails[barangId].url_foto}`;
     }
     return "/assets/logoReuseMart.png"; // Default image
   };

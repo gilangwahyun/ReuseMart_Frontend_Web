@@ -344,12 +344,23 @@ const NotaPenjualanKurir = () => {
         }
 
         // Step 3: Get pembeli data to get the id_user
-        const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
-        const pembeliData = pembeliResponse.data;
+        let pembeliData = { nama_pembeli: "Pembeli tidak teridentifikasi", id_user: null };
+        let buyerUserId = null;
         
-        console.log("Pembeli data:", pembeliData);
-        const buyerUserId = pembeliData.id_user; // Get the buyer's user ID
-        console.log("Buyer's User ID:", buyerUserId);
+        try {
+          console.log(`Fetching pembeli data for ID: ${transaksiData.id_pembeli}`);
+          const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+          if (pembeliResponse && pembeliResponse.data) {
+            pembeliData = pembeliResponse.data;
+            buyerUserId = pembeliData.id_user; // Get the buyer's user ID
+            console.log("Pembeli data:", pembeliData);
+            console.log("Buyer's User ID:", buyerUserId);
+          } else {
+            console.log("No pembeli data returned from API, using default values");
+          }
+        } catch (pembeliError) {
+          console.error(`Error fetching pembeli data: ${pembeliError.message}`);
+        }
         
         // Step 4: Get the user email using the pembeli/user endpoint
         let buyerEmail = "Email tidak tersedia";
@@ -404,8 +415,20 @@ const NotaPenjualanKurir = () => {
         }
 
         // Step 6: Get address data
-        const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
-        const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+        let alamatData = null;
+        try {
+          console.log(`Fetching alamat for pembeli ID: ${transaksiData.id_pembeli}`);
+          const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
+          
+          if (alamatResponse.data && Array.isArray(alamatResponse.data) && alamatResponse.data.length > 0) {
+            alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+            console.log("Found address data:", alamatData);
+          } else {
+            console.log("No address data available for this buyer");
+          }
+        } catch (addrError) {
+          console.error("Error fetching address data:", addrError);
+        }
 
         // Step 7: Get transaction items
         const detailTransaksiResponse = await useAxios.get(`/detailTransaksi/transaksi/${transaksiData.id_transaksi}`);

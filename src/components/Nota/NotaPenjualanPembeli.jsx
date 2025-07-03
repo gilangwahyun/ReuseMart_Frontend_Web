@@ -407,9 +407,24 @@ const NotaPenjualanPembeli = () => {
 
                 // Format address
                 console.log(`[NOTA PEMBELI] Fetching address for pembeli ID: ${transaksiData.id_pembeli}`);
-                const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
-                const alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
-                const formattedAddress = alamatData ? alamatData.alamat_lengkap : 'Alamat tidak tersedia';
+                let formattedAddress = 'Alamat tidak tersedia';
+                let alamatData = null;
+                
+                try {
+                  const alamatResponse = await useAxios.get(`/alamat/pembeli/${transaksiData.id_pembeli}`);
+                  console.log(`[NOTA PEMBELI] Alamat response:`, alamatResponse.data);
+                  
+                  if (alamatResponse.data && Array.isArray(alamatResponse.data) && alamatResponse.data.length > 0) {
+                    alamatData = alamatResponse.data.find(a => a.is_default) || alamatResponse.data[0];
+                    formattedAddress = alamatData.alamat_lengkap || 'Alamat tidak tersedia';
+                  } else {
+                    console.log(`[NOTA PEMBELI] No address found for pembeli ID: ${transaksiData.id_pembeli}`);
+                  }
+                } catch (addrError) {
+                  console.log(`[NOTA PEMBELI] Error fetching address: ${addrError.message}`);
+                  // Continue with default address
+                }
+                
                 console.log(`[NOTA PEMBELI] Formatted address: ${formattedAddress}`);
 
                 // Get buyer email
@@ -458,6 +473,13 @@ const NotaPenjualanPembeli = () => {
 
                 // Create nota data
                 console.log(`[NOTA PEMBELI] Creating nota data object with invoice number: ${newInvoiceNumber}`);
+                
+                // Pastikan alamat_pembeli tidak menyebabkan masalah
+                let alamatPembeli = formattedAddress;
+                if (!alamatPembeli || alamatPembeli.trim() === '') {
+                  alamatPembeli = 'Alamat tidak tersedia';
+                }
+                
                 const notaData = {
                   id_transaksi: transaksiData.id_transaksi,
                   nomor_nota: newInvoiceNumber,
@@ -471,8 +493,8 @@ const NotaPenjualanPembeli = () => {
                   potongan_diskon: 0,
                   poin_diperoleh: points,
                   total_setelah_diskon: totalAmount,
-                  alamat_pembeli: formattedAddress,
-                  nama_pembeli: pembeliData.nama_pembeli,
+                  alamat_pembeli: alamatPembeli,
+                  nama_pembeli: pembeliData.nama_pembeli || 'Pembeli tidak teridentifikasi',
                   email_pembeli: buyerEmail
                 };
                 
@@ -572,14 +594,24 @@ const NotaPenjualanPembeli = () => {
         try {
           if (transaksiData && transaksiData.id_pembeli) {
             console.log(`[NOTA PEMBELI] Fetching pembeli data for ID: ${transaksiData.id_pembeli}`);
-            const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
-            pembeliData = pembeliResponse.data || pembeliData;
-            console.log("[NOTA PEMBELI] Pembeli data:", pembeliData);
+            try {
+              const pembeliResponse = await useAxios.get(`/pembeli/${transaksiData.id_pembeli}`);
+              if (pembeliResponse && pembeliResponse.data) {
+                pembeliData = pembeliResponse.data;
+                console.log("[NOTA PEMBELI] Pembeli data:", pembeliData);
+              } else {
+                console.log("[NOTA PEMBELI] No pembeli data returned from API, using default");
+              }
+            } catch (pembeliError) {
+              // Jika terjadi error 404, pembeli tidak ditemukan
+              console.log(`[NOTA PEMBELI] Error fetching pembeli: ${pembeliError.message}`);
+              // Tetap gunakan data default
+            }
           } else {
             console.log("[NOTA PEMBELI] No pembeli ID available in transaction data, using default");
           }
         } catch (error) {
-          console.error("[NOTA PEMBELI] Error fetching pembeli data:", error);
+          console.error("[NOTA PEMBELI] Error handling pembeli data:", error);
         }
 
         // Step 4: Get the user email using the pembeli/user endpoint
