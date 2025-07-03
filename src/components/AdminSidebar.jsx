@@ -1,54 +1,93 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaUserTie,
-  FaBoxOpen,
-  FaUsers,
-  FaShoppingCart,
   FaBuilding,
-  FaDonate,
-  FaHome,
+  FaTachometerAlt,
+  FaBars,
+  FaTimes,
+  FaSignOutAlt,
+  FaGift,
 } from "react-icons/fa";
+import { Logout } from "../api/AuthApi";
 
-const sidebarItems = [
-  { to: "/admin/dashboard", icon: <FaHome />, label: "Dashboard" },
-  { to: "/admin/pegawai", icon: <FaUserTie />, label: "Pegawai" },
-  { to: "/admin/barang-titipan", icon: <FaBoxOpen />, label: "Barang Titipan" },
-  { to: "/admin/penitip", icon: <FaUsers />, label: "Penitip" },
-  { to: "/admin/pembeli", icon: <FaShoppingCart />, label: "Pembeli" },
-  { to: "/admin/organisasi", icon: <FaBuilding />, label: "Organisasi" },
-  { to: "/admin/donasi", icon: <FaDonate />, label: "Donasi" },
-];
+const AdminSidebar = () => {
+  const [isOpen, setIsOpen] = useState(true); // Awalnya terbuka
+  const navigate = useNavigate();
+  const location = useLocation();
 
-const AdminSidebar = ({ isOpen }) => {
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await Logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const sidebarItems = [
+    { to: "/DashboardAdmin", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { to: "/admin/pegawai", icon: <FaUserTie />, label: "Manajerial Pegawai" },
+    { to: "/admin/organisasi", icon: <FaBuilding />, label: "Manajerial Organisasi" },
+    { to: "/admin/merchandise", icon: <FaGift />, label: "Manajerial Merchandise" },
+  ];
+
   return (
-    <nav
-      aria-label="Admin Sidebar"
-      className={`bg-white h-screen fixed top-0 left-0 shadow-md transition-all duration-300 ${
-        isOpen
-          ? "w-64 pointer-events-auto"
-          : "w-0 overflow-hidden pointer-events-none"
-      }`}
-      style={{ zIndex: 20 }}
+    <div
+      className={`bg-white border-end shadow-sm d-flex flex-column justify-between`}
+      style={{
+        width: isOpen ? "220px" : "70px",
+        transition: "width 0.3s",
+        height: "100vh",
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+      }}
     >
-      <div className="p-4 border-b">
-        <h2 className="text-lg font-bold">Admin Panel</h2>
+      {/* Header */}
+      <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
+        {isOpen && <h5 className="mb-0 text">Admin Panel</h5>}
+        <button
+          className="btn btn-sm btn-light border"
+          onClick={toggleSidebar}
+        >
+          {isOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
 
-      <ul className="p-4 space-y-3">
+      {/* Navigation */}
+      <ul className="nav flex-column p-2 flex-grow-1">
         {sidebarItems.map(({ to, icon, label }) => (
-          <li key={to}>
+          <li className="nav-item" key={to}>
             <Link
               to={to}
-              className="flex items-center gap-2 text-gray-700 hover:text-blue-600"
-              aria-current={window.location.pathname === to ? "page" : undefined}
+              className={`nav-link d-flex align-items-center py-2 px-3 rounded ${
+                location.pathname === to ? "bg-success text-white" : "text-dark"
+              }`}
+              style={{ transition: "0.2s" }}
             >
-              {icon} {label}
+              {icon}
+              {isOpen && <span className="ms-2">{label}</span>}
             </Link>
           </li>
         ))}
       </ul>
-    </nav>
+
+      {/* Logout */}
+      <div className="p-2 border-top">
+        <button
+          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center"
+          onClick={handleLogout}
+        >
+          <FaSignOutAlt />
+          {isOpen && <span className="ms-2">Logout</span>}
+        </button>
+      </div>
+    </div>
   );
 };
 
