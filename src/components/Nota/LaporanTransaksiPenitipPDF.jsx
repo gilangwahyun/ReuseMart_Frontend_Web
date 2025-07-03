@@ -5,7 +5,7 @@ import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
 import axios from 'axios';
 import { BASE_URL } from '../../api';
-import { getAllTransaksi } from '../../api/TransaksiApi';
+import { getAllTransaksi, getTransaksiById } from '../../api/TransaksiApi';
 import { getPenitipanBarangById } from '../../api/PenitipanBarangApi';
 
 const LaporanTransaksiPenitipPDF = () => {
@@ -79,58 +79,110 @@ const LaporanTransaksiPenitipPDF = () => {
       
       // Process each transaction
       for (const transaksi of transaksiResponse.data) {
-        // Get transaction details with penitip info
+        // Get transaction details using getTransaksiById instead
         try {
-          const penitipDetails = await axios.get(`${BASE_URL}/api/transaksi/${transaksi.id_transaksi}/penitipan-penitip`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          const detailsData = penitipDetails.data || [];
+          const transactionDetails = await getTransaksiById(transaksi.id_transaksi);
           
-          // Process each item in the transaction
-          for (const item of detailsData) {
-            try {
-              // Calculate bonus (10% of price)
-              const bonus = item.harga_item * 0.1;
-              // Calculate total income
-              const pendapatan = item.harga_item - bonus;
-              
-              // Log data untuk debugging
-              console.log('Item data detail (PDF):', item);
-              
-              // Jika tidak ada tanggal_awal_penitipan dan ada id_penitipan, coba ambil data penitipan
-              let tanggalPenitipan = item.tanggal_awal_penitipan || '-';
-              
-              if (tanggalPenitipan === '-' && item.id_penitipan) {
-                try {
-                  // Ambil data penitipan langsung dari API
-                  console.log(`Fetching penitipan data for id_penitipan: ${item.id_penitipan}`);
-                  const penitipanData = await getPenitipanBarangById(item.id_penitipan);
-                  if (penitipanData && penitipanData.tanggal_awal_penitipan) {
-                    tanggalPenitipan = penitipanData.tanggal_awal_penitipan;
-                    console.log(`Found tanggal_awal_penitipan: ${tanggalPenitipan}`);
+          // Check if we have detail_transaksi in the response
+          if (transactionDetails && transactionDetails.detail_transaksi) {
+            // Process each detail item in the transaction
+            for (const detail of transactionDetails.detail_transaksi) {
+              try {
+                // Log the full detail object to see structure
+                console.log(`Detail for transaction ${transaksi.id_transaksi}:`, detail);
+                
+                // Extract penitip info from nested objects if available
+                let idPenitip = null;
+                let namaPenitip = 'Tidak diketahui';
+                let tanggalAwalPenitipan = '-';
+                
+                // Check if we have barang object with penitipan_barang info
+                if (detail.barang && detail.barang.penitipan_barang) {
+                  // Get tanggal from penitipan_barang
+                  if (detail.barang.penitipan_barang.tanggal_awal_penitipan) {
+                    tanggalAwalPenitipan = detail.barang.penitipan_barang.tanggal_awal_penitipan;
                   }
-                } catch (penitipanErr) {
-                  console.error(`Error fetching penitipan data for id ${item.id_penitipan}:`, penitipanErr);
+                  
+                  // Get penitip info if available
+                  if (detail.barang.penitipan_barang.penitip) {
+                    idPenitip = detail.barang.penitipan_barang.penitip.id_penitip;
+                    namaPenitip = detail.barang.penitipan_barang.penitip.nama_penitip;
+                  } else if (detail.barang.penitipan_barang.id_penitip) {
+                    // If only id_penitip is available, try to fetch penitip info
+                    idPenitip = detail.barang.penitipan_barang.id_penitip;
+                    
+                    try {
+                      const penitipResponse = await axios.get(`${BASE_URL}/api/penitip/${idPenitip}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      
+                      if (penitipResponse.data) {
+                        namaPenitip = penitipResponse.data.nama_penitip || 'Tidak diketahui';
+                      }
+                    } catch (penitipErr) {
+                      console.error(`Error fetching penitip data for id ${idPenitip}:`, penitipErr);
+                    }
+                  }
+                } else if (detail.id_penitipan) {
+                  // If we only have id_penitipan, fetch penitipan data
+                  const penitipanData = await getPenitipanBarangById(detail.id_penitipan);
+                  
+                  if (penitipanData) {
+                    // Set tanggal from penitipan data
+                    if (penitipanData.tanggal_awal_penitipan) {
+                      tanggalAwalPenitipan = penitipanData.tanggal_awal_penitipan;
+                    }
+                    
+                    // If penitipan has id_penitip, try to get penitip data
+                    if (penitipanData.id_penitip) {
+                      idPenitip = penitipanData.id_penitip;
+                      
+                      try {
+                        const penitipResponse = await axios.get(`${BASE_URL}/api/penitip/${idPenitip}`, {
+                          headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (penitipResponse.data) {
+                          namaPenitip = penitipResponse.data.nama_penitip || 'Tidak diketahui';
+                        }
+                      } catch (penitipErr) {
+                        console.error(`Error fetching penitip data for id ${idPenitip}:`, penitipErr);
+                      }
+                    }
+                  }
                 }
+                
+                // Get nama_barang - check if it's in barang object or direct property
+                let namaBarang = detail.nama_barang;
+                if (!namaBarang && detail.barang && detail.barang.nama_barang) {
+                  namaBarang = detail.barang.nama_barang;
+                }
+                
+                // Calculate bonus (10% of price)
+                const harga = detail.harga || detail.harga_item || 
+                              (detail.barang ? detail.barang.harga : 0) || 0;
+                const bonus = harga * 0.1;
+                // Calculate total income
+                const pendapatan = harga - bonus;
+                
+                allBarangWithIncome.push({
+                  id_barang: detail.id_barang,
+                  nama_barang: namaBarang || 'Barang Tidak Bernama',
+                  harga: harga,
+                  id_penitip: idPenitip,
+                  nama_penitip: namaPenitip,
+                  tanggal_penitipan: tanggalAwalPenitipan,
+                  tanggal_transaksi: transaksi.tanggal_transaksi || '-',
+                  id_transaksi: transaksi.id_transaksi,
+                  bonus: bonus,
+                  pendapatan: pendapatan
+                });
+              } catch (itemErr) {
+                console.error(`Error processing item ${detail.id_barang}:`, itemErr);
               }
-              
-              allBarangWithIncome.push({
-                id_barang: item.id_barang,
-                nama_barang: item.nama_barang,
-                harga: item.harga_item,
-                id_penitip: item.id_penitip,
-                nama_penitip: item.nama_penitip || 'Tidak diketahui',
-                tanggal_penitipan: tanggalPenitipan,
-                tanggal_transaksi: transaksi.tanggal_transaksi || '-',
-                id_transaksi: transaksi.id_transaksi,
-                bonus: bonus,
-                pendapatan: pendapatan
-              });
-            } catch (itemErr) {
-              console.error(`Error processing item ${item.id_barang}:`, itemErr);
             }
+          } else {
+            console.log(`No details found for transaction ${transaksi.id_transaksi}`);
           }
         } catch (err) {
           console.error(`Error fetching details for transaction ${transaksi.id_transaksi}:`, err);

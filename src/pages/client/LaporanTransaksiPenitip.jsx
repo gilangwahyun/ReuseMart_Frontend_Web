@@ -6,6 +6,7 @@ import { useReactToPrint } from 'react-to-print';
 import { getPenitipanByPenitipId, getPenitipTransaksiNota } from '../../api/PenitipApi'; 
 import { getTransaksiById, getAllTransaksi } from '../../api/TransaksiApi';
 import { getPenitipanBarangById } from '../../api/PenitipanBarangApi';
+import { getPenitipanPenitipByTransaksi } from '../../api/DetailTransaksiApi';
 import axios from 'axios';
 import { BASE_URL } from '../../api';
 import PenitipSidebar from '../../components/PenitipSidebar';
@@ -75,60 +76,66 @@ const LaporanTransaksiPenitip = () => {
       
       console.log('All Transaction Data:', transaksiResponse.data);
       
-      // Get auth token from localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Token autentikasi tidak ditemukan');
-      }
-      
       // Process and transform data
       let allBarangWithIncome = [];
       
       // Process each transaction
       for (const transaksi of transaksiResponse.data) {
-        // Get transaction details with penitip info
+        // Get transaction details with penitip info using our updated function
         try {
-          const penitipDetails = await axios.get(`${BASE_URL}/api/transaksi/${transaksi.id_transaksi}/penitipan-penitip`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          const detailsData = penitipDetails.data || [];
+          const detailsData = await getPenitipanPenitipByTransaksi(transaksi.id_transaksi);
+          console.log(`Transaction ${transaksi.id_transaksi} details:`, detailsData);
           
           // Process each item in the transaction
           for (const item of detailsData) {
             try {
               // Calculate bonus (10% of price)
-              const bonus = item.harga_item * 0.1;
+              const harga = item.harga_item || (item.barang ? item.barang.harga : 0) || 0;
+              const bonus = harga * 0.1;
               // Calculate total income
-              const pendapatan = item.harga_item - bonus;
+              const pendapatan = harga - bonus;
               
               // Log data untuk debugging
               console.log('Item data detail:', item);
               
-              // Jika tidak ada tanggal_awal_penitipan dan ada id_penitipan, coba ambil data penitipan
+              // Get nama_barang from item or nested barang object
+              let namaBarang = item.nama_barang;
+              if (!namaBarang && item.barang && item.barang.nama_barang) {
+                namaBarang = item.barang.nama_barang;
+              }
+              
+              // Extract penitip info and tanggal
+              let namaPenitip = item.nama_penitip || 'Tidak diketahui';
+              let idPenitip = item.id_penitip || null;
+              
+              // Get tanggal_awal_penitipan - check multiple locations
               let tanggalMasuk = item.tanggal_awal_penitipan || '-';
               
-              if (tanggalMasuk === '-' && item.id_penitipan) {
-                try {
-                  // Ambil data penitipan langsung dari API
-                  console.log(`Fetching penitipan data for id_penitipan: ${item.id_penitipan}`);
-                  const penitipanData = await getPenitipanBarangById(item.id_penitipan);
-                  if (penitipanData && penitipanData.tanggal_awal_penitipan) {
-                    tanggalMasuk = penitipanData.tanggal_awal_penitipan;
-                    console.log(`Found tanggal_awal_penitipan: ${tanggalMasuk}`);
+              // If it's not directly available, check nested objects
+              if (tanggalMasuk === '-') {
+                if (item.barang && item.barang.penitipan_barang && item.barang.penitipan_barang.tanggal_awal_penitipan) {
+                  tanggalMasuk = item.barang.penitipan_barang.tanggal_awal_penitipan;
+                } else if (item.id_penitipan) {
+                  try {
+                    // Ambil data penitipan langsung dari API
+                    console.log(`Fetching penitipan data for id_penitipan: ${item.id_penitipan}`);
+                    const penitipanData = await getPenitipanBarangById(item.id_penitipan);
+                    if (penitipanData && penitipanData.tanggal_awal_penitipan) {
+                      tanggalMasuk = penitipanData.tanggal_awal_penitipan;
+                      console.log(`Found tanggal_awal_penitipan: ${tanggalMasuk}`);
+                    }
+                  } catch (penitipanErr) {
+                    console.error(`Error fetching penitipan data for id ${item.id_penitipan}:`, penitipanErr);
                   }
-                } catch (penitipanErr) {
-                  console.error(`Error fetching penitipan data for id ${item.id_penitipan}:`, penitipanErr);
                 }
               }
               
               allBarangWithIncome.push({
                 id_barang: item.id_barang,
-                nama_barang: item.nama_barang,
-                harga: item.harga_item,
-                id_penitip: item.id_penitip,
-                nama_penitip: item.nama_penitip || 'Tidak diketahui',
+                nama_barang: namaBarang || 'Barang Tidak Bernama',
+                harga: harga,
+                id_penitip: idPenitip,
+                nama_penitip: namaPenitip,
                 // Gunakan tanggal yang berhasil diambil
                 tanggal_masuk: tanggalMasuk,
                 tanggal_transaksi: transaksi.tanggal_transaksi || '-',
